@@ -361,6 +361,68 @@ that's the natural next validation step once Phase 1 starts.
 
 ---
 
+## First real local run — the app had genuinely never been started before this
+
+Docker Desktop was started, `docker-compose` brought up real Postgres +
+Redis, a real `.env` was created, the schema was migrated and seeded, and
+`yarn dev` ran both apps for the very first time ever. This is a stronger
+test than the build check above (that only proves the code compiles; this
+proves pages actually render real data end to end) and it found bugs the
+build check couldn't:
+
+- **This machine already runs a native Postgres on `127.0.0.1:5432`**
+  (unrelated to this project), which silently intercepts connections to
+  `localhost:5432` ahead of Docker's port-forward — `docker exec` into the
+  container worked, but `psql`/Prisma connecting via `localhost:5432` hit
+  the _other_ Postgres and got "role does not exist". Fixed with a
+  gitignored `docker-compose.override.yml` remapping the container to host
+  port 5433 — the committed `docker-compose.yml` (host port 5432) is
+  untouched, so this doesn't affect anyone without the same conflict.
+- **`turbo.json`'s `"pipeline"` vs `"tasks"` key (previously logged as a
+  soft "risk") is actually a hard failure** with the resolved Turbo version
+  (2.10.12) — `yarn dev` refused to start at all, not just a warning. Fixed
+  by renaming the key.
+- **`packages/db/prisma/seed.ts` crashed** ("hash is not a function") — it
+  dynamically `await import()`-ed `bcryptjs` (a CommonJS package), which
+  doesn't interop the same way as a static import in this setup. Fixed by
+  switching to the static `import { hash } from "bcryptjs"` already used
+  successfully elsewhere in the codebase (`packages/auth`).
+- **The real homepage was unreachable in both apps** — `apps/notes/app/page.tsx`
+  and `apps/video/app/page.tsx` were leftover scaffold placeholders
+  ("Notes Platform" / "Video Platform" stub text) sitting at the same `/`
+  route as the real homepage in `app/(marketing)/page.tsx` (a route group
+  doesn't change the URL, so both resolved to `/`). Next.js silently picked
+  the top-level placeholder with no error or warning at any point —
+  `next build` didn't catch it either, since it's not a type or build
+  error, just two files matching one route. The Navbar, search, and
+  track/course grid on the _actual_ homepage were structurally unreachable
+  until this was caught by actually loading the page and not seeing the
+  expected content. Fixed by deleting both placeholder `page.tsx` files.
+- **Next.js only auto-loads `.env` from an app's own directory, not the
+  monorepo root** — a root-level `.env` (matching where `.env.example`
+  lives) is invisible to `next dev`/`next build` unless something copies or
+  symlinks it down into `apps/notes/` and `apps/video/`. Worked around
+  locally by copying `.env` into both app directories (with `NEXTAUTH_URL`
+  adjusted per app's port) — **this needs a real decision for Phase 1**:
+  either commit to always copying `.env` into both app dirs as a documented
+  setup step, or add a small `predev`/`prebuild` script that copies it
+  automatically. Not fixed generically yet since it's a process/tooling
+  decision, not a code bug.
+
+After all of the above, both apps serve real seeded content: the notes
+homepage renders "Learn at your own pace" + the seeded "Introduction to
+TypeScript" track card; the video homepage renders "Level up your skills" +
+the seeded "Full Stack Development 101" course card; `/admin` on both
+correctly 307-redirects an unauthenticated request to `/auth`; the seeded
+MCQ lesson renders and is answerable. The one page that legitimately errors
+(500) is the seeded Blog-type lesson, because its `notionDocId` is the
+seed's own placeholder string `"replace-with-real-notion-page-id"` — that's
+expected until a real Notion integration is configured, not a bug.
+
+Local login: **admin@example.com / admin123** (from the seed script).
+
+---
+
 ## Open risks / known issues
 
 - `turbo.json` uses the Turbo v1 `"pipeline"` key while `turbo@^2.0.0` is

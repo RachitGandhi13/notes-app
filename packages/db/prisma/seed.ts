@@ -1,4 +1,5 @@
-import { PrismaClient, ProblemType, TrackType, ContentType, PostType } from "@prisma/client";
+import { PrismaClient, ProblemType, TrackType, ContentType } from "@prisma/client";
+import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -128,7 +129,6 @@ async function main() {
 
   // ── Seed admin user (no OAuth — useful for local dev) ─────────────────────
   // Password: "admin123" — change immediately in any real environment
-  const { hash } = await import("bcryptjs");
   const hashedPassword = await hash("admin123", 10);
 
   await prisma.user.upsert({
