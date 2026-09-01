@@ -1,0 +1,368 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Identity Core (shared by both apps) ─────────────────────────────────────
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  refresh_token_expires_in Int?
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   @db.Text // nullable: only set for Credentials users
+  admin         Boolean   @default(false)
+  accounts      Account[]
+  sessions      Session[]
+
+  // Notes domain relations
+  quizScores QuizScore[]
+
+  // Video domain relations
+  purchases     UserPurchases[]
+  videoProgress VideoProgress[]
+  bookmarks     Bookmark[]
+  comments      Comment[]
+  questions     Question[]
+  answers       Answer[]
+  votes             Vote[]
+  certificates      Certificate[]
+  bountySubmissions BountySubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Notes Domain ─────────────────────────────────────────────────────────────
+
+model Track {
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  image       String
+  categories  TrackCategory[]
+  problems    TrackProblems[]
+  canvaLink   String?
+  trackType   TrackType       @default(NOTION)
+  inSearch    Boolean         @default(false)
+  hidden      Boolean         @default(false)
+  cohort      Int             @default(0)
+  createdAt   DateTime        @default(now())
+}
+
+model Categories {
+  id       String          @id @default(uuid())
+  category String
+  tracks   TrackCategory[]
+}
+
+model TrackCategory {
+  trackId    String
+  track      Track      @relation(fields: [trackId], references: [id])
+  categoryId String
+  category   Categories @relation(fields: [categoryId], references: [id])
+
+  @@id([trackId, categoryId])
+}
+
+model Problem {
+  id            String          @id @default(uuid())
+  title         String
+  description   String
+  notionDocId   String
+  mcqQuestions  MCQQuestion[]
+  type          ProblemType
+  trackProblems TrackProblems[]
+  quizScores    QuizScore[]
+}
+
+model TrackProblems {
+  track        Track   @relation(fields: [trackId], references: [id])
+  trackId      String
+  problem      Problem @relation(fields: [problemId], references: [id])
+  problemId    String
+  sortingOrder Int
+
+  @@id([trackId, problemId])
+}
+
+model MCQQuestion {
+  id            String  @id @default(uuid())
+  question      String
+  options       String[]
+  correctOption String
+  problem       Problem @relation(fields: [problemId], references: [id])
+  problemId     String
+}
+
+model QuizScore {
+  id        String   @id @default(uuid())
+  score     Int
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  problem   Problem  @relation(fields: [problemId], references: [id])
+  problemId String
+  createdAt DateTime @default(now())
+}
+
+enum ProblemType {
+  Blog
+  MCQ
+}
+
+enum TrackType {
+  NOTION
+  CANVA
+}
+
+// ─── Video Domain ─────────────────────────────────────────────────────────────
+
+model Course {
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  imageUrl    String?
+  price       Float           @default(0)
+  slug        String          @unique
+  hidden      Boolean         @default(false)
+  content     CourseContent[]
+  purchases   UserPurchases[]
+  certificate Certificate[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model UserPurchases {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+// Self-referential content tree: folders and leaves
+model Content {
+  id             String          @id @default(uuid())
+  type           ContentType
+  title          String
+  hidden         Boolean         @default(false)
+  description    String?
+  thumbnail      String?
+  parentId       String?
+  parent         Content?        @relation("ContentTree", fields: [parentId], references: [id])
+  children       Content[]       @relation("ContentTree")
+  courseContent  CourseContent[]
+  videoMetadata  VideoMetadata?
+  notionMetadata NotionMetadata?
+  videoProgress  VideoProgress[]
+  bookmarks      Bookmark[]
+  comments       Comment[]
+  questions      Question[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model CourseContent {
+  course    Course  @relation(fields: [courseId], references: [id])
+  courseId  String
+  content   Content @relation(fields: [contentId], references: [id])
+  contentId String
+  order     Int
+
+  @@id([courseId, contentId])
+}
+
+model VideoMetadata {
+  id            String  @id @default(uuid())
+  videoUrl      String
+  drmProtected  Boolean @default(false)
+  subtitleUrl   String?
+  thumbnail1Url String?
+  thumbnail2Url String?
+  thumbnail3Url String?
+  content       Content @relation(fields: [contentId], references: [id])
+  contentId     String  @unique
+}
+
+model NotionMetadata {
+  id        String  @id @default(uuid())
+  notionId  String
+  content   Content @relation(fields: [contentId], references: [id])
+  contentId String  @unique
+}
+
+model VideoProgress {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  content     Content  @relation(fields: [contentId], references: [id])
+  contentId   String
+  markAsRead  Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, contentId])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  content   Content  @relation(fields: [contentId], references: [id])
+  contentId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+}
+
+model Comment {
+  id        String      @id @default(uuid())
+  content   Content     @relation(fields: [contentId], references: [id])
+  contentId String
+  author    User        @relation(fields: [authorId], references: [id])
+  authorId  String
+  body      String      @db.Text
+  approved  Boolean     @default(false)
+  type      CommentType @default(DEFAULT)
+  votes     Vote[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  content   Content  @relation(fields: [contentId], references: [id])
+  contentId String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  title     String
+  body      String   @db.Text
+  answers   Answer[]
+  votes     Vote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  author     User     @relation(fields: [authorId], references: [id])
+  authorId   String
+  body       String   @db.Text
+  accepted   Boolean  @default(false)
+  votes      Vote[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Vote {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  voteType   VoteType
+  comment    Comment?  @relation(fields: [commentId], references: [id])
+  commentId  String?
+  question   Question? @relation(fields: [questionId], references: [id])
+  questionId String?
+  answer     Answer?   @relation(fields: [answerId], references: [id])
+  answerId   String?
+}
+
+model Certificate {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  slug      String   @unique @default(uuid())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  link        String?
+  createdAt   DateTime @default(now())
+}
+
+model BountySubmission {
+  id          String         @id @default(uuid())
+  user        User           @relation(fields: [userId], references: [id])
+  userId      String
+  bountyId    String         // external reference — linked in Phase 8
+  description String         @db.Text
+  type        PostType       @default(BOUNTY)
+  approved    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+enum ContentType {
+  FOLDER
+  VIDEO
+  NOTION
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}
+
+enum CommentType {
+  DEFAULT
+  INTRO
+}
+
+enum PostType {
+  BOUNTY
+  PROJECT
+}
+
