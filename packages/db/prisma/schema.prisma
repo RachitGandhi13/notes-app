@@ -60,6 +60,7 @@ model User {
   votes             Vote[]
   certificates      Certificate[]
   bountySubmissions BountySubmission[]
+  paymentOrders     PaymentOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -87,6 +88,10 @@ model Track {
   inSearch    Boolean         @default(false)
   hidden      Boolean         @default(false)
   cohort      Int             @default(0)
+  // Cross-app bundling: if set, this track requires purchasing the linked
+  // video Course (checked against the shared UserPurchases table). Null = free.
+  courseId    String?         @unique
+  course      Course?         @relation(fields: [courseId], references: [id])
   createdAt   DateTime        @default(now())
 }
 
@@ -158,18 +163,20 @@ enum TrackType {
 // ─── Video Domain ─────────────────────────────────────────────────────────────
 
 model Course {
-  id          String          @id @default(uuid())
-  title       String
-  description String
-  imageUrl    String?
-  price       Float           @default(0)
-  slug        String          @unique
-  hidden      Boolean         @default(false)
-  content     CourseContent[]
-  purchases   UserPurchases[]
-  certificate Certificate[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id            String          @id @default(uuid())
+  title         String
+  description   String
+  imageUrl      String?
+  price         Float           @default(0) // in INR (rupees) — Razorpay integration
+  slug          String          @unique
+  hidden        Boolean         @default(false)
+  content       CourseContent[]
+  purchases     UserPurchases[]
+  certificate   Certificate[]
+  paymentOrders PaymentOrder[]
+  linkedTrack   Track?          // notes-app track bundled with this course purchase (Phase 3)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
 
 model UserPurchases {
@@ -181,6 +188,29 @@ model UserPurchases {
   createdAt DateTime @default(now())
 
   @@unique([userId, courseId])
+}
+
+// Razorpay payment audit trail — separate from UserPurchases (the access-check
+// table) so every attempt (including failed/abandoned ones) is recorded for
+// the client's records, without affecting access logic.
+model PaymentOrder {
+  id                String        @id @default(uuid())
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?
+  user              User          @relation(fields: [userId], references: [id])
+  userId            String
+  course            Course        @relation(fields: [courseId], references: [id])
+  courseId          String
+  amount            Float // in INR (rupees), matches Course.price at order-creation time
+  status            PaymentStatus @default(CREATED)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
 }
 
 // Self-referential content tree: folders and leaves

@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { getTrack, getProblem } from "@/lib/actions";
+import { getTrack, getProblem, hasTrackAccess } from "@/lib/actions";
 import { getNotionPage } from "@/lib/notion";
 import { ProblemSidebar } from "@/components/ProblemSidebar";
 import { NotionRenderer } from "@/components/NotionRenderer";
 import { MCQQuiz } from "@/components/MCQQuiz";
+import { TrackPaywall } from "@/components/TrackPaywall";
 
 interface Props {
   params: { trackIds: string[] };
@@ -17,9 +18,13 @@ export default async function TrackPage({ params }: Props) {
   const track = await getTrack(trackId);
   if (!track) notFound();
 
+  const hasAccess = await hasTrackAccess(track);
+  if (!hasAccess && track.course) {
+    return <TrackPaywall trackTitle={track.title} course={track.course} />;
+  }
+
   // Default to first problem if none specified
-  const activeProblemId =
-    problemId ?? track.problems[0]?.problem.id;
+  const activeProblemId = problemId ?? track.problems[0]?.problem.id;
 
   if (!activeProblemId) {
     return (
@@ -30,7 +35,7 @@ export default async function TrackPage({ params }: Props) {
           problems={track.problems}
           activeProblemId=""
         />
-        <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        <div className="text-muted-foreground flex flex-1 items-center justify-center">
           This track has no lessons yet.
         </div>
       </div>
@@ -41,8 +46,7 @@ export default async function TrackPage({ params }: Props) {
   if (!problem) notFound();
 
   // Fetch Notion content for Blog-type problems
-  const recordMap =
-    problem.type === "Blog" ? await getNotionPage(problem.notionDocId) : null;
+  const recordMap = problem.type === "Blog" ? await getNotionPage(problem.notionDocId) : null;
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
@@ -57,15 +61,10 @@ export default async function TrackPage({ params }: Props) {
         <div className="mx-auto max-w-3xl px-6 py-8">
           <h1 className="mb-6 text-2xl font-bold">{problem.title}</h1>
 
-          {problem.type === "Blog" && recordMap && (
-            <NotionRenderer recordMap={recordMap} />
-          )}
+          {problem.type === "Blog" && recordMap && <NotionRenderer recordMap={recordMap} />}
 
           {problem.type === "MCQ" && (
-            <MCQQuiz
-              problemId={problem.id}
-              questions={problem.mcqQuestions}
-            />
+            <MCQQuiz problemId={problem.id} questions={problem.mcqQuestions} />
           )}
         </div>
       </div>
@@ -81,8 +80,6 @@ export async function generateStaticParams() {
     include: { problems: { orderBy: { sortingOrder: "asc" }, take: 1 } },
   });
   return tracks.map((t) => ({
-    trackIds: t.problems[0]
-      ? [t.id, t.problems[0].problemId]
-      : [t.id],
+    trackIds: t.problems[0] ? [t.id, t.problems[0].problemId] : [t.id],
   }));
 }

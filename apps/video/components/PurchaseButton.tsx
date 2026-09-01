@@ -10,6 +10,23 @@ interface PurchaseButtonProps {
   courseSlug: string;
 }
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export function PurchaseButton({ courseId, price, courseSlug }: PurchaseButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,26 +38,64 @@ export function PurchaseButton({ courseId, price, courseSlug }: PurchaseButtonPr
 
     try {
       if (price === 0) {
-        // Free course — enroll directly without Stripe
+        // Free course — enroll directly, no payment involved
         await purchaseCourse(courseId);
         router.refresh();
         return;
       }
 
-      // Paid course — create Stripe Checkout session and redirect
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, courseSlug }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Failed to start checkout.");
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setError("Could not load the payment gateway. Check your connection and try again.");
         return;
       }
 
-      window.location.href = data.url;
+      const orderRes = await fetch("/api/razorpay/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        setError(orderData.error ?? "Failed to start checkout.");
+        return;
+      }
+
+      const razorpay = new window.Razorpay({
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Video Platform",
+        description: orderData.courseName,
+        order_id: orderData.orderId,
+        handler: async function (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) {
+          const verifyRes = await fetch("/api/razorpay/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(response),
+          });
+          if (verifyRes.ok) {
+            router.push(`/courses/${courseSlug}?payment=success`);
+            router.refresh();
+          } else {
+            router.push(`/courses/${courseSlug}?payment=cancelled`);
+          }
+        },
+        modal: {
+          ondismiss: () => setLoading(false),
+        },
+        theme: { color: "#0f172a" },
+      });
+
+      razorpay.on("payment.failed", () => {
+        router.push(`/courses/${courseSlug}?payment=cancelled`);
+      });
+
+      razorpay.open();
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -53,15 +108,11 @@ export function PurchaseButton({ courseId, price, courseSlug }: PurchaseButtonPr
       <button
         onClick={handlePurchase}
         disabled={loading}
-        className="w-full rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="bg-primary text-primary-foreground w-full rounded-lg px-6 py-3 font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {loading
-          ? "Processing…"
-          : price === 0
-          ? "Enroll for Free"
-          : `Purchase for $${price}`}
+        {loading ? "Processing…" : price === 0 ? "Enroll for Free" : `Purchase for ₹${price}`}
       </button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
   );
 }

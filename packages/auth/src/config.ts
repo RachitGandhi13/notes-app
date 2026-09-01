@@ -26,7 +26,6 @@ export function checkRateLimit(key: string, maxRequests = 10, windowMs = 60_000)
 
 // ── Shared NextAuth options ────────────────────────────────────────────────────
 export const authOptions: NextAuthOptions = {
-  // @ts-expect-error adapter type mismatch between next-auth and @auth/prisma-adapter versions
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {

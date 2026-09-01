@@ -59,7 +59,10 @@ export function extractTextFromRecordMap(recordMap: ExtendedRecordMap): string {
     if (!titleProp) continue;
 
     // Each element is [text, ...annotations] — we only want the text part
-    const text = titleProp.map((t) => t[0]).join("").trim();
+    const text = titleProp
+      .map((t) => t[0])
+      .join("")
+      .trim();
     if (text) lines.push(text);
   }
 
@@ -84,6 +87,7 @@ export interface IndexPayload {
   image: string;
   problemTitle: string;
   problemId: string;
+  [key: string]: unknown; // required by the Qdrant client's payload type
 }
 
 /**
@@ -151,6 +155,11 @@ export interface SearchResult {
 
 /**
  * Embed a user query and return the top-5 nearest Qdrant matches.
+ *
+ * Uses the Query API (`.query`) rather than the older `.search` method —
+ * `.search` was removed from @qdrant/js-client-rest in favor of the unified
+ * Query API (the installed version resolved well past what this code was
+ * originally written against, since no lockfile existed before now).
  */
 export async function getSearchResults(query: string): Promise<SearchResult[]> {
   await ensureCollection();
@@ -158,14 +167,14 @@ export async function getSearchResults(query: string): Promise<SearchResult[]> {
 
   const vector = await embed(query);
 
-  const results = await qdrant.search(COLLECTION_NAME, {
-    vector,
+  const response = await qdrant.query(COLLECTION_NAME, {
+    query: vector,
     limit: 5,
     with_payload: true,
   });
 
-  return results.map((r) => ({
+  return response.points.map((r) => ({
     score: r.score,
-    payload: r.payload as IndexPayload,
+    payload: r.payload as unknown as IndexPayload,
   }));
 }

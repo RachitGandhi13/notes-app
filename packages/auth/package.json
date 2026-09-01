@@ -10,11 +10,13 @@
     "@auth/prisma-adapter": "^1.4.0",
     "@repo/db": "*",
     "bcryptjs": "^2.4.3",
-    "next-auth": "^4.24.0"
+    "next-auth": "^4.24.0",
+    "nodemailer": "^6.9.0"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^6.4.0",
     "typescript": "^5.3.0"
   }
 }

@@ -1,20 +1,33 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthPageInner />
+    </Suspense>
+  );
+}
+
+function AuthPageInner() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const error = searchParams.get("error");
+  const verified = searchParams.get("verified") === "1";
 
+  const [tab, setTab] = useState<"signin" | "register">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [credError, setCredError] = useState("");
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
-  async function handleCredentials(e: React.FormEvent) {
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setCredError("");
@@ -32,21 +45,51 @@ export default function AuthPage() {
     }
   }
 
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setCredError("");
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCredError(data.error ?? "Registration failed.");
+      } else {
+        setRegisterSuccess(true);
+        await signIn("credentials", { email, password, callbackUrl });
+      }
+    } catch {
+      setCredError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="bg-background flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Continue with your preferred method
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">Continue with your preferred method</p>
         </div>
 
+        {verified && (
+          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
+            Email verified — you can now sign in.
+          </div>
+        )}
+
         {error && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm">
             {error === "OAuthAccountNotLinked"
               ? "This email is already used with a different provider."
-              : "An error occurred. Please try again."}
+              : error === "InvalidVerification"
+                ? "That verification link is invalid or has expired."
+                : "An error occurred. Please try again."}
           </div>
         )}
 
@@ -54,14 +97,14 @@ export default function AuthPage() {
         <div className="space-y-3">
           <button
             onClick={() => signIn("github", { callbackUrl })}
-            className="flex w-full items-center justify-center gap-3 rounded-md border bg-card px-4 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
+            className="bg-card hover:bg-accent flex w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
           >
             <GitHubIcon />
             Continue with GitHub
           </button>
           <button
             onClick={() => signIn("google", { callbackUrl })}
-            className="flex w-full items-center justify-center gap-3 rounded-md border bg-card px-4 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
+            className="bg-card hover:bg-accent flex w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
           >
             <GoogleIcon />
             Continue with Google
@@ -69,52 +112,135 @@ export default function AuthPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <hr className="flex-1 border-border" />
-          <span className="text-xs text-muted-foreground">or</span>
-          <hr className="flex-1 border-border" />
+          <hr className="border-border flex-1" />
+          <span className="text-muted-foreground text-xs">or</span>
+          <hr className="border-border flex-1" />
         </div>
 
-        {/* Credentials form */}
-        <form onSubmit={handleCredentials} className="space-y-4">
-          {credError && (
-            <p className="text-sm text-destructive">{credError}</p>
-          )}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+        {/* Tab switcher */}
+        <div className="flex rounded-md border p-1">
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            onClick={() => setTab("signin")}
+            className={`flex-1 rounded py-1.5 text-sm font-medium transition-colors ${tab === "signin" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
           >
-            {loading ? "Signing in…" : "Sign in with Email"}
+            Sign In
           </button>
-        </form>
+          <button
+            onClick={() => setTab("register")}
+            className={`flex-1 rounded py-1.5 text-sm font-medium transition-colors ${tab === "register" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+          >
+            Register
+          </button>
+        </div>
+
+        {credError && <p className="text-destructive text-sm">{credError}</p>}
+
+        {registerSuccess && (
+          <p className="text-sm text-green-600 dark:text-green-400">
+            Account created — check your email to verify it.
+          </p>
+        )}
+
+        {tab === "signin" ? (
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium" htmlFor="password">
+                  Password
+                </label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-muted-foreground hover:text-foreground text-xs underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Signing in…" : "Sign in with Email"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="name">
+                Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="reg-email">
+                Email
+              </label>
+              <input
+                id="reg-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="reg-password">
+                Password
+              </label>
+              <input
+                id="reg-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Creating account…" : "Create Account"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

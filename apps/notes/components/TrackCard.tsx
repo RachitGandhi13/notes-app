@@ -1,5 +1,5 @@
 import { Badge } from "@repo/ui";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,13 +10,22 @@ interface TrackCardProps {
   image: string;
   categories: { category: { category: string } }[];
   problemCount: number;
+  course?: { price: number } | null;
 }
 
-export function TrackCard({ id, title, description, image, categories, problemCount }: TrackCardProps) {
+export function TrackCard({
+  id,
+  title,
+  description,
+  image,
+  categories,
+  problemCount,
+  course,
+}: TrackCardProps) {
   return (
     <Link href={`/tracks/${id}`} className="group block">
-      <div className="overflow-hidden rounded-xl border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-        <div className="relative aspect-video w-full overflow-hidden bg-muted">
+      <div className="bg-card overflow-hidden rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="bg-muted relative aspect-video w-full overflow-hidden">
           <Image
             src={image}
             alt={title}
@@ -33,11 +42,22 @@ export function TrackCard({ id, title, description, image, categories, problemCo
               </Badge>
             ))}
           </div>
-          <h3 className="font-semibold leading-snug line-clamp-1">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{description}</p>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <BookOpen className="h-3.5 w-3.5" />
-            <span>{problemCount} {problemCount === 1 ? "lesson" : "lessons"}</span>
+          <h3 className="line-clamp-1 font-semibold leading-snug">{title}</h3>
+          <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{description}</p>
+          <div className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
+            {course ? (
+              <>
+                <Lock className="h-3.5 w-3.5" />
+                <span>{course.price > 0 ? `₹${course.price} bundle` : "Requires enrollment"}</span>
+              </>
+            ) : (
+              <>
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>
+                  {problemCount} {problemCount === 1 ? "lesson" : "lessons"}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>

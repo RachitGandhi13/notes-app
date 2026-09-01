@@ -23,6 +23,7 @@ function _fetchTracks() {
     include: {
       categories: { include: { category: true } },
       problems: { select: { problemId: true } },
+      course: { select: { id: true, slug: true, price: true, title: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -37,8 +38,25 @@ export async function getTrack(trackId: string) {
         include: { problem: true },
         orderBy: { sortingOrder: "asc" },
       },
+      course: { select: { id: true, slug: true, price: true, title: true } },
     },
   });
+}
+
+// ── Cross-app entitlement (Phase 3) ─────────────────────────────────────────────
+// A track with no linked course is free/open. A bundled track requires the
+// signed-in user to have a matching row in the shared UserPurchases table —
+// the same Postgres database the video app writes to, so this is a direct
+// query, no cross-app API call needed.
+
+export async function hasTrackAccess(track: { courseId: string | null }): Promise<boolean> {
+  if (!track.courseId) return true;
+  const session = await getSession();
+  if (!session?.user) return false;
+  const purchase = await prisma.userPurchases.findUnique({
+    where: { userId_courseId: { userId: session.user.id, courseId: track.courseId } },
+  });
+  return !!purchase;
 }
 
 // ── Problems ───────────────────────────────────────────────────────────────────

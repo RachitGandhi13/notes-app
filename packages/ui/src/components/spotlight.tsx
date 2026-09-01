@@ -6,9 +6,10 @@ import { cn } from "../lib/utils";
 interface SpotlightProps {
   className?: string;
   fill?: string;
+  children?: React.ReactNode;
 }
 
-export function Spotlight({ className, fill = "white" }: SpotlightProps) {
+export function Spotlight({ className, fill = "white", children }: SpotlightProps) {
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
@@ -41,6 +42,7 @@ export function Spotlight({ className, fill = "white" }: SpotlightProps) {
           background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${fill}15, transparent 40%)`,
         }}
       />
+      {children && <div className="relative z-10">{children}</div>}
     </div>
   );
 }

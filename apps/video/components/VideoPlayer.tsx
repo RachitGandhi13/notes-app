@@ -10,9 +10,32 @@ interface VideoPlayerProps {
   onEnded?: () => void;
 }
 
-export function VideoPlayer({ videoUrl, title, subtitleUrl, thumbnail, onEnded }: VideoPlayerProps) {
+export function VideoPlayer({
+  videoUrl,
+  title,
+  subtitleUrl,
+  thumbnail,
+  onEnded,
+}: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState(false);
+
+  const isYouTube = videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be");
+
+  if (isYouTube) {
+    const embedSrc = `${videoUrl}${videoUrl.includes("?") ? "&" : "?"}modestbranding=1&rel=0`;
+    return (
+      <div className="w-full overflow-hidden rounded-xl bg-black shadow-xl">
+        <iframe
+          className="aspect-video w-full"
+          src={embedSrc}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full overflow-hidden rounded-xl bg-black shadow-xl">
@@ -32,9 +55,7 @@ export function VideoPlayer({ videoUrl, title, subtitleUrl, thumbnail, onEnded }
           playsInline
         >
           <source src={videoUrl} />
-          {subtitleUrl && (
-            <track kind="subtitles" src={subtitleUrl} default label="English" />
-          )}
+          {subtitleUrl && <track kind="subtitles" src={subtitleUrl} default label="English" />}
           Your browser does not support the video element.
         </video>
       )}

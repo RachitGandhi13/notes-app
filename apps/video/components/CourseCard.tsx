@@ -12,11 +12,18 @@ interface CourseCardProps {
   purchased?: boolean;
 }
 
-export function CourseCard({ slug, title, description, imageUrl, price, purchased }: CourseCardProps) {
+export function CourseCard({
+  slug,
+  title,
+  description,
+  imageUrl,
+  price,
+  purchased,
+}: CourseCardProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
-      <div className="overflow-hidden rounded-xl border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-        <div className="relative aspect-video w-full overflow-hidden bg-muted">
+      <div className="bg-card overflow-hidden rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="bg-muted relative aspect-video w-full overflow-hidden">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -27,7 +34,7 @@ export function CourseCard({ slug, title, description, imageUrl, price, purchase
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <PlayCircle className="h-12 w-12 text-muted-foreground/40" />
+              <PlayCircle className="text-muted-foreground/40 h-12 w-12" />
             </div>
           )}
           {purchased && (
@@ -37,13 +44,13 @@ export function CourseCard({ slug, title, description, imageUrl, price, purchase
           )}
         </div>
         <div className="p-4">
-          <h3 className="font-semibold leading-snug line-clamp-1">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{description}</p>
+          <h3 className="line-clamp-1 font-semibold leading-snug">{title}</h3>
+          <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{description}</p>
           <div className="mt-3 flex items-center justify-between">
             <Badge variant={price === 0 ? "secondary" : "default"}>
-              {price === 0 ? "Free" : `$${price}`}
+              {price === 0 ? "Free" : `₹${price}`}
             </Badge>
-            <span className="text-xs text-muted-foreground group-hover:underline">
+            <span className="text-muted-foreground text-xs group-hover:underline">
               View course →
             </span>
           </div>

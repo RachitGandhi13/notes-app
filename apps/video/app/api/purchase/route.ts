@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { purchaseCourse } from "@/lib/actions";
 import { AuthError } from "@repo/auth";
 
-// For free courses — paid courses will go through Stripe webhook in Phase 8
+// For free courses — paid courses go through the Razorpay order/verify flow
 export async function POST(req: Request) {
   try {
     const { courseId } = await req.json();
