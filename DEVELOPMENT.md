@@ -553,6 +553,54 @@ the institution name is "CloudVidya Academy" everywhere.
 
 ---
 
+## Phase 11 — Fuller home and notes pages (client: "not minimalistic") ✅
+
+The client found the home hero sparse — big empty margins, and a single
+course leaving two thirds of its row blank — and wants it to look full, with
+images or animation.
+
+- [x] **Home hero** (`app/(marketing)/page.tsx`): full-bleed, two columns.
+      Left — badge, gradient headline ("Level up your Cloud & DevOps skills"),
+      copy, Browse courses / Explore notes buttons, search, and stat tiles.
+      Right (`components/home/HeroArt.tsx`, desktop) — the instructor's photo
+      in a gradient frame, a rotating dashed orbit, pulsing rings, five
+      infrastructure icons joined by animated dashed lines, and four floating
+      glass cards. Behind it `AnimatedBackdrop`: fading grid + three drifting
+      colour blobs.
+- [x] **New sections:** scrolling topics strip (`TechMarquee`), 8-card feature
+      grid (`FeatureGrid`), a notes showcase with a mock slide + quiz
+      (`NotesShowcase`), and a sign-up / "keep going" banner (`JoinBanner`).
+      The instructor section gained bottom spacing. The marketing layout no
+      longer wraps everything in a narrow `container` so sections can run edge
+      to edge. Search results (`/?q=`) hide the marketing sections.
+- [x] **Few courses no longer look empty:** exactly one course renders as a
+      wide `FeaturedCourse` card; two courses use a two-column grid; three or
+      more keep the three-column grid. Same idea for tracks on `/notes`.
+- [x] **Notes page** gets the same backdrop, stat tiles, a 3-step "how it
+      works" row and the adaptive track grid; track cards say "sections".
+- [x] **Nothing invented:** every number and claim comes from real data or
+      from the client's own instructor content in `lib/instructor.ts` — course
+      and enrolled counts from the database, "6 AWS certifications" from the
+      certification list, "7+ years" from the bio (`experienceYears`), topics
+      from `expertise`. Each feature card describes something the platform
+      does. No testimonials, student counts or logos were made up.
+- [x] **Motion:** pure CSS keyframes added to `tailwind.config.ts` (`float`,
+      `blob`, `marquee`, `dash`, `fade-up`, `pulse-ring`, `spin-slow`,
+      `gradient-shift`); all animated pieces use `motion-reduce:animate-none`.
+      No extra JavaScript or new dependencies.
+- [x] **Verified** in headless Chrome at 1440px in light and dark, and at
+      360/390/430/768px. That found a real phone bug (headline forcing the
+      hero column wider than the screen, clipping the buttons and search bar),
+      fixed by only keeping "Cloud & DevOps" on one line from `sm` up and
+      adding `min-w-0` to the column. Type-check, lint and `next build` pass.
+      Lighthouse/performance were not measured.
+- [ ] **Not done:** no stock photography or generated imagery — visuals are the
+      instructor photo plus drawn shapes. The hero art is hidden below `lg`
+      (phones get the text, stats, topics strip and cards). If the client has
+      real photos or a short promo video, they would slot into `HeroArt`.
+
+---
+
 ## First real build — critical bugs found and fixed
 
 Everything up to this point had only been read, schema-validated, and

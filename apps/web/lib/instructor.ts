@@ -5,6 +5,8 @@ export const instructor = {
   name: "Dr. Veeranna Gatate",
   title: "AWS & DevOps Expert · Founder, CloudVidya Academy",
   photo: "/instructor.png",
+  // From the bio the client supplied: "With 7+ years of IT experience…"
+  experienceYears: "7+",
   linkedinUrl: "https://linkedin.com/in/drveerannagatate",
   email: "vcgatate@gmail.com",
   bio: [

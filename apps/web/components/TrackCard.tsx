@@ -74,7 +74,7 @@ export function TrackCard({
               ) : (
                 <>
                   <BookOpen className="h-3.5 w-3.5" />
-                  {problemCount} {problemCount === 1 ? "lesson" : "lessons"}
+                  {problemCount} {problemCount === 1 ? "section" : "sections"}
                 </>
               )}
             </span>
