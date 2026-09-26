@@ -1,4 +1,4 @@
-import { PrismaClient, ProblemType, TrackType, ContentType } from "@prisma/client";
+import { PrismaClient, ProblemType, ContentType } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -24,8 +24,7 @@ async function main() {
       id: "seed-track-1",
       title: "Introduction to TypeScript",
       description: "Learn TypeScript from the ground up.",
-      image: "https://via.placeholder.com/400x200?text=TypeScript",
-      trackType: TrackType.NOTION,
+      image: "https://placehold.co/800x450/D08D74/FFFFFF.png?text=TypeScript",
       categories: {
         create: { categoryId: category.id },
       },
@@ -39,8 +38,9 @@ async function main() {
       id: "seed-prob-1",
       title: "What is TypeScript?",
       description: "An introduction to TypeScript and why it exists.",
-      notionDocId: "replace-with-real-notion-page-id",
-      type: ProblemType.Blog,
+      // Placeholder — a real upload replaces this file once the admin adds one.
+      pptUrl: "/uploads/placeholder.pptx",
+      type: ProblemType.PPT,
     },
   });
 
@@ -51,7 +51,6 @@ async function main() {
       id: "seed-prob-2",
       title: "TypeScript Basics Quiz",
       description: "Test your knowledge of TypeScript basics.",
-      notionDocId: "replace-with-real-notion-page-id",
       type: ProblemType.MCQ,
       mcqQuestions: {
         create: [
@@ -86,7 +85,7 @@ async function main() {
     create: {
       title: "Full Stack Development 101",
       description: "A complete guide to modern full stack development.",
-      imageUrl: "https://via.placeholder.com/400x200?text=Fullstack",
+      imageUrl: "/course-fullstack-thumbnail.jpg",
       price: 0,
       slug: "fullstack-dev-101",
     },
@@ -112,7 +111,7 @@ async function main() {
       parentId: rootFolder.id,
       videoMetadata: {
         create: {
-          videoUrl: "https://example.com/intro.mp4",
+          videoUrl: "/demo-lesson.mp4",
           drmProtected: false,
         },
       },

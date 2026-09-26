@@ -16,7 +16,11 @@ Study tracks built from Notion pages, organized into categories, with
 multiple-choice quizzes attached to individual problems/lessons.
 
 - Admin pastes a Notion page ID; the app fetches that page's blocks and creates
-  a `Track` from it
+  a `Track` from it — or creates a track with no Notion page at all, for
+  content the admin supplies directly
+- Admin can add slide-deck lessons (a pasted Canva/Google Slides embed link,
+  for the client's own uploaded PPTs) and hand-written MCQ quizzes to any
+  track, no Notion page required for either
 - AI-powered search over notes content (Gemini embeddings → Qdrant vector search)
 - MCQ quizzes with score tracking per user
 
@@ -113,6 +117,7 @@ See `.env.example` for the full list. At minimum you'll need:
 - `REDIS_URL` — caching (optional, best-effort)
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` — paid courses in the video app
 - `NEXT_PUBLIC_VIDEO_APP_URL` — lets the notes app link out to the video app's purchase page for bundled tracks
+- `NEXT_PUBLIC_NOTES_APP_URL` — lets the video app's navbar link to the notes app
 
 ## Deployment
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@repo/ui";
-import { BookOpen, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckSquare, ChevronLeft, ChevronRight, Presentation } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -29,14 +29,14 @@ export function ProblemSidebar({
   return (
     <aside
       className={cn(
-        "relative flex h-full flex-col border-r bg-background transition-all duration-300",
+        "bg-background relative flex h-full flex-col border-r transition-all duration-300",
         collapsed ? "w-12" : "w-72"
       )}
     >
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full border bg-background shadow-sm"
+        className="bg-background absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full border shadow-sm"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
@@ -46,11 +46,11 @@ export function ProblemSidebar({
         <>
           {/* Track title */}
           <div className="border-b p-4">
-            <Link href="/" className="text-xs text-muted-foreground hover:underline">
+            <Link href="/" className="text-muted-foreground text-xs hover:underline">
               ← All tracks
             </Link>
             <h2 className="mt-1 text-sm font-semibold leading-snug">{trackTitle}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-0.5 text-xs">
               {problems.length} {problems.length === 1 ? "lesson" : "lessons"}
             </p>
           </div>
@@ -75,7 +75,7 @@ export function ProblemSidebar({
                       {problem.type === "MCQ" ? (
                         <CheckSquare className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       ) : (
-                        <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <Presentation className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       )}
                       <span className="leading-snug">{problem.title}</span>
                     </Link>

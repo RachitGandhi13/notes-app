@@ -5,4 +5,6 @@ module.exports = {
   parserOptions: {
     project: true,
   },
+  // Typed linting needs each file in tsconfig; plain-JS config files aren't.
+  ignorePatterns: [".eslintrc.js", "*.config.js"],
 };

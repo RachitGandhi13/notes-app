@@ -12,6 +12,7 @@
     "@repo/auth": "*",
     "@repo/cache": "*",
     "@repo/db": "*",
+    "@repo/storage": "*",
     "@repo/store": "*",
     "@repo/ui": "*",
     "razorpay": "^2.9.4",

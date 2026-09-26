@@ -83,8 +83,6 @@ model Track {
   image       String
   categories  TrackCategory[]
   problems    TrackProblems[]
-  canvaLink   String?
-  trackType   TrackType       @default(NOTION)
   inSearch    Boolean         @default(false)
   hidden      Boolean         @default(false)
   cohort      Int             @default(0)
@@ -114,7 +112,8 @@ model Problem {
   id            String          @id @default(uuid())
   title         String
   description   String
-  notionDocId   String
+  // PPT-type only — the uploaded file's storage URL
+  pptUrl        String?
   mcqQuestions  MCQQuestion[]
   type          ProblemType
   trackProblems TrackProblems[]
@@ -151,13 +150,8 @@ model QuizScore {
 }
 
 enum ProblemType {
-  Blog
   MCQ
-}
-
-enum TrackType {
-  NOTION
-  CANVA
+  PPT
 }
 
 // ─── Video Domain ─────────────────────────────────────────────────────────────

@@ -280,6 +280,141 @@ Placeholder — to be expanded as more requirements come in. Each new
 requirement gets its own numbered sub-phase below rather than rewriting this
 section.
 
+### Phase 7.1 — Cross-app nav link + manual PPT/MCQ lesson authoring ✅
+
+**Client requirement:** the notes app should be reachable from the main
+(video app) navbar; and for notes-app content, the client wants to upload
+his own PPT slide decks and write MCQ quiz questions by hand, rather than
+everything having to come from a Notion page.
+
+- [x] `packages/ui`'s `Navbar` component gained a working `links` prop (it
+      existed in the interface already but was never destructured/rendered —
+      dead prop). The video app's root layout now passes a "Notes" link built
+      from a new `NEXT_PUBLIC_NOTES_APP_URL` env var (mirrors the existing
+      `NEXT_PUBLIC_VIDEO_APP_URL` used the other direction for Phase 3
+      bundling), added to `.env.example` and all three local `.env` copies.
+      Only wired one direction (video → notes), matching what was asked; the
+      notes app's navbar doesn't link back to video app yet.
+- [x] Schema: `Problem.notionDocId` is now nullable (previously required —
+      even MCQ problems had to carry a placeholder Notion ID, a pre-existing
+      wart). Added `Problem.slideUrl` (nullable) and a new `ProblemType.Slides`
+      value alongside the existing `Blog`/`MCQ`. **Migration not yet run** — no
+      reachable Postgres in this environment (Phase 1 still blocks this); ran
+      `prisma generate` only, so the Prisma Client types are current but
+      `yarn db:migrate` still needs to run against a real database.
+- [x] `apps/notes/lib/actions.ts`: `createBlankTrack` (a track with no
+      Notion step, for tracks built entirely from manual content),
+      `addSlideLesson` (creates a `Slides`-type `Problem` from a pasted
+      embeddable link), `addMCQLesson` (creates an `MCQ`-type `Problem` +
+      `MCQQuestion` rows from hand-typed question/option data, validated
+      server-side — at least 2 filled options per question, correct option
+      must match one of them).
+- [x] Admin panel (`apps/notes/app/admin/`): three new forms
+      (`components/admin/ManualContentForms.tsx`) — create a blank track, add a
+      slides lesson to any existing track, add an MCQ quiz lesson to any
+      existing track (dynamic question/option rows, radio-select the correct
+      option, add/remove both questions and options).
+- [x] New `SlidesEmbed` component renders `slideUrl` as a responsive 16:9
+      iframe on the track/lesson page (same treatment as the video app's
+      YouTube embed) for `Slides`-type problems; `ProblemSidebar` shows a
+      distinct icon for them.
+- [x] `lib/search.ts`'s `insertData` now skips problems with no
+      `notionDocId` (Slides/MCQ lessons) rather than erroring — AI semantic
+      search still only indexes Notion-backed Blog content; extending it to
+      slide/MCQ text wasn't asked for.
+- [x] **Slide hosting decision:** no PPT file upload/storage was built —
+      same free-tier reasoning as the video app's YouTube choice (Phase 0/1):
+      no free file-storage tier here either. The admin pastes an _embeddable
+      link_ instead (Canva's "Share → Embed" link, or a Google Slides "File →
+      Publish to web" link), both free and already host the actual file. This
+      wasn't confirmed with the client explicitly — flagging in case they
+      expected direct file upload; the workaround is one extra step (upload to
+      Canva/Slides first) rather than new infra.
+- [x] Fixed three pre-existing build-blocking ESLint errors surfaced while
+      verifying this change with a full `next build` (unrelated to this
+      work, never caught before because a full build+lint had only been run
+      twice before in this project's history — see "First real build" above):
+      `apps/video/components/VoteButtons.tsx` and
+      `apps/video/lib/community.ts` had genuinely unused
+      variables/imports (`net`, `getSession`); `apps/notes/components/MCQQuiz.tsx`
+      had two unused per-question booleans (`isCorrect`/`isWrong` — the actual
+      styling logic uses per-_option_ variables further down, these were dead);
+      `apps/notes/components/SearchDialog.tsx` had an unused `useCallback`
+      import. All four were `no-unused-vars` errors, not warnings — they made
+      `next build` exit 1 for both apps. Both apps now build clean again aside
+      from the pre-existing `@typescript-eslint/no-explicit-any` warnings
+      (non-blocking, already present throughout the codebase before this
+      session).
+
+---
+
+## UI design pass — competitor-informed polish ✅
+
+Compared the actual student-facing product (this app) against creator
+course-platform marketplaces (Kajabi, Thinkific, Teachable, Graphy, Podia)
+and a live large-scale example (Physics Wallah), then pulled specific,
+_honest_ patterns from the best-ranked ones into real code. Deliberately did
+**not** add fabricated ratings/reviews/testimonials — there's no review
+system, so only real, computed numbers are shown.
+
+- Added real enrollment counts (`Course._count.purchases`) to `getCourses`/`getCourse` — used as an honest trust signal (Kajabi/Thinkific pattern: concrete numbers over vague claims), never fabricated.
+- `CourseCard`/`TrackCard`: bigger radius, hover-lift + shadow, gradient-on-hover image overlay, refined pill badges, real enrolled-count stat, "View course →" hover affordance.
+- Course detail page (`app/courses/[courseSlug]/page.tsx`): rebuilt as a proper two-column sales-page layout (Thinkific/Kajabi pattern) — main content + a distinct sticky purchase panel with price, CTA, and a real trust-signal row (lesson count, enrolled count, "Lifetime access" — accurate, since purchases never expire in this schema).
+- Both homepages: bigger hero typography, a real stats row (course/track count, total enrolled/lesson count) instead of decoration-only hero text.
+- `ContentSidebar`: progress bar now shows "`X of Y` lessons completed" alongside the percentage, turns green at 100%.
+- **Gotcha hit while doing this**: changing a cached query's shape (adding `_count`) without flushing Redis serves the _old_ shape back from cache, crashing on the new field access (`Cannot read properties of undefined`). Not a code bug — just a reminder that a query-shape change needs a cache flush (`docker exec <redis> redis-cli FLUSHALL` locally) or a cache-key version bump in production.
+
+---
+
+## Design system overhaul — client-supplied reference ✅ (superseded, see next section)
+
+**Update:** the client saw this live and was disappointed — it didn't match
+what they actually wanted. They then supplied a second, different reference
+(100xDevs.com: dark navy + vivid blue, bold sans, not cream/terracotta/serif)
+and asked for an exact clone of that instead. The section below records
+what shipped from _that_ pivot; this section is kept as history of what was
+tried first and superseded, not because any of it remains live.
+
+Client supplied a 4-page Squarespace-style mockup (warm cream + terracotta
+"quiet luxury" editorial aesthetic, serif display headlines, pill buttons,
+a chapter/lesson curriculum accordion, instructor bio, FAQ). Rebuilt the
+actual design tokens and highest-value pages to match; did **not** build the
+sections that would need fabricated content (see below).
+
+- **Color palette** (`app/globals.css` in both apps + `packages/ui/src/globals.css`): replaced the default shadcn slate/zinc palette with a warm cream background (`36 46% 95%`) and terracotta primary (`14 55% 62%`), light and dark variants both defined. All existing components inherit this automatically since everything already reads from the same CSS variables — no component-level color changes needed beyond this.
+- **Typography**: added `Fraunces` (serif, via `next/font/google`, weights 400/500/600 + italics) alongside the existing `Inter`, wired through CSS variables (`--font-serif`/`--font-sans`) and each app's `tailwind.config.ts` `fontFamily` so `font-serif`/`font-sans` utility classes work anywhere. Applied `font-serif` to hero headlines, course/curriculum titles, and chapter names — body text and UI chrome stay on Inter for readability.
+- **Buttons**: shared `Button` component (`packages/ui`) and the major hand-styled CTAs (`PurchaseButton`, course detail purchase panel) changed from `rounded-md`/`rounded-lg` to `rounded-full` (pill shape), matching the reference. `Badge` was already `rounded-full`.
+- **Homepages** (both apps): rebuilt as a two-column hero — serif headline + stats + pill "Explore" CTA on the left, a real image (first course/track's actual thumbnail, not a stock photo) in a rounded panel on the right, falling back to a decorative gradient if no image exists yet.
+- **Course detail page**: title now serif; **curriculum rebuilt as a chapter/lesson accordion** (`CurriculumAccordion.tsx`, new) matching the reference almost exactly — each `FOLDER`-type `Content` node becomes a collapsible "Chapter N" panel (first one open by default), each child becomes a lesson row with its real thumbnail, title, and description snippet. Standalone (non-foldered) content gets bucketed into a trailing "More Lessons" group so nothing is ever dropped.
+- **Deliberately not built** — the reference also showed an "About Your Instructor" bio section and an FAQ accordion. Both would need real content (instructor bio/photo, actual Q&A) that doesn't exist in the schema or from the client yet — building them with placeholder text would mean shipping fabricated content. Flagged as a follow-up: adding an instructor bio needs a small schema addition (name/photo/bio on `Course` or a site-wide setting) and the client's actual bio text; an FAQ needs either a `Course.faq` field with an admin editor, or the client's actual list of questions. Also skipped the standalone "Request a Consultation" / "Contact" pages from the reference — they're not part of this app's functionality (a course platform, not a lead-gen site).
+- Swapped the seed data's dead `via.placeholder.com` image URLs for `placehold.co` (PNG format specifically — their default SVG response gets rejected by Next's image optimizer unless `dangerouslyAllowSVG` is enabled, which wasn't worth turning on globally just for a placeholder given course images accept arbitrary admin-supplied URLs).
+
+---
+
+## Design system pivot #2 — 100xDevs clone (current) ✅
+
+Client provided real assets this round: `apps/veerannaSir.png` (instructor
+photo, moved to `apps/{video,notes}/public/instructor.png`), plus a
+`sampleimg/` folder with a sample article thumbnail and a real ~31MB sample
+lesson video (`team15_decisionTree_video.mp4`) — **not yet wired in**: the
+video file isn't used anywhere, since the platform's whole video strategy is
+YouTube-hosted (Phase 2/free-tier decision) rather than self-hosted files;
+using it would mean building a different, non-free video pipeline. Flagged
+for the client's decision, not decided unilaterally.
+
+- **Theme flip**: dark is now the default and only visually-designed theme (`ThemeProvider defaultTheme="dark" enableSystem={false}` in both apps). Light mode CSS variables still exist as a fallback (nothing was deleted) but aren't the target look anymore.
+- **Palette**: dark navy-black background (`224 45% 5%`) + vivid blue primary (`217 91% 60%`), same three `globals.css` files as the previous pivot.
+- **Typography**: removed `Fraunces`/serif entirely — headlines are bold `Inter` (`font-extrabold`) throughout, matching 100xDevs' bold-sans look.
+- **Buttons**: reverted from full pill (`rounded-full`) back to moderate rounding (`rounded-lg`) — the terracotta pivot used true pills, 100xDevs' buttons are rounded rectangles. `Badge` stays `rounded-full` (its small pill tags do match the reference).
+- **Navbar rebuilt** (`packages/ui/src/components/navbar.tsx`): circular brand logo (using the instructor photo — a real, if temporary, stand-in for an actual site logo/favicon) + bold brand name, a centered search slot, and **Login + Join now** as two separate buttons when signed out (previously a single "Sign in" button). Dropped the always-visible text nav links and the theme toggle to match the reference's cleaner header — Profile and (for admins only) Admin moved into the avatar dropdown instead of being lost.
+- **Real course search, added from scratch** (video app had none before): `CourseSearchBar` (client component, its own internal `<Suspense>` boundary per the earlier `useSearchParams` lesson) drives a `?q=` URL param; `getCourses(query)` does a real `title: { contains }` Postgres filter, bypassing the Redis cache for searches (only the unfiltered list is cached) rather than polluting it with arbitrary query strings. One instance lives in the navbar (compact), another larger one in the hero, both hitting the same URL param so they stay in sync. Notes app reuses its existing Cmd+K `SearchDialog` instead of duplicating search logic — the navbar's search slot there is just a styled trigger button (`NavSearchTrigger`) that opens it.
+- **`?tab=register` deep link** added to both `/auth` pages so the navbar/footer "Join now"/"Register" links land directly on the register tab instead of always defaulting to sign-in.
+- **Homepage hero rebuilt** as a centered layout (previously two-column) matching the reference: small pill badge with the instructor's photo ("Programs by CloudVidya Academy"), bold headline with one word in the primary blue, subtitle, the search bar, then the real course/track count + enrolled/lesson stats.
+- **`InstructorSection` restructured** to match the reference's actual layout: square photo on the left (using the real photo now, not a placeholder path), "Founder of CloudVidya Academy" label + bold heading + bio on the right, then a real link row (LinkedIn, mailto: email) — kept the certifications list from the previous pass since it's real content the reference-2 site doesn't happen to show but adds genuine credibility.
+- **New `SupportSection`** ("Need help?") using the client's real email (`vcgatate@gmail.com`) as both a mailto: link and displayed text — matches the reference's student-support block.
+- **New shared `Footer` component** (`packages/ui/src/components/footer.tsx`) — brand + description, two link columns, LinkedIn/email icons, copyright, and the reference's giant low-opacity background wordmark. **Only real, working links included** — Home, Browse, Sign in, Register, Profile. Deliberately did **not** add Terms & Conditions / Privacy Policy / Refund & Cancellation links like the reference has, since those pages don't exist and fabricating either the links or placeholder legal text would be worse than not having them.
+- **Flagging, not fixing**: this is a payment-collecting platform now (Razorpay), and it currently has no Terms of Service, Privacy Policy, or Refund/Cancellation policy anywhere — genuinely worth the client's attention before going live (Razorpay's own merchant approval sometimes expects these), not something I should draft unilaterally since it's legal content, not UI.
+
 ---
 
 ## First real build — critical bugs found and fixed

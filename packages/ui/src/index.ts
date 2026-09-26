@@ -44,6 +44,8 @@ export { Input } from "./components/input";
 export { Label } from "./components/label";
 export { Navbar } from "./components/navbar";
 export type { NavLink } from "./components/navbar";
+export { Footer } from "./components/footer";
+export type { FooterLink } from "./components/footer";
 export {
   Pagination,
   PaginationContent,

@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from "@repo/ui";
 import Fuse from "fuse.js";
 import { Mic, MicOff, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRecoilState } from "recoil";
 import { searchOpenAtom } from "@repo/store";
 import { semanticSearch } from "@/lib/actions";
@@ -49,7 +49,11 @@ export function SearchDialog({ tracks }: SearchDialogProps) {
   // Focus input when dialog opens
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
-    else { setQuery(""); setAiResults([]); setTab("fuzzy"); }
+    else {
+      setQuery("");
+      setAiResults([]);
+      setTab("fuzzy");
+    }
   }, [open]);
 
   // Fuse.js fuzzy search
@@ -127,20 +131,24 @@ export function SearchDialog({ tracks }: SearchDialogProps) {
       <DialogContent className="max-w-lg p-0">
         {/* Search input */}
         <div className="flex items-center gap-2 border-b px-3 py-2">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Search className="text-muted-foreground h-4 w-4 shrink-0" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tracks…"
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="placeholder:text-muted-foreground flex-1 bg-transparent text-sm outline-none"
           />
           <button
             onClick={toggleVoice}
-            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
             aria-label={listening ? "Stop listening" : "Voice search"}
           >
-            {listening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
+            {listening ? (
+              <MicOff className="text-destructive h-4 w-4" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
           </button>
         </div>
 
@@ -152,7 +160,7 @@ export function SearchDialog({ tracks }: SearchDialogProps) {
               onClick={() => setTab(t)}
               className={`flex items-center gap-1.5 px-4 py-2 transition-colors ${
                 tab === t
-                  ? "border-b-2 border-primary font-medium text-foreground"
+                  ? "border-primary text-foreground border-b-2 font-medium"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -166,49 +174,49 @@ export function SearchDialog({ tracks }: SearchDialogProps) {
         <ul className="max-h-72 overflow-y-auto p-1">
           {tab === "fuzzy" ? (
             fuzzyResults.length === 0 ? (
-              <li className="py-6 text-center text-sm text-muted-foreground">No tracks found.</li>
+              <li className="text-muted-foreground py-6 text-center text-sm">No tracks found.</li>
             ) : (
               fuzzyResults.map((track) => (
                 <li key={track.id}>
                   <button
                     onClick={() => handleSelectTrack(track.id)}
-                    className="w-full rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                    className="hover:bg-accent w-full rounded-md px-3 py-2.5 text-left transition-colors"
                   >
                     <p className="text-sm font-medium">{track.title}</p>
-                    <p className="truncate text-xs text-muted-foreground">{track.description}</p>
+                    <p className="text-muted-foreground truncate text-xs">{track.description}</p>
                   </button>
                 </li>
               ))
             )
           ) : aiLoading ? (
-            <li className="py-6 text-center text-sm text-muted-foreground">Searching…</li>
+            <li className="text-muted-foreground py-6 text-center text-sm">Searching…</li>
           ) : !query.trim() ? (
-            <li className="py-6 text-center text-sm text-muted-foreground">
+            <li className="text-muted-foreground py-6 text-center text-sm">
               Type to search with AI semantic matching.
             </li>
           ) : aiResults.length === 0 ? (
-            <li className="py-6 text-center text-sm text-muted-foreground">No results found.</li>
+            <li className="text-muted-foreground py-6 text-center text-sm">No results found.</li>
           ) : (
             aiResults.map((r) => (
               <li key={r.payload.problemId}>
                 <button
                   onClick={() => handleSelectProblem(r.payload.trackId, r.payload.problemId)}
-                  className="w-full rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                  className="hover:bg-accent w-full rounded-md px-3 py-2.5 text-left transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium">{r.payload.problemTitle}</p>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="text-muted-foreground shrink-0 text-xs">
                       {Math.round(r.score * 100)}% match
                     </span>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{r.payload.trackTitle}</p>
+                  <p className="text-muted-foreground truncate text-xs">{r.payload.trackTitle}</p>
                 </button>
               </li>
             ))
           )}
         </ul>
 
-        <div className="border-t px-3 py-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground border-t px-3 py-2 text-xs">
           <kbd className="rounded border px-1 py-0.5 font-mono text-xs">↑↓</kbd> navigate &nbsp;
           <kbd className="rounded border px-1 py-0.5 font-mono text-xs">↵</kbd> select &nbsp;
           <kbd className="rounded border px-1 py-0.5 font-mono text-xs">esc</kbd> close

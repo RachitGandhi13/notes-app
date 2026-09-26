@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -15,7 +15,6 @@ import {
 import {
   createCourse,
   createSection,
-  createVideo,
   updateCourse,
   toggleCourseHidden,
   toggleContentHidden,
@@ -54,24 +53,46 @@ interface LinkableTrack {
   courseId: string | null;
 }
 
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB — soft client-side sanity cap
+
 function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [description, setDescription] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      setError("Choose a video file to upload.");
+      return;
+    }
+    if (file.size > MAX_VIDEO_SIZE) {
+      setError("File is too large (max 500MB).");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     try {
-      await createVideo({ courseId, parentId, title, youtubeUrl, description });
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("courseId", courseId);
+      if (parentId) formData.set("parentId", parentId);
+      formData.set("title", title);
+      formData.set("description", description);
+
+      const res = await fetch("/api/admin/upload-video", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to upload video.");
+
       setTitle("");
-      setYoutubeUrl("");
       setDescription("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setOpen(false);
       router.refresh();
     } catch (err: any) {
@@ -102,13 +123,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         onChange={(e) => setTitle(e.target.value)}
         className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
       />
-      <input
-        required
-        placeholder="YouTube URL (Unlisted) or video ID"
-        value={youtubeUrl}
-        onChange={(e) => setYoutubeUrl(e.target.value)}
-        className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
-      />
       <textarea
         placeholder="Description (optional)"
         value={description}
@@ -116,13 +130,20 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         rows={2}
         className="border-input bg-background w-full resize-none rounded border px-2 py-1 text-xs"
       />
+      <input
+        required
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs"
+      />
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={submitting}
           className="bg-primary text-primary-foreground rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
         >
-          {submitting ? "Adding…" : "Add"}
+          {submitting ? "Uploading…" : "Upload"}
         </button>
         <button
           type="button"

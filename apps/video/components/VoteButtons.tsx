@@ -25,7 +25,7 @@ export function VoteButtons({ votes, currentUserId, onVote }: VoteButtonsProps) 
   const [optimisticVotes, setOptimisticVotes] = useState(votes);
   const [loading, setLoading] = useState(false);
 
-  const { up, down, net } = countVotes(optimisticVotes);
+  const { up, down } = countVotes(optimisticVotes);
   const myVote = currentUserId
     ? optimisticVotes.find((v) => v.userId === currentUserId)?.voteType
     : undefined;
@@ -52,7 +52,7 @@ export function VoteButtons({ votes, currentUserId, onVote }: VoteButtonsProps) 
         onClick={() => handleVote("UPVOTE")}
         disabled={!currentUserId || loading}
         className={cn(
-          "flex items-center gap-1 rounded px-1.5 py-1 text-xs transition-colors hover:bg-accent disabled:opacity-40",
+          "hover:bg-accent flex items-center gap-1 rounded px-1.5 py-1 text-xs transition-colors disabled:opacity-40",
           myVote === "UPVOTE" && "text-green-600 dark:text-green-400"
         )}
         aria-label="Upvote"
@@ -64,7 +64,7 @@ export function VoteButtons({ votes, currentUserId, onVote }: VoteButtonsProps) 
         onClick={() => handleVote("DOWNVOTE")}
         disabled={!currentUserId || loading}
         className={cn(
-          "flex items-center gap-1 rounded px-1.5 py-1 text-xs transition-colors hover:bg-accent disabled:opacity-40",
+          "hover:bg-accent flex items-center gap-1 rounded px-1.5 py-1 text-xs transition-colors disabled:opacity-40",
           myVote === "DOWNVOTE" && "text-red-600 dark:text-red-400"
         )}
         aria-label="Downvote"

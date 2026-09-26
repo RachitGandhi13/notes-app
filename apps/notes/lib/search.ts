@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { QdrantClient } from "@qdrant/js-client-rest";
-import type { ExtendedRecordMap } from "notion-types";
 
 // ── Singletons ─────────────────────────────────────────────────────────────────
 
@@ -33,42 +32,6 @@ export async function ensureCollection() {
   }
 }
 
-// ── Text extraction from Notion record map ────────────────────────────────────
-
-const TEXT_BLOCK_TYPES = new Set([
-  "heading_1",
-  "heading_2",
-  "heading_3",
-  "sub_header",
-  "sub_sub_header",
-  "text",
-  "bulleted_list_item",
-  "numbered_list_item",
-  "quote",
-  "callout",
-]);
-
-export function extractTextFromRecordMap(recordMap: ExtendedRecordMap): string {
-  const lines: string[] = [];
-
-  for (const blockId of Object.keys(recordMap.block)) {
-    const block = recordMap.block[blockId]?.value;
-    if (!block || !TEXT_BLOCK_TYPES.has(block.type)) continue;
-
-    const titleProp = block.properties?.title as [string, unknown[]][] | undefined;
-    if (!titleProp) continue;
-
-    // Each element is [text, ...annotations] — we only want the text part
-    const text = titleProp
-      .map((t) => t[0])
-      .join("")
-      .trim();
-    if (text) lines.push(text);
-  }
-
-  return lines.join("\n");
-}
-
 // ── Embedding helper ───────────────────────────────────────────────────────────
 
 async function embed(text: string): Promise<number[]> {
@@ -93,18 +56,21 @@ export interface IndexPayload {
 /**
  * Index all problems of a track into Qdrant.
  * Called by the admin after creating or updating a track.
+ *
+ * There's no Notion page (or any other parsed document body) to pull text
+ * from anymore — lessons are either an uploaded PPT file (no extracted text)
+ * or a hand-written MCQ quiz. So the embedding signal is whatever text
+ * actually exists: the lesson's title/description, plus its question text
+ * for MCQ lessons.
  */
 export async function insertData(
   trackId: string,
   trackTitle: string,
   image: string,
-  problems: { id: string; title: string; notionDocId: string }[]
+  problems: { id: string; title: string; description: string; questions: string[] }[]
 ) {
   await ensureCollection();
   const qdrant = getQdrant();
-
-  // Import notion lazily — only needed server-side during indexing
-  const { getNotionPage } = await import("./notion");
 
   const points: {
     id: string;
@@ -114,11 +80,10 @@ export async function insertData(
 
   for (const problem of problems) {
     try {
-      const recordMap = await getNotionPage(problem.notionDocId);
-      const rawText = extractTextFromRecordMap(recordMap);
-
-      // Combine title + body text for richer embedding signal
-      const textToEmbed = `${problem.title}\n\n${rawText}`.trim();
+      const textToEmbed = [problem.title, problem.description, ...problem.questions]
+        .filter(Boolean)
+        .join("\n\n")
+        .trim();
       if (!textToEmbed) continue;
 
       const vector = await embed(textToEmbed);

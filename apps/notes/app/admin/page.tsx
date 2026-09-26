@@ -20,7 +20,7 @@ export default async function AdminPage() {
       <div>
         <h1 className="text-2xl font-bold">Admin Panel</h1>
         <p className="text-muted-foreground">
-          Add a new track by pasting a Notion parent page ID.
+          Create a track, then upload PPT lessons and write MCQ quizzes for it directly.
         </p>
       </div>
       <AdminPanel tracks={tracks} />

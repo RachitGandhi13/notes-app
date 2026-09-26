@@ -4,11 +4,21 @@ import { prisma } from "@repo/db/client";
 import { getSession, requireAuth, requireAdmin } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
-import { extractYouTubeId, youtubeEmbedUrl, youtubeThumbnailUrl } from "./youtube";
 
 // ── Courses ────────────────────────────────────────────────────────────────────
 
-export async function getCourses() {
+export async function getCourses(query?: string) {
+  // Search results aren't cached — arbitrary query strings would pollute the
+  // cache; a plain title filter is cheap enough to run straight against
+  // Postgres every time.
+  if (query?.trim()) {
+    return prisma.course.findMany({
+      where: { hidden: false, title: { contains: query.trim(), mode: "insensitive" } },
+      include: { _count: { select: { purchases: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   const CACHE_KEY = "courses:all";
   const cached = await cacheGet<Awaited<ReturnType<typeof _fetchCourses>>>(CACHE_KEY);
   if (cached) return cached;
@@ -21,6 +31,7 @@ export async function getCourses() {
 function _fetchCourses() {
   return prisma.course.findMany({
     where: { hidden: false },
+    include: { _count: { select: { purchases: true } } },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -39,6 +50,7 @@ function _fetchCourse(slug: string) {
   return prisma.course.findUnique({
     where: { slug },
     include: {
+      _count: { select: { purchases: true } },
       content: {
         where: { content: { hidden: false } },
         include: {
@@ -288,18 +300,20 @@ export async function createSection(courseId: string, title: string) {
   revalidatePath("/admin");
 }
 
-export async function createVideo(data: {
+// Called by the upload route (app/api/admin/upload-video/route.ts) after it
+// has already stored the file — this function only does the DB write, since
+// the route needs to run before requireAdmin's normal server-action path
+// (file uploads go through a Route Handler, not a server action, to avoid
+// the smaller body-size limit Next.js applies to server actions).
+export async function createUploadedVideo(data: {
   courseId: string;
   parentId?: string;
   title: string;
   description?: string;
-  youtubeUrl: string;
+  videoUrl: string;
 }) {
   await requireAdmin();
   if (!data.title.trim()) throw new Error("Video title is required.");
-
-  const videoId = extractYouTubeId(data.youtubeUrl);
-  if (!videoId) throw new Error("Could not parse a YouTube video ID from that URL.");
 
   const content = await prisma.content.create({
     data: {
@@ -307,9 +321,8 @@ export async function createVideo(data: {
       title: data.title.trim(),
       description: data.description?.trim() || null,
       parentId: data.parentId || null,
-      thumbnail: youtubeThumbnailUrl(videoId),
       videoMetadata: {
-        create: { videoUrl: youtubeEmbedUrl(videoId) },
+        create: { videoUrl: data.videoUrl },
       },
     },
   });

@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTrack, getProblem, hasTrackAccess } from "@/lib/actions";
-import { getNotionPage } from "@/lib/notion";
 import { ProblemSidebar } from "@/components/ProblemSidebar";
-import { NotionRenderer } from "@/components/NotionRenderer";
+import { PPTViewer } from "@/components/PPTViewer";
 import { MCQQuiz } from "@/components/MCQQuiz";
 import { TrackPaywall } from "@/components/TrackPaywall";
 
@@ -45,9 +44,6 @@ export default async function TrackPage({ params }: Props) {
   const problem = await getProblem(activeProblemId);
   if (!problem) notFound();
 
-  // Fetch Notion content for Blog-type problems
-  const recordMap = problem.type === "Blog" ? await getNotionPage(problem.notionDocId) : null;
-
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       <ProblemSidebar
@@ -61,7 +57,9 @@ export default async function TrackPage({ params }: Props) {
         <div className="mx-auto max-w-3xl px-6 py-8">
           <h1 className="mb-6 text-2xl font-bold">{problem.title}</h1>
 
-          {problem.type === "Blog" && recordMap && <NotionRenderer recordMap={recordMap} />}
+          {problem.type === "PPT" && problem.pptUrl && (
+            <PPTViewer pptUrl={problem.pptUrl} title={problem.title} />
+          )}
 
           {problem.type === "MCQ" && (
             <MCQQuiz problemId={problem.id} questions={problem.mcqQuestions} />

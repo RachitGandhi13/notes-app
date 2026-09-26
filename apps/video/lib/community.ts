@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@repo/db/client";
-import { getSession, requireAuth, requireAdmin } from "@repo/auth";
+import { requireAuth, requireAdmin } from "@repo/auth";
 import { revalidatePath } from "next/cache";
 
 // ── Comments ───────────────────────────────────────────────────────────────────

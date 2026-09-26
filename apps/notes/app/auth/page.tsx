@@ -19,7 +19,9 @@ function AuthPageInner() {
   const error = searchParams.get("error");
   const verified = searchParams.get("verified") === "1";
 
-  const [tab, setTab] = useState<"signin" | "register">("signin");
+  const [tab, setTab] = useState<"signin" | "register">(
+    searchParams.get("tab") === "register" ? "register" : "signin"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

@@ -94,7 +94,6 @@ export async function createTrack(data: {
   description: string;
   image: string;
   categoryName: string;
-  problems: { notionDocId: string; title: string }[];
 }) {
   await requireAdmin();
 
@@ -104,34 +103,107 @@ export async function createTrack(data: {
     create: { id: data.categoryName, category: data.categoryName },
   });
 
-  await prisma.$transaction(async (tx) => {
-    const track = await tx.track.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        image: data.image,
-        categories: { create: { categoryId: category.id } },
-      },
-    });
-
-    for (let i = 0; i < data.problems.length; i++) {
-      const p = data.problems[i]!;
-      const problem = await tx.problem.create({
-        data: {
-          title: p.title,
-          description: p.title,
-          notionDocId: p.notionDocId,
-          type: "Blog",
-        },
-      });
-      await tx.trackProblems.create({
-        data: { trackId: track.id, problemId: problem.id, sortingOrder: i + 1 },
-      });
-    }
+  const track = await prisma.track.create({
+    data: {
+      title: data.title,
+      description: data.description,
+      image: data.image,
+      categories: { create: { categoryId: category.id } },
+    },
   });
 
   await cacheDel("tracks:all");
   revalidatePath("/");
+
+  return track;
+}
+
+// ── Admin: manually-added lessons (uploaded PPTs + hand-written MCQ quizzes) ───
+
+async function nextSortingOrder(trackId: string) {
+  const count = await prisma.trackProblems.count({ where: { trackId } });
+  return count + 1;
+}
+
+// Called by the upload route (app/api/admin/upload-ppt/route.ts) after it has
+// already stored the file — this function only does the DB write, since the
+// route needs to run before requireAdmin's normal server-action path (file
+// uploads go through a Route Handler, not a server action, to avoid the
+// smaller body-size limit Next.js applies to server actions).
+export async function addPPTLesson(data: {
+  trackId: string;
+  title: string;
+  description: string;
+  pptUrl: string;
+}) {
+  await requireAdmin();
+
+  await prisma.$transaction(async (tx) => {
+    const problem = await tx.problem.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        pptUrl: data.pptUrl,
+        type: "PPT",
+      },
+    });
+    await tx.trackProblems.create({
+      data: {
+        trackId: data.trackId,
+        problemId: problem.id,
+        sortingOrder: await nextSortingOrder(data.trackId),
+      },
+    });
+  });
+
+  await cacheDel("tracks:all");
+  revalidatePath(`/tracks/${data.trackId}`);
+}
+
+export async function addMCQLesson(data: {
+  trackId: string;
+  title: string;
+  description: string;
+  questions: { question: string; options: string[]; correctOption: string }[];
+}) {
+  await requireAdmin();
+
+  if (data.questions.length === 0) throw new Error("At least one question is required.");
+  for (const q of data.questions) {
+    if (!q.question.trim()) throw new Error("Every question needs question text.");
+    const filledOptions = q.options.map((o) => o.trim()).filter(Boolean);
+    if (filledOptions.length < 2) throw new Error(`"${q.question}" needs at least 2 options.`);
+    if (!filledOptions.includes(q.correctOption.trim())) {
+      throw new Error(`"${q.question}"'s correct option must match one of its options.`);
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const problem = await tx.problem.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        type: "MCQ",
+        mcqQuestions: {
+          create: data.questions.map((q) => ({
+            question: q.question.trim(),
+            options: q.options.map((o) => o.trim()).filter(Boolean),
+            correctOption: q.correctOption.trim(),
+          })),
+        },
+      },
+    });
+    await tx.trackProblems.create({
+      data: {
+        trackId: data.trackId,
+        problemId: problem.id,
+        sortingOrder: await nextSortingOrder(data.trackId),
+      },
+    });
+  });
+
+  await cacheDel("tracks:all");
+  revalidatePath(`/tracks/${data.trackId}`);
 }
 
 export async function markTrackIndexed(trackId: string) {
@@ -149,7 +221,7 @@ export async function indexTrack(trackId: string) {
     where: { id: trackId },
     include: {
       problems: {
-        include: { problem: true },
+        include: { problem: { include: { mcqQuestions: true } } },
         orderBy: { sortingOrder: "asc" },
       },
     },
@@ -162,7 +234,8 @@ export async function indexTrack(trackId: string) {
   const problems = track.problems.map((tp) => ({
     id: tp.problem.id,
     title: tp.problem.title,
-    notionDocId: tp.problem.notionDocId,
+    description: tp.problem.description,
+    questions: tp.problem.mcqQuestions.map((q) => q.question),
   }));
 
   const count = await insertData(track.id, track.title, track.image, problems);
