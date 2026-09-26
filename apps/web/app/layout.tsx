@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex min-h-screen flex-col">
             <NextTopLoader showSpinner={false} color="hsl(var(--primary))" />
             <Navbar
-              brand="CloudVidya"
+              brand="CloudVidya Academy"
               brandHref="/"
               brandLogo="/cloudvidya.png"
               links={[
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
             <div className="flex-1">{children}</div>
             <Footer
-              brand="CloudVidya"
+              brand="CloudVidya Academy"
               brandLogo="/cloudvidya.png"
               description="Learn AWS, DevOps, and Cloud through hands-on, project-based courses and mentorship from Dr. Veeranna Gatate."
               linkColumns={[
@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ]}
               linkedinUrl="https://linkedin.com/in/drveerannagatate"
               email="vcgatate@gmail.com"
-              wordmark="CloudVidya"
+              wordmark="CloudVidya Academy"
             />
           </div>
         </Providers>

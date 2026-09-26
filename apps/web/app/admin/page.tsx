@@ -21,7 +21,7 @@ export default async function AdminPage() {
     getAllCoursesForAdmin(),
     getLinkableTracks(),
     prisma.track.findMany({
-      select: { id: true, title: true, image: true, inSearch: true },
+      select: { id: true, title: true, image: true, inSearch: true, hidden: true },
       orderBy: { createdAt: "desc" },
     }),
   ]);

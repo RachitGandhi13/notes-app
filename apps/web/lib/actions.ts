@@ -279,7 +279,7 @@ export async function createCourse(data: {
   return course;
 }
 
-export async function createSection(courseId: string, title: string) {
+export async function createSection(courseId: string, title: string, thumbnail?: string) {
   await requireAdmin();
   if (!title.trim()) throw new Error("Section title is required.");
 
@@ -289,7 +289,7 @@ export async function createSection(courseId: string, title: string) {
   });
 
   const folder = await prisma.content.create({
-    data: { type: "FOLDER", title: title.trim() },
+    data: { type: "FOLDER", title: title.trim(), thumbnail: thumbnail || null },
   });
 
   await prisma.courseContent.create({
@@ -311,18 +311,22 @@ export async function createUploadedVideo(data: {
   title: string;
   description?: string;
   videoUrl: string;
+  thumbnail?: string;
 }) {
   await requireAdmin();
   if (!data.title.trim()) throw new Error("Video title is required.");
 
+  // The thumbnail is stored twice on purpose: Content.thumbnail feeds the
+  // curriculum list, VideoMetadata.thumbnail1Url is the player's poster frame.
   const content = await prisma.content.create({
     data: {
       type: "VIDEO",
       title: data.title.trim(),
       description: data.description?.trim() || null,
+      thumbnail: data.thumbnail || null,
       parentId: data.parentId || null,
       videoMetadata: {
-        create: { videoUrl: data.videoUrl },
+        create: { videoUrl: data.videoUrl, thumbnail1Url: data.thumbnail || null },
       },
     },
   });
@@ -344,6 +348,31 @@ export async function createUploadedVideo(data: {
   }
 
   await invalidateCourseCache(data.courseId);
+  revalidatePath("/admin");
+}
+
+// Set or clear the thumbnail of a section (playlist) or a video after creation.
+export async function setContentThumbnail(
+  contentId: string,
+  courseId: string,
+  thumbnail: string | null
+) {
+  await requireAdmin();
+
+  const content = await prisma.content.update({
+    where: { id: contentId },
+    data: { thumbnail: thumbnail || null },
+    select: { type: true },
+  });
+  // Keep the player's poster frame in step with the list thumbnail for videos.
+  if (content.type === "VIDEO") {
+    await prisma.videoMetadata.updateMany({
+      where: { contentId },
+      data: { thumbnail1Url: thumbnail || null },
+    });
+  }
+
+  await invalidateCourseCache(courseId);
   revalidatePath("/admin");
 }
 

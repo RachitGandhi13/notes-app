@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   Folder,
+  ImageIcon,
   Pencil,
   PlayCircle,
   Plus,
@@ -19,13 +20,17 @@ import {
   toggleCourseHidden,
   toggleContentHidden,
   moveContentOrder,
+  setContentThumbnail,
 } from "@/lib/actions";
+import { ThumbnailPicker } from "@/components/admin/ThumbnailPicker";
+import { UploadBar, postFormWithProgress } from "@/components/admin/upload";
 
 interface ContentNode {
   id: string;
   type: string;
   title: string;
   hidden: boolean;
+  thumbnail: string | null;
   videoMetadata: { videoUrl: string } | null;
   children: ContentNode[];
 }
@@ -60,8 +65,10 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [thumbnail, setThumbnail] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [percent, setPercent] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,6 +84,7 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
     }
 
     setSubmitting(true);
+    setPercent(0);
     setError("");
     try {
       const formData = new FormData();
@@ -85,13 +93,13 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
       if (parentId) formData.set("parentId", parentId);
       formData.set("title", title);
       formData.set("description", description);
+      if (thumbnail) formData.set("thumbnail", thumbnail);
 
-      const res = await fetch("/api/admin/upload-video", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to upload video.");
+      await postFormWithProgress("/api/admin/upload-video", formData, setPercent);
 
       setTitle("");
       setDescription("");
+      setThumbnail("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       setOpen(false);
       router.refresh();
@@ -99,6 +107,7 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
       setError(err?.message ?? "Failed to add video.");
     } finally {
       setSubmitting(false);
+      setPercent(null);
     }
   }
 
@@ -137,22 +146,32 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         accept="video/*"
         className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs"
       />
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="bg-primary text-primary-foreground rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
-        >
-          {submitting ? "Uploading…" : "Upload"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="hover:bg-accent rounded border px-3 py-1 text-xs"
-        >
-          Cancel
-        </button>
-      </div>
+      <ThumbnailPicker
+        compact
+        label="Video thumbnail (optional)"
+        value={thumbnail}
+        onChange={setThumbnail}
+      />
+      {percent !== null ? (
+        <UploadBar percent={percent} />
+      ) : (
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-primary text-primary-foreground rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
+          >
+            Upload
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="hover:bg-accent rounded border px-3 py-1 text-xs"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </form>
   );
 }
@@ -161,6 +180,7 @@ function AddSectionForm({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [thumbnail, setThumbnail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -169,8 +189,9 @@ function AddSectionForm({ courseId }: { courseId: string }) {
     setSubmitting(true);
     setError("");
     try {
-      await createSection(courseId, title);
+      await createSection(courseId, title, thumbnail || undefined);
       setTitle("");
+      setThumbnail("");
       setOpen(false);
       router.refresh();
     } catch (err: any) {
@@ -192,30 +213,37 @@ function AddSectionForm({ courseId }: { courseId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="bg-muted/30 w-full space-y-3 rounded-md border p-3">
       {error && <p className="text-destructive text-xs">{error}</p>}
       <input
         required
         autoFocus
-        placeholder="Section title, e.g. Week 1"
+        placeholder="Playlist / section title, e.g. Week 1"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="border-input bg-background flex h-8 flex-1 rounded border px-2 text-xs"
+        className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
       />
-      <button
-        type="submit"
-        disabled={submitting}
-        className="bg-primary text-primary-foreground rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
-      >
-        {submitting ? "Adding…" : "Add"}
-      </button>
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        className="hover:bg-accent rounded border px-3 py-1 text-xs"
-      >
-        Cancel
-      </button>
+      <ThumbnailPicker
+        label="Playlist thumbnail (optional)"
+        value={thumbnail}
+        onChange={setThumbnail}
+      />
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="bg-primary text-primary-foreground rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
+        >
+          {submitting ? "Adding…" : "Add"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="hover:bg-accent rounded border px-3 py-1 text-xs"
+        >
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }
@@ -236,7 +264,18 @@ function ContentNodeRow({
   const router = useRouter();
   const [expanded, setExpanded] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [editingThumb, setEditingThumb] = useState(false);
   const isFolder = node.type === "FOLDER";
+
+  async function handleThumbnailChange(url: string) {
+    setBusy(true);
+    try {
+      await setContentThumbnail(node.id, courseId, url || null);
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleToggleHidden() {
     setBusy(true);
@@ -275,6 +314,10 @@ function ContentNodeRow({
         ) : (
           <PlayCircle className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
         )}
+        {node.thumbnail && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={node.thumbnail} alt="" className="h-7 w-12 shrink-0 rounded object-cover" />
+        )}
         <span
           className={`text-sm font-medium ${node.hidden ? "text-muted-foreground line-through" : ""}`}
         >
@@ -306,6 +349,14 @@ function ContentNodeRow({
             </>
           )}
           <button
+            onClick={() => setEditingThumb((v) => !v)}
+            className="text-muted-foreground hover:bg-accent rounded p-1"
+            aria-label="Change thumbnail"
+            title={node.thumbnail ? "Change thumbnail" : "Add thumbnail"}
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={handleToggleHidden}
             disabled={busy}
             className="text-muted-foreground hover:bg-accent rounded p-1 disabled:opacity-50"
@@ -316,6 +367,17 @@ function ContentNodeRow({
           </button>
         </div>
       </div>
+
+      {editingThumb && (
+        <div className="mt-3 border-t pt-3">
+          <ThumbnailPicker
+            compact
+            label={isFolder ? "Playlist thumbnail" : "Video thumbnail"}
+            value={node.thumbnail ?? ""}
+            onChange={handleThumbnailChange}
+          />
+        </div>
+      )}
 
       {isFolder && expanded && (
         <div className="mt-3 space-y-2 pl-6">
@@ -390,22 +452,15 @@ function EditCourseForm({ course, onDone }: { course: AdminCourse; onDone: () =>
         rows={2}
         className="border-input bg-background w-full resize-none rounded-md border px-3 py-2 text-sm"
       />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <input
-          type="number"
-          min="0"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          placeholder="Price (₹)"
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-        />
-        <input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="Image URL"
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm sm:col-span-2"
-        />
-      </div>
+      <input
+        type="number"
+        min="0"
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        placeholder="Price (₹)"
+        className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm sm:w-48"
+      />
+      <ThumbnailPicker label="Course thumbnail" value={imageUrl} onChange={setImageUrl} />
       <div className="flex gap-2">
         <button
           type="submit"
@@ -604,27 +659,23 @@ function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Price (₹, 0 = free)</label>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-          />
-        </div>
-        <div className="space-y-1 sm:col-span-2">
-          <label className="text-xs font-medium">Image URL (optional)</label>
-          <input
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-          />
-        </div>
+      <div className="space-y-1 sm:w-48">
+        <label className="text-xs font-medium">Price (₹, 0 = free)</label>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+        />
       </div>
+
+      <ThumbnailPicker
+        label="Course thumbnail (optional)"
+        value={imageUrl}
+        onChange={setImageUrl}
+      />
 
       <div className="space-y-1">
         <label className="text-xs font-medium">

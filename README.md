@@ -16,7 +16,10 @@ database.
 Recorded video courses, organised into sections (playlist-style groupings),
 with purchase-gated access for paid courses.
 
-- Admin creates courses, adds sections, and uploads lecture videos directly
+- Admin creates courses, adds sections (playlists) and uploads lecture videos
+  directly, with an upload progress bar
+- Thumbnails are uploaded, not pasted as links: one for the course, one for
+  each playlist, and optionally one per video
 - Free courses enroll directly; paid courses are purchased via **Razorpay**
   (Checkout modal + signature-verified confirmation + a webhook backstop)
 - Course search from the navbar and hero
@@ -29,9 +32,16 @@ with purchase-gated access for paid courses.
 
 Study tracks organised into categories, browsable at `/notes`.
 
-- Admin creates a track, then adds PPT slide lessons (uploaded files) and
-  hand-written MCQ quizzes to it
-- MCQ quizzes with per-user score tracking (shown on the profile page)
+- A track is a topic made of **sections**. Each section has slides (a PPT,
+  PPTX or PDF uploaded by the admin) and/or practice questions
+- Admins edit right on the track page: add a section and upload its slides,
+  replace or remove the slides, add/edit/delete practice questions, reorder or
+  delete sections
+- Students see the slides on the page (PDFs inline; PPT/PPTX through
+  Microsoft's viewer once the site is live), then practise the multiple-choice
+  questions with instant feedback and "Try again"
+- Scores are saved to the student's profile when signed in; anyone can practise
+  without an account
 - Cmd/Ctrl+K search on `/notes`: fuzzy search over tracks, plus AI-powered
   search (Gemini embeddings → Qdrant vector search)
 
@@ -116,7 +126,9 @@ See `.env.example` for the full list. At minimum you'll need:
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` — paid courses
 - `QDRANT_URL`, `GOOGLEAI_API_KEY` — AI search (optional, deferrable)
 - `REDIS_URL` — caching (optional, best-effort)
-- `BLOB_READ_WRITE_TOKEN` — file uploads on Vercel (local disk is used without it)
+- `BLOB_READ_WRITE_TOKEN` — cloud storage for uploads (thumbnails, slides, videos).
+  Without it files go to local disk, which only works in development: a
+  production server won't serve files written after it started
 - `SMTP_*` — verification and password-reset emails (logged instead of sent when unset)
 
 ## Deployment

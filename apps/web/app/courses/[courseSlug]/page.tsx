@@ -47,6 +47,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
     .map((cc) => ({
       id: cc.content.id,
       title: cc.content.title,
+      thumbnail: cc.content.thumbnail as string | null,
       lessons: cc.content.children.map((child) => ({
         id: child.id,
         type: child.type,
@@ -67,7 +68,12 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
     }));
 
   if (standaloneLessons.length > 0) {
-    chapters.push({ id: "standalone", title: "More Lessons", lessons: standaloneLessons });
+    chapters.push({
+      id: "standalone",
+      title: "More Lessons",
+      thumbnail: null,
+      lessons: standaloneLessons,
+    });
   }
 
   return (

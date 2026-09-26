@@ -470,6 +470,89 @@ the two apps as they were before this merge and are kept for history.
 
 ---
 
+## Phase 10 — Notes sections (slides + practice questions), playlist thumbnails, rebrand ✅
+
+Client requirements (2026-09-26): in Notes he uploads a PPT for each section
+directly on the page, with MCQs for students to practise; in Courses he
+uploads the videos and needs a thumbnail option for each new playlist; and
+the institution name is "CloudVidya Academy" everywhere.
+
+- [x] **Rebrand:** navbar/footer brand and the giant footer wordmark now say
+      "CloudVidya Academy" (all other copy already did). Wordmark shrunk
+      (`12vw` → `8vw`) so the longer name isn't clipped; the navbar brand can
+      wrap on phones and the theme toggle is hidden below `sm` (the site is
+      dark-only by design) so nothing overflows at 375px.
+- [x] **Notes model — no data-model change beyond one column.** A "section" is
+      still a `Problem` row and can now carry a presentation (`pptUrl`),
+      practice MCQs, or both; `type` is kept as `PPT` when a file exists,
+      `MCQ` otherwise. New migration `20260926120000_mcq_question_created_at`
+      adds `MCQQuestion.createdAt` so questions keep the order they were added
+      in (Postgres doesn't guarantee row order). **Must be applied to Neon:**
+      `prisma migrate deploy` from `packages/db` with the direct URL.
+- [x] **In-page admin editing** (admins only, on the track page itself):
+      sidebar "Add section" form (title, description, optional slides upload);
+      per-section "Edit this section" panel — rename, upload/replace/remove
+      slides, add/edit/delete practice questions, move up/down, delete (with
+      an in-page confirm, no browser dialogs). Server actions in
+      `lib/track-actions.ts` (`addSection`, `updateSection`, `setSectionPPT`,
+      `deleteSection`, `moveSection`, `addQuestion`, `updateQuestion`,
+      `deleteQuestion`, `toggleTrackHidden`). The old separate "PPT lesson" /
+      "MCQ lesson" forms and `addPPTLesson`/`addMCQLesson` are gone; `/admin`
+      → Notes now only creates tracks, lists them ("Open & edit", hide/show)
+      and runs AI indexing.
+- [x] **Slides show on the page.** `PPTViewer` embeds PDFs natively and PPT/PPTX
+      through Microsoft's Office viewer iframe (needs a public https URL, so it
+      only works once files live in cloud storage; locally it falls back to an
+      "open in a new tab" card). `/api/admin/upload-ppt` now accepts
+      `.ppt/.pptx/.pdf` (100MB soft cap) and either creates a section or
+      replaces a section's file. **PPTX embedding is untested** — it needs a
+      deployed public URL; only PDF embedding and the fallback were exercised.
+- [x] **Practice mode for students:** questions render under the slides,
+      "Try again" resets the quiz, scores save when signed in, and a visitor who
+      isn't signed in still sees their result (previously the submit threw and
+      the button stuck on "Submitting…"). Prev/Next section links added.
+- [x] **Security fix found on the way:** a section could be opened through any
+      track's URL (`/tracks/<free track>/<paid track's section id>`), bypassing
+      the paywall, because only the track was access-checked. The page now
+      404s unless the section belongs to the track. Admins can also open
+      bundled tracks without "buying" them.
+- [x] **Thumbnails by upload:** new `/api/admin/upload-image` (JPG/PNG/WebP,
+      4MB, no SVG) and a shared `ThumbnailPicker` replace every "Image URL"
+      text box — course create/edit, track create — and add thumbnails to
+      playlists (sections) and videos, with a change-thumbnail button on
+      existing ones. Sections' thumbnail shows in the course curriculum
+      header; a video's is stored both as `Content.thumbnail` (list) and
+      `VideoMetadata.thumbnail1Url` (player poster). No schema change
+      (`Content.thumbnail` already existed).
+- [x] **Upload progress:** video, slide and section uploads use XHR with a
+      progress bar (`components/admin/upload.tsx`); stored filenames are
+      sanitised (a `../` in an uploaded name could previously escape the
+      local uploads folder).
+- [x] **Validation shown reliably:** Next.js anonymises errors thrown from
+      server actions in production builds, so question rules live in
+      `lib/question-validation.ts` and run in the form first (the server
+      re-checks). Other older admin forms still rely on thrown messages and
+      would show a generic error in production.
+- [x] **Track page** now renders on demand (`force-dynamic`) and
+      `generateStaticParams` is gone — it depends on who is looking, and the
+      old version needed a database at build time. Fixed the page height
+      (`3.5rem` → `4rem` navbar) and made the section list stack above the
+      lesson on phones (it squeezed the lesson into ~100px).
+- [x] **Verified** with a real browser (Playwright driving headless Chrome)
+      against a throwaway Postgres running all 4 migrations from scratch (no
+      drift): 26 checks on the notes flow pass against both the dev server and a
+      production build (`next build` + `next start`); the video/thumbnail flow
+      passes on the dev server. Also checked at a 375px phone width.
+      Docker was not available, and the E2E scripts are not in the repo.
+- [ ] **Not done — production file storage.** `next start` returns 404 for
+      files written to `public/` after startup (checked), so uploads only work
+      locally. `@repo/storage` supports Vercel Blob (`BLOB_READ_WRITE_TOKEN`)
+      or local disk only — there is no S3 backend, and on serverless hosts big
+      uploads still hit the ~4.5MB request cap (see Open risks). Decision
+      needed on hosting + storage before real uploads work when deployed.
+
+---
+
 ## First real build — critical bugs found and fixed
 
 Everything up to this point had only been read, schema-validated, and
@@ -654,6 +737,13 @@ Local login: **admin@example.com / admin123** (from the seed script).
   breaks `/api/admin/upload-video` and `/api/admin/upload-ppt` for real lecture
   files in production — they need client-side direct uploads to Blob/S3 (or a
   host without that cap) before large uploads work when deployed.
+- **Uploaded files don't survive/serve in production without cloud storage.**
+  Verified: a production Next server 404s anything written to `public/` after
+  it started, and serverless disks are ephemeral anyway. Thumbnails, slides
+  and videos therefore need Vercel Blob (`BLOB_READ_WRITE_TOKEN`, supported) or
+  an S3 backend (not built). Uploaded-image hosts must also be in
+  `next.config.js` `images.remotePatterns` (`**.amazonaws.com` and Vercel Blob
+  are; a custom CloudFront domain would need adding).
 - **The GitHub repo is public** and contains the client's logo and
   instructor photo; make it private before pushing.
 - Legal pages (Terms, Privacy, Refund/Cancellation) still don't exist and are

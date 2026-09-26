@@ -4,11 +4,18 @@ import { cn } from "@repo/ui";
 import { CheckSquare, ChevronLeft, ChevronRight, Presentation } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { AddSectionForm } from "@/components/admin/AddSectionForm";
 
 interface Problem {
   problemId: string;
   sortingOrder: number;
-  problem: { id: string; title: string; type: string };
+  problem: {
+    id: string;
+    title: string;
+    type: string;
+    pptUrl: string | null;
+    _count: { mcqQuestions: number };
+  };
 }
 
 interface ProblemSidebarProps {
@@ -16,6 +23,8 @@ interface ProblemSidebarProps {
   trackTitle: string;
   problems: Problem[];
   activeProblemId: string;
+  /** Shows the "Add section" form for admins. */
+  isAdmin?: boolean;
 }
 
 export function ProblemSidebar({
@@ -23,26 +32,30 @@ export function ProblemSidebar({
   trackTitle,
   problems,
   activeProblemId,
+  isAdmin,
 }: ProblemSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside
       className={cn(
-        "bg-background relative flex h-full flex-col border-r transition-all duration-300",
-        collapsed ? "w-12" : "w-72"
+        // Phones: a full-width block above the lesson. md and up: the
+        // collapsible side column.
+        "bg-background relative flex w-full flex-col border-b transition-all duration-300 md:h-full md:border-b-0 md:border-r",
+        collapsed ? "md:w-12" : "md:w-72"
       )}
     >
-      {/* Collapse toggle */}
+      {/* Collapse toggle (side column only) */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="bg-background absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full border shadow-sm"
+        className="bg-background absolute -right-3 top-4 z-10 hidden h-6 w-6 items-center justify-center rounded-full border shadow-sm md:flex"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </button>
 
-      {!collapsed && (
+      {/* Always rendered (so phones always get the list); only hidden when the desktop column is collapsed */}
+      <div className={cn("flex min-h-0 flex-1 flex-col", collapsed && "md:hidden")}>
         <>
           {/* Track title */}
           <div className="border-b p-4">
@@ -51,12 +64,12 @@ export function ProblemSidebar({
             </Link>
             <h2 className="mt-1 text-sm font-semibold leading-snug">{trackTitle}</h2>
             <p className="text-muted-foreground mt-0.5 text-xs">
-              {problems.length} {problems.length === 1 ? "lesson" : "lessons"}
+              {problems.length} {problems.length === 1 ? "section" : "sections"}
             </p>
           </div>
 
           {/* Problem list */}
-          <nav className="flex-1 overflow-y-auto p-2">
+          <nav className="max-h-60 flex-1 overflow-y-auto p-2 md:max-h-none">
             <ul className="space-y-0.5">
               {problems.map(({ problem, sortingOrder }) => {
                 const isActive = problem.id === activeProblemId;
@@ -72,20 +85,36 @@ export function ProblemSidebar({
                       )}
                     >
                       <span className="mt-0.5 shrink-0 text-xs opacity-60">{sortingOrder}.</span>
-                      {problem.type === "MCQ" ? (
-                        <CheckSquare className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      ) : (
+                      {problem.pptUrl ? (
                         <Presentation className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <CheckSquare className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       )}
-                      <span className="leading-snug">{problem.title}</span>
+                      <span className="leading-snug">
+                        {problem.title}
+                        {problem._count.mcqQuestions > 0 && (
+                          <span className="block text-xs opacity-60">
+                            {problem._count.mcqQuestions}{" "}
+                            {problem._count.mcqQuestions === 1
+                              ? "practice question"
+                              : "practice questions"}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   </li>
                 );
               })}
             </ul>
           </nav>
+
+          {isAdmin && (
+            <div className="border-t p-2">
+              <AddSectionForm trackId={trackId} />
+            </div>
+          )}
         </>
-      )}
+      </div>
     </aside>
   );
 }

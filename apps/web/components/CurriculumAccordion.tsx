@@ -15,6 +15,7 @@ interface LessonItem {
 interface ChapterGroup {
   id: string;
   title: string;
+  thumbnail?: string | null;
   lessons: LessonItem[];
 }
 
@@ -56,13 +57,20 @@ function ChapterPanel({ chapter, index }: { chapter: ChapterGroup; index: number
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
-        <div>
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-            Chapter {index + 1}
-          </p>
-          <h3 className="mt-0.5 text-lg font-bold">{chapter.title}</h3>
+        <div className="flex min-w-0 items-center gap-4">
+          {chapter.thumbnail && (
+            <div className="bg-muted relative hidden h-14 w-24 shrink-0 overflow-hidden rounded-lg sm:block">
+              <Image src={chapter.thumbnail} alt="" fill sizes="96px" className="object-cover" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              Chapter {index + 1}
+            </p>
+            <h3 className="mt-0.5 text-lg font-bold">{chapter.title}</h3>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <span className="text-muted-foreground text-xs">
             {chapter.lessons.length} {chapter.lessons.length === 1 ? "lesson" : "lessons"}
           </span>

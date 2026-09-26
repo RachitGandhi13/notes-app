@@ -29,6 +29,8 @@ export async function POST(request: Request) {
     const parentId = formData.get("parentId") ? String(formData.get("parentId")) : undefined;
     const title = String(formData.get("title") ?? "");
     const description = String(formData.get("description") ?? "");
+    // URL of an already-uploaded thumbnail image (via /api/admin/upload-image)
+    const thumbnail = String(formData.get("thumbnail") ?? "") || undefined;
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
@@ -41,7 +43,9 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const pathname = `videos/${randomUUID()}-${file.name}`;
+    // Strip any directory parts / odd characters from the client-supplied name.
+    const safeName = path.basename(file.name).replace(/[^\w.-]+/g, "_");
+    const pathname = `videos/${randomUUID()}-${safeName}`;
     const videoUrl = await storeFile({
       publicDir: path.join(process.cwd(), "public"),
       pathname,
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
       contentType: file.type,
     });
 
-    await createUploadedVideo({ courseId, parentId, title, description, videoUrl });
+    await createUploadedVideo({ courseId, parentId, title, description, videoUrl, thumbnail });
 
     return NextResponse.json({ videoUrl });
   } catch (err) {

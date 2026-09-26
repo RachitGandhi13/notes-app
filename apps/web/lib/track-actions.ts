@@ -4,6 +4,7 @@ import { prisma } from "@repo/db/client";
 import { getSession, requireAdmin, requireAuth } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
+import { validateQuestion, type QuestionInput } from "@/lib/question-validation";
 
 // ── Tracks ─────────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,9 @@ export async function getTrack(trackId: string) {
     include: {
       categories: { include: { category: true } },
       problems: {
-        include: { problem: true },
+        include: {
+          problem: { include: { _count: { select: { mcqQuestions: true } } } },
+        },
         orderBy: { sortingOrder: "asc" },
       },
       course: { select: { id: true, slug: true, price: true, title: true } },
@@ -64,7 +67,7 @@ export async function hasTrackAccess(track: { courseId: string | null }): Promis
 export async function getProblem(problemId: string) {
   return prisma.problem.findUnique({
     where: { id: problemId },
-    include: { mcqQuestions: true },
+    include: { mcqQuestions: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
   });
 }
 
@@ -113,97 +116,191 @@ export async function createTrack(data: {
   });
 
   await cacheDel("tracks:all");
-  revalidatePath("/");
+  revalidatePath("/notes");
 
   return track;
 }
 
-// ── Admin: manually-added lessons (uploaded PPTs + hand-written MCQ quizzes) ───
-
-async function nextSortingOrder(trackId: string) {
-  const count = await prisma.trackProblems.count({ where: { trackId } });
-  return count + 1;
+export async function toggleTrackHidden(trackId: string) {
+  await requireAdmin();
+  const track = await prisma.track.findUnique({ where: { id: trackId }, select: { hidden: true } });
+  if (!track) throw new Error("Track not found.");
+  await prisma.track.update({ where: { id: trackId }, data: { hidden: !track.hidden } });
+  await cacheDel("tracks:all");
+  revalidatePath("/notes");
+  revalidatePath("/admin");
 }
 
-// Called by the upload route (app/api/admin/upload-ppt/route.ts) after it has
-// already stored the file — this function only does the DB write, since the
-// route needs to run before requireAdmin's normal server-action path (file
-// uploads go through a Route Handler, not a server action, to avoid the
-// smaller body-size limit Next.js applies to server actions).
-export async function addPPTLesson(data: {
+// ── Admin: sections ─────────────────────────────────────────────────────────────
+// A "section" is one Problem row in a track. It can carry an uploaded
+// presentation (pptUrl), practice MCQs, or both. `type` is kept in step with
+// whether a presentation exists — PPT when there is a file, MCQ otherwise — so
+// the sidebar icon and search keep working. Files themselves are uploaded
+// through app/api/admin/upload-ppt (a Route Handler, to avoid the smaller
+// body-size limit server actions have), which then calls these.
+
+async function refreshTrack(trackId: string) {
+  await cacheDel("tracks:all");
+  revalidatePath(`/tracks/${trackId}`);
+  revalidatePath("/notes");
+}
+
+async function trackIdOfProblem(problemId: string) {
+  const link = await prisma.trackProblems.findFirst({
+    where: { problemId },
+    select: { trackId: true },
+  });
+  return link?.trackId ?? null;
+}
+
+export async function addSection(data: {
   trackId: string;
   title: string;
-  description: string;
-  pptUrl: string;
+  description?: string;
+  pptUrl?: string;
 }) {
   await requireAdmin();
+  const title = data.title.trim();
+  if (!title) throw new Error("Section title is required.");
 
-  await prisma.$transaction(async (tx) => {
-    const problem = await tx.problem.create({
+  const problem = await prisma.$transaction(async (tx) => {
+    const created = await tx.problem.create({
       data: {
-        title: data.title,
-        description: data.description,
-        pptUrl: data.pptUrl,
-        type: "PPT",
+        title,
+        description: data.description?.trim() ?? "",
+        pptUrl: data.pptUrl || null,
+        type: data.pptUrl ? "PPT" : "MCQ",
       },
     });
+    const count = await tx.trackProblems.count({ where: { trackId: data.trackId } });
     await tx.trackProblems.create({
-      data: {
-        trackId: data.trackId,
-        problemId: problem.id,
-        sortingOrder: await nextSortingOrder(data.trackId),
-      },
+      data: { trackId: data.trackId, problemId: created.id, sortingOrder: count + 1 },
     });
+    return created;
   });
 
-  await cacheDel("tracks:all");
-  revalidatePath(`/tracks/${data.trackId}`);
+  await refreshTrack(data.trackId);
+  return { id: problem.id };
 }
 
-export async function addMCQLesson(data: {
-  trackId: string;
-  title: string;
-  description: string;
-  questions: { question: string; options: string[]; correctOption: string }[];
-}) {
+export async function updateSection(
+  problemId: string,
+  data: { title: string; description: string }
+) {
   await requireAdmin();
+  const title = data.title.trim();
+  if (!title) throw new Error("Section title is required.");
 
-  if (data.questions.length === 0) throw new Error("At least one question is required.");
-  for (const q of data.questions) {
-    if (!q.question.trim()) throw new Error("Every question needs question text.");
-    const filledOptions = q.options.map((o) => o.trim()).filter(Boolean);
-    if (filledOptions.length < 2) throw new Error(`"${q.question}" needs at least 2 options.`);
-    if (!filledOptions.includes(q.correctOption.trim())) {
-      throw new Error(`"${q.question}"'s correct option must match one of its options.`);
+  await prisma.problem.update({
+    where: { id: problemId },
+    data: { title, description: data.description.trim() },
+  });
+  const trackId = await trackIdOfProblem(problemId);
+  if (trackId) await refreshTrack(trackId);
+}
+
+// Called by the upload route after it has stored a replacement file, or with
+// null to remove the presentation from a section.
+export async function setSectionPPT(problemId: string, pptUrl: string | null) {
+  await requireAdmin();
+  await prisma.problem.update({
+    where: { id: problemId },
+    data: { pptUrl, type: pptUrl ? "PPT" : "MCQ" },
+  });
+  const trackId = await trackIdOfProblem(problemId);
+  if (trackId) await refreshTrack(trackId);
+}
+
+// Removes the section, its practice questions and students' scores for it.
+export async function deleteSection(problemId: string) {
+  await requireAdmin();
+  const trackId = await trackIdOfProblem(problemId);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.quizScore.deleteMany({ where: { problemId } });
+    await tx.mCQQuestion.deleteMany({ where: { problemId } });
+    await tx.trackProblems.deleteMany({ where: { problemId } });
+    await tx.problem.delete({ where: { id: problemId } });
+
+    // Close the gap so the sidebar numbering stays 1, 2, 3…
+    if (trackId) {
+      const rest = await tx.trackProblems.findMany({
+        where: { trackId },
+        orderBy: { sortingOrder: "asc" },
+      });
+      for (const [i, tp] of rest.entries()) {
+        if (tp.sortingOrder !== i + 1) {
+          await tx.trackProblems.update({
+            where: { trackId_problemId: { trackId, problemId: tp.problemId } },
+            data: { sortingOrder: i + 1 },
+          });
+        }
+      }
     }
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const problem = await tx.problem.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        type: "MCQ",
-        mcqQuestions: {
-          create: data.questions.map((q) => ({
-            question: q.question.trim(),
-            options: q.options.map((o) => o.trim()).filter(Boolean),
-            correctOption: q.correctOption.trim(),
-          })),
-        },
-      },
-    });
-    await tx.trackProblems.create({
-      data: {
-        trackId: data.trackId,
-        problemId: problem.id,
-        sortingOrder: await nextSortingOrder(data.trackId),
-      },
-    });
   });
 
-  await cacheDel("tracks:all");
-  revalidatePath(`/tracks/${data.trackId}`);
+  if (trackId) await refreshTrack(trackId);
+  return { trackId };
+}
+
+export async function moveSection(trackId: string, problemId: string, direction: "up" | "down") {
+  await requireAdmin();
+  const list = await prisma.trackProblems.findMany({
+    where: { trackId },
+    orderBy: { sortingOrder: "asc" },
+  });
+  const i = list.findIndex((tp) => tp.problemId === problemId);
+  const j = direction === "up" ? i - 1 : i + 1;
+  if (i === -1 || j < 0 || j >= list.length) return;
+
+  // Renumber the whole list rather than swapping two values, so a track whose
+  // numbering already has gaps or ties still ends up strictly ordered.
+  const moving = list[i];
+  const neighbour = list[j];
+  if (!moving || !neighbour) return;
+  const reordered = [...list];
+  reordered[i] = neighbour;
+  reordered[j] = moving;
+  await prisma.$transaction(
+    reordered.map((tp, k) =>
+      prisma.trackProblems.update({
+        where: { trackId_problemId: { trackId, problemId: tp.problemId } },
+        data: { sortingOrder: k + 1 },
+      })
+    )
+  );
+  await refreshTrack(trackId);
+}
+
+// ── Admin: practice questions ───────────────────────────────────────────────────
+
+function cleanQuestion(q: QuestionInput): QuestionInput {
+  const result = validateQuestion(q);
+  if (!result.ok) throw new Error(result.error);
+  return result.value;
+}
+
+export async function addQuestion(problemId: string, input: QuestionInput) {
+  await requireAdmin();
+  const data = cleanQuestion(input);
+  await prisma.mCQQuestion.create({ data: { ...data, problemId } });
+  const trackId = await trackIdOfProblem(problemId);
+  if (trackId) await refreshTrack(trackId);
+}
+
+export async function updateQuestion(questionId: string, input: QuestionInput) {
+  await requireAdmin();
+  const data = cleanQuestion(input);
+  const q = await prisma.mCQQuestion.update({ where: { id: questionId }, data });
+  const trackId = await trackIdOfProblem(q.problemId);
+  if (trackId) await refreshTrack(trackId);
+}
+
+export async function deleteQuestion(questionId: string) {
+  await requireAdmin();
+  const q = await prisma.mCQQuestion.delete({ where: { id: questionId } });
+  const trackId = await trackIdOfProblem(q.problemId);
+  if (trackId) await refreshTrack(trackId);
 }
 
 export async function markTrackIndexed(trackId: string) {
