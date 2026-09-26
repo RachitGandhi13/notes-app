@@ -118,7 +118,7 @@ below are deliberately terse; open the file for exact code.
 - **Generic Radix/shadcn wrappers, verified to contain zero custom logic beyond Tailwind classes**: `Badge`, `Button` (cva variants: default/destructive/outline/secondary/ghost/link), `Card`, `Checkbox`, `Dialog`, `DropdownMenu`, `Input`, `Label`, `Pagination`, `ScrollArea`, `Select`, `Separator`, `Sheet` (built on `@radix-ui/react-dialog`, not a separate package — see bug fixed above), `Skeleton`, `Switch`, `Table`, `Tabs`, `Textarea`, `Toast`/`Toaster`, `Tooltip`.
 - Both apps' `tailwind.config.ts` point `content` at `../../packages/ui/src/**/*.tsx` so these compile correctly in each app.
 
-### `apps/notes` (port 3000)
+### `apps/notes` (port 3000) — merged into `apps/web`, see Phase 9
 
 - `app/layout.tsx` / `providers.tsx` — root layout wraps children in `SessionProvider` → `RecoilRoot` → `next-themes` `ThemeProvider`.
 - `app/(marketing)/layout.tsx` — fetches all tracks server-side, renders `Navbar` + `SearchDialog` (client component fed server data) + page content.
@@ -138,7 +138,7 @@ below are deliberately terse; open the file for exact code.
 - `lib/search.ts` — Gemini `embedding-001` → Qdrant. `ensureCollection()` creates the `notes_platform` collection (Dot distance, `VECTOR_SIZE` env, default 768) if missing. `insertData()` walks a track's problems, pulls each Notion page, extracts plain text from known block types (`extractTextFromRecordMap`), embeds title+body, upserts one point per problem keyed by problem UUID. `getSearchResults(query)` embeds the query and returns top-5 Qdrant matches.
 - Components: `MCQQuiz` (client-side answer state, submits score once all answered, shows correct/incorrect highlighting after submit), `NotionRenderer` (dynamically-imported `react-notion-x` renderer, code/collection/equation/modal sub-renderers lazy-loaded), `ProblemSidebar` (collapsible lesson list), `SearchDialog` (Cmd/Ctrl+K palette with two tabs — Fuse.js fuzzy search over client-side track data, and a debounced AI-search tab calling `semanticSearch`; also has experimental Web Speech API voice input), `TrackCard`.
 
-### `apps/video` (port 3001)
+### `apps/video` (port 3001) — became `apps/web`, see Phase 9
 
 - `app/layout.tsx` / `providers.tsx` — identical provider stack to notes app.
 - `app/(marketing)/layout.tsx` — nav links: Courses / Profile / **Admin** (visible to everyone in the nav, but the page itself is `requireAdmin`-gated — not a security issue, just a UX note that non-admins see a nav link that will redirect them).
@@ -417,6 +417,59 @@ for the client's decision, not decided unilaterally.
 
 ---
 
+## Phase 9 — Merge notes + video into one app ✅
+
+**Client decision (2026-09-26):** one website at `www.cloudvidyaacademy.com`
+with everything in it; the client will remove the old static site there and
+put this one up. The domain is registered with Amazon Registrar, DNS is in
+Route 53, and the same zone carries the client's Google email (`MX
+smtp.google.com` + a `google-site-verification` TXT) — **DNS changes must be
+additive and must never touch MX/TXT.** The old site (S3 + CloudFront) serves
+both the apex and `www`; note its alias records before repointing so the
+change can be rolled back.
+
+- [x] `apps/video` renamed to `apps/web` (`@repo/web`, port 3000); `apps/notes`
+      folded in and removed. Dependencies unioned (`@google/generative-ai`,
+      `@qdrant/js-client-rest`, `fuse.js` added).
+- [x] **Routes:** `/` course landing (unchanged), `/courses/...` (unchanged),
+      `/notes` (was the notes app's `/`; `app/notes/layout.tsx` mounts the
+      Cmd+K `SearchDialog`), `/tracks/...` (unchanged), one `/admin` with
+      Courses / Notes / Comments tabs, one `/profile` (courses, bookmarks,
+      quiz history, admin badge), one `/auth`, union of all `/api/*` routes.
+- [x] **Actions:** `lib/actions.ts` (courses/videos) and
+      `lib/track-actions.ts` (was the notes app's `lib/actions.ts`). The two
+      files have no overlapping export names, so they sit side by side
+      instead of being merged into one file.
+- [x] **Cross-app plumbing removed:** `NEXT_PUBLIC_VIDEO_APP_URL`,
+      `NEXT_PUBLIC_NOTES_APP_URL` and `NEXT_PUBLIC_APP_URL` are gone (nothing
+      read the last one). `TrackPaywall` now links to `/courses/<slug>`
+      internally; the navbar has Courses + Notes links. Only `NEXTAUTH_URL`
+      is needed for the site's own URL.
+- [x] **Tailwind:** took the notes config (a superset: `destructive`/`popover`
+      colors and the accordion keyframes the video config lacked). Replaced
+      `require("tailwindcss-animate")` with an ES import — the `require` was
+      an existing `no-require-imports` lint error in both apps.
+- [x] **Dockerfile:** single `apps/web/Dockerfile`, port 3000. Fixed two bugs
+      both old Dockerfiles had: `packages/storage/package.json` was never
+      copied (added after they were written), and in a monorepo the standalone
+      server lands at `apps/web/server.js`, so static assets, `public/` and
+      the `CMD` all needed the `apps/web/` prefix.
+- [x] **Verified:** `tsc --noEmit` clean; `next build` generates 25 pages; the
+      standalone output run in the Docker image's layout
+      (`node apps/web/server.js`) returns 200 for `/`, `/notes`, `/auth`,
+      static assets and `/api/auth/providers`, 404 for unknown course/track
+      slugs, and 307 → `/auth` for `/admin` and `/profile` when signed out.
+      Docker itself isn't runnable on the dev machine, so the image was never
+      actually built.
+- [ ] **Follow-up:** the navbar search is courses-only and the notes Cmd+K
+      search only exists on `/notes`; a single search across both is a
+      possible improvement, not done.
+
+The `### apps/notes` and `### apps/video` reference sections above describe
+the two apps as they were before this merge and are kept for history.
+
+---
+
 ## First real build — critical bugs found and fixed
 
 Everything up to this point had only been read, schema-validated, and
@@ -588,3 +641,20 @@ Local login: **admin@example.com / admin123** (from the seed script).
   section+video, purchase it with a real Razorpay test key, confirm the
   linked notes track unlocks, download the Excel export, register/reset a
   real account) is still needed once Phase 1 infra exists.
+- **Production database is migrated but empty** (Neon, Singapore; all 3
+  migrations applied 2026-09-26, no drift). **Never run `yarn db:seed` against
+  it** — the seed creates `admin@example.com` / `admin123`. Create the real
+  admin by registering through the site, then
+  `UPDATE "User" SET admin = true WHERE email = '<their email>';`. Run
+  migrations with Neon's _direct_ (non-pooled) URL; the running app should use
+  the pooled URL plus `&pgbouncer=true&connect_timeout=15`.
+- **Vercel Hobby is for non-commercial use** and this site sells courses, so
+  the free-plan hosting assumption needs the client's decision (paid plan, or
+  another host). Vercel functions also cap the request body at ~4.5MB, which
+  breaks `/api/admin/upload-video` and `/api/admin/upload-ppt` for real lecture
+  files in production — they need client-side direct uploads to Blob/S3 (or a
+  host without that cap) before large uploads work when deployed.
+- **The GitHub repo is public** and contains the client's logo and
+  instructor photo; make it private before pushing.
+- Legal pages (Terms, Privacy, Refund/Cancellation) still don't exist and are
+  expected by Razorpay before live payments — waiting on the client's text.

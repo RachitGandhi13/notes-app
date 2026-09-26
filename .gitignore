@@ -20,7 +20,7 @@ docker-compose.override.yml
 # Local upload-fallback output and large client sample media (not for git)
 apps/*/public/uploads/
 sampleimg/
-apps/video/public/demo-lesson.mp4
+apps/web/public/demo-lesson.mp4
 
 # OS
 .DS_Store
