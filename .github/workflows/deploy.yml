@@ -1,0 +1,117 @@
+name: Deploy to AWS Lightsail
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# One deployment at a time. A second push waits instead of racing the first.
+concurrency:
+  group: lightsail-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install the Lightsail control plugin (lightsailctl)
+        run: |
+          sudo curl -fsSL "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o /usr/local/bin/lightsailctl
+          sudo chmod +x /usr/local/bin/lightsailctl
+
+      # GitHub's Ubuntu runners are x86-64, so this build runs natively (no emulation).
+      - name: Build the x86-64 image
+        env:
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$NEXT_PUBLIC_RAZORPAY_KEY_ID" \
+            -f apps/web/Dockerfile \
+            -t cloudvidya-web:latest \
+            --load .
+
+      - name: Push the image to Lightsail
+        id: push
+        env:
+          SERVICE: ${{ secrets.LIGHTSAIL_SERVICE_NAME }}
+        run: |
+          set -euo pipefail
+          aws lightsail push-container-image --service-name "$SERVICE" --label web --image cloudvidya-web:latest | tee push.log
+          # The push reports a reference such as :my-service.web.12, which the deployment must name.
+          REF=$(grep -oE ':[A-Za-z0-9-]+\.web\.[0-9]+' push.log | tail -1 || true)
+          if [ -z "$REF" ]; then
+            echo "Could not find the image reference in the push output." >&2
+            exit 1
+          fi
+          echo "image=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Create the deployment
+        env:
+          SERVICE: ${{ secrets.LIGHTSAIL_SERVICE_NAME }}
+          IMAGE: ${{ steps.push.outputs.image }}
+          # The full production environment, in dotenv format, as one secret.
+          # A deployment replaces the whole container configuration, so every value is sent each time.
+          PRODUCTION_ENV: ${{ secrets.CV_PRODUCTION_ENV }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/make-lightsail-deployment.py
+          aws lightsail create-container-service-deployment \
+            --service-name "$SERVICE" \
+            --containers "file://$RUNNER_TEMP/containers.json" \
+            --public-endpoint "file://$RUNNER_TEMP/public-endpoint.json"
+
+      - name: Wait for the deployment to become active
+        env:
+          SERVICE: ${{ secrets.LIGHTSAIL_SERVICE_NAME }}
+          IMAGE: ${{ steps.push.outputs.image }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            STATE=$(aws lightsail get-container-services --service-name "$SERVICE" \
+              --query 'containerServices[0].currentDeployment.state' --output text)
+            IMG=$(aws lightsail get-container-services --service-name "$SERVICE" \
+              --query 'containerServices[0].currentDeployment.containers.web.image' --output text)
+            echo "attempt $attempt: state=$STATE image=$IMG"
+            if [ "$STATE" = "ACTIVE" ] && [ "$IMG" = "$IMAGE" ]; then
+              echo "Deployment is active on $IMAGE"
+              exit 0
+            fi
+            if [ "$STATE" = "FAILED" ]; then
+              echo "Deployment failed. Check the container logs in Lightsail." >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for the deployment." >&2
+          exit 1
+
+      - name: Check the live site
+        env:
+          SITE_URL: https://www.cloudvidyaacademy.com
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/api/health" || true)
+            echo "attempt $attempt: $SITE_URL/api/health -> $CODE"
+            if [ "$CODE" = "200" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "The live health check did not return 200." >&2
+          exit 1
