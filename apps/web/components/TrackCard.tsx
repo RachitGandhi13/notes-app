@@ -2,6 +2,7 @@ import { Badge } from "@repo/ui";
 import { ArrowRight, BookOpen, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { needsUnoptimized } from "@/lib/images";
 
 interface TrackCardProps {
   id: string;
@@ -30,6 +31,7 @@ export function TrackCard({
             <Image
               src={image}
               alt={title}
+              unoptimized={needsUnoptimized(image)}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

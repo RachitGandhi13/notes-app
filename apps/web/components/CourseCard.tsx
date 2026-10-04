@@ -2,6 +2,7 @@ import { Badge } from "@repo/ui";
 import { ArrowRight, PlayCircle, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { needsUnoptimized } from "@/lib/images";
 
 interface CourseCardProps {
   slug: string;
@@ -29,6 +30,7 @@ export function CourseCard({
           {imageUrl ? (
             <Image
               src={imageUrl}
+              unoptimized={needsUnoptimized(imageUrl)}
               alt={title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"

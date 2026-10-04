@@ -3,6 +3,7 @@
 import { ChevronDown, Circle, FileText, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { needsUnoptimized } from "@/lib/images";
 
 interface LessonItem {
   id: string;
@@ -26,7 +27,13 @@ function LessonRow({ lesson, index }: { lesson: LessonItem; index: number }) {
     <li className="hover:bg-muted/40 flex items-center gap-4 px-5 py-4 transition-colors">
       <div className="bg-muted relative h-12 w-16 shrink-0 overflow-hidden rounded-lg">
         {lesson.thumbnail ? (
-          <Image src={lesson.thumbnail} alt="" fill className="object-cover" />
+          <Image
+            src={lesson.thumbnail}
+            alt=""
+            fill
+            unoptimized={needsUnoptimized(lesson.thumbnail)}
+            className="object-cover"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <Icon className="text-muted-foreground/50 h-5 w-5" />
@@ -60,7 +67,14 @@ function ChapterPanel({ chapter, index }: { chapter: ChapterGroup; index: number
         <div className="flex min-w-0 items-center gap-4">
           {chapter.thumbnail && (
             <div className="bg-muted relative hidden h-14 w-24 shrink-0 overflow-hidden rounded-lg sm:block">
-              <Image src={chapter.thumbnail} alt="" fill sizes="96px" className="object-cover" />
+              <Image
+                src={chapter.thumbnail}
+                alt=""
+                fill
+                sizes="96px"
+                unoptimized={needsUnoptimized(chapter.thumbnail)}
+                className="object-cover"
+              />
             </div>
           )}
           <div className="min-w-0">
