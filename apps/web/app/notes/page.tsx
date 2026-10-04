@@ -4,7 +4,10 @@ import { getTracks } from "@/lib/track-actions";
 import { TrackCard } from "@/components/TrackCard";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 
-export const revalidate = 3600; // ISR — re-generate at most every hour
+// Rendered per request. Prerendering at build time would need the database and
+// Redis during `next build`, which the Docker build doesn't have. The track list
+// is still cached in Redis (see lib/track-actions.ts).
+export const dynamic = "force-dynamic";
 
 const STEPS = [
   { Icon: BookOpen, title: "Pick a track", text: "Choose a topic and see its sections in order." },

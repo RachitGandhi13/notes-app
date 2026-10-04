@@ -1,8 +1,13 @@
 "use server";
 
 import { prisma } from "@repo/db/client";
-import { requireAuth, requireAdmin } from "@repo/auth";
+import { AuthError, requireAuth, requireAdmin } from "@repo/auth";
 import { revalidatePath } from "next/cache";
+import { userCanAccessContent } from "@/lib/access";
+
+// Upper bounds on user text, so one request can't store an arbitrarily large body.
+const MAX_BODY = 5000;
+const MAX_TITLE = 200;
 
 // ── Comments ───────────────────────────────────────────────────────────────────
 
@@ -19,13 +24,18 @@ export async function getComments(contentId: string) {
 
 export async function addComment(contentId: string, body: string) {
   const session = await requireAuth();
-  if (!body.trim()) throw new Error("Comment body is required.");
+  if (!(await userCanAccessContent(contentId))) {
+    throw new AuthError(403, "Buy this course to join the discussion.");
+  }
+  const text = body.trim();
+  if (!text) throw new Error("Comment body is required.");
+  if (text.length > MAX_BODY) throw new Error(`Comments are limited to ${MAX_BODY} characters.`);
 
   await prisma.comment.create({
     data: {
       contentId,
       authorId: session.user.id,
-      body: body.trim(),
+      body: text,
       approved: false, // requires admin approval
     },
   });
@@ -98,14 +108,23 @@ export async function getQuestions(contentId: string) {
 
 export async function addQuestion(contentId: string, title: string, body: string) {
   const session = await requireAuth();
-  if (!title.trim() || !body.trim()) throw new Error("Title and body are required.");
+  if (!(await userCanAccessContent(contentId))) {
+    throw new AuthError(403, "Buy this course to ask questions.");
+  }
+  const cleanTitle = title.trim();
+  const cleanBody = body.trim();
+  if (!cleanTitle || !cleanBody) throw new Error("Title and body are required.");
+  if (cleanTitle.length > MAX_TITLE)
+    throw new Error(`Titles are limited to ${MAX_TITLE} characters.`);
+  if (cleanBody.length > MAX_BODY)
+    throw new Error(`Questions are limited to ${MAX_BODY} characters.`);
 
   await prisma.question.create({
     data: {
       contentId,
       authorId: session.user.id,
-      title: title.trim(),
-      body: body.trim(),
+      title: cleanTitle,
+      body: cleanBody,
     },
   });
   revalidatePath(`/courses`);
@@ -132,13 +151,23 @@ export async function voteOnQuestion(questionId: string, voteType: "UPVOTE" | "D
 
 export async function addAnswer(questionId: string, body: string) {
   const session = await requireAuth();
-  if (!body.trim()) throw new Error("Answer body is required.");
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    select: { contentId: true },
+  });
+  if (!question) throw new Error("Question not found.");
+  if (!(await userCanAccessContent(question.contentId))) {
+    throw new AuthError(403, "Buy this course to answer questions.");
+  }
+  const text = body.trim();
+  if (!text) throw new Error("Answer body is required.");
+  if (text.length > MAX_BODY) throw new Error(`Answers are limited to ${MAX_BODY} characters.`);
 
   await prisma.answer.create({
     data: {
       questionId,
       authorId: session.user.id,
-      body: body.trim(),
+      body: text,
     },
   });
   revalidatePath(`/courses`);

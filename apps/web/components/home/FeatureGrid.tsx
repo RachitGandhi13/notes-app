@@ -1,9 +1,9 @@
 import {
-  Award,
   ClipboardCheck,
   FileText,
   HeartHandshake,
   LineChart,
+  ListChecks,
   MessagesSquare,
   MonitorPlay,
   Rocket,
@@ -43,9 +43,9 @@ const FEATURES: { Icon: LucideIcon; title: string; text: string; tint: string }[
     tint: "from-sky-500 to-indigo-400",
   },
   {
-    Icon: Award,
-    title: "Certificates",
-    text: "Earn a certificate when you complete a course.",
+    Icon: ListChecks,
+    title: "Practice quizzes",
+    text: "Check what you've learned with multiple-choice questions after every section.",
     tint: "from-rose-500 to-pink-400",
   },
   {
@@ -73,8 +73,8 @@ export function FeatureGrid() {
           Everything you need to go from learning to <span className="text-primary">doing</span>
         </h2>
         <p className="text-muted-foreground mt-3 leading-relaxed">
-          Video courses, notes, quizzes and certificates — all in one place, built around hands-on
-          AWS and DevOps training.
+          Video courses, notes and quizzes — all in one place, built around hands-on AWS and DevOps
+          training.
         </p>
       </div>
 

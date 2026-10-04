@@ -742,6 +742,233 @@ Local login: **admin@example.com / admin123** (from the seed script).
 
 ---
 
+## Phase 12 — Pre-deployment cleanup & security hardening ✅
+
+**Decision (2026-10-04):** hosting is **AWS App Runner** running the
+`apps/web/Dockerfile` image, with Route 53 for DNS. The app is server-rendered
+(16 route handlers, 4 `"use server"` modules, session-gated pages), so it cannot
+be a static S3 + CloudFront site. A `next build` with `output: "export"` fails
+on the first API route, and the full list of server-only features is above.
+
+- [x] **Deleted:** `apps/notes/` (untracked leftover with a stale `.env`),
+      `apps/cloudVidya.png` and `apps/veerannaSir.png` (byte-identical copies of
+      files in `public/`), `apps/web/public/demo-lesson.mp4` and
+      `course-fullstack-thumbnail.jpg` (seed-only; the video was identical to the
+      deleted `sampleimg/` copy, so it is gone from disk), `sampleimg/`,
+      `components/NavSearchTrigger.tsx`, and dead actions `getCertificate`,
+      `claimCertificate`, `markTrackIndexed`.
+- [x] **UI package:** removed 17 unused shadcn components, plus `use-toast.ts`
+      (imported the deleted toast) and `globals.css` (never imported). The index
+      exports only the 8 active modules. `packages/ui` typechecks; it previously
+      failed on a missing session type.
+- [x] **Dependencies removed:** `framer-motion` (apps/web, packages/ui),
+      `react-scroll-to-top`, and 10 unused Radix packages.
+- [x] **Node 22** everywhere (Dockerfile `node:22-alpine`, root `engines`). Node 20
+      is past end-of-life, and the locked `eslint-visitor-keys@5` needs Node
+      20.19+. `openssl` added to the Alpine image for Prisma.
+- [x] **Qdrant pinned** to `~1.18.0` in `apps/web`. `1.19` requires Node 22+ and
+      `1.18` still exposes the `query()` call `lib/search.ts` uses (checked in the
+      published typings). Relax to `^1.18` on Node 22 if you want the latest.
+- [x] **Ignores:** `.gitignore` and `.dockerignore` now cover `out/`, `build/`,
+      `*.log`, `.env*` (except `.env.example`), `.vercel/`, `.eslintcache`,
+      `coverage/`, and `apps/*/public/uploads`.
+
+**Security fixes**
+
+- [x] **Paid courses could be taken for free.** `purchaseCourse` never checked
+      the price, so any signed-in user could `POST /api/purchase` with a paid
+      course ID. It now refuses paid and hidden courses.
+- [x] **Paid lessons readable by anyone.** `getCourse` returned every `videoUrl`
+      and `getContent` returned any lesson by ID. Both are now gated. The course
+      outline has no URLs, and `getContent` returns `null` unless the caller owns
+      the lesson's course (or is an admin). Lessons were also reachable across
+      courses (buy course A, read course B's lessons by ID). Fixed by resolving
+      each lesson's course.
+- [x] **Bundled slides and quizzes readable by anyone.** `getTrack` returned
+      `pptUrl` for every section, and `getProblem` returned any section. Both are
+      now gated on the section's track.
+- [x] **Bookmarks leaked video URLs.** `toggleBookmark` had no purchase check,
+      and `getBookmarks` returned `videoMetadata`. Both are fixed.
+- [x] **Comments, questions and answers** on paid lessons need the purchase.
+      Text fields have length limits (5000 characters, 200 for titles).
+- [x] **Quiz scores** are checked as integers in `0..questionCount` and need
+      access to the section.
+- [x] **Rate limiting** trusted the leftmost `x-forwarded-for` hop, which the
+      client controls. It now uses the rightmost hop. Login was not rate limited
+      at all. It is now 10 attempts per email per 15 minutes.
+- [x] **Razorpay:** signatures compared in constant time, and the webhook grants
+      access only when the captured amount matches the order.
+- [x] **Upload validation:** each file must match an allowlist of extension and
+      magic bytes (JPEG/PNG/WebP, PDF/PPT/PPTX, MP4/MOV/WebM). Video is capped at
+      1 GB. Cross-origin multipart posts are rejected by Origin. A declared
+      `Content-Length` over the cap gets a 413. Before this, a renamed `.html`
+      could be stored under `public/`.
+- [x] **Revalidate endpoint:** the secret moved from the query string to an
+      `Authorization: Bearer` header and is compared with `timingSafeEqual`.
+      `path` must be site-relative.
+- [x] **Email:** the register name is HTML-escaped in the verification email.
+      Password length is capped at 128. The recipient address is no longer logged.
+- [x] **No localhost fallback** for `NEXTAUTH_URL`, so links can't silently point
+      at localhost. (The brief said `AUTH_URL`; this codebase reads `NEXTAUTH_URL`.)
+- [x] **Security headers** in `next.config.js`: HSTS, a Content-Security-Policy
+      limited to the hosts the app uses (Razorpay, Office viewer), X-Frame-Options,
+      nosniff, Referrer-Policy and Permissions-Policy. `X-Powered-By` is off.
+- [x] **Session lifetime** is 7 days (NextAuth's default is 30).
+- [x] **Search** query capped at 200 characters. Qdrant URL fails loudly in
+      production rather than defaulting to localhost.
+- [x] **Cache key** for courses moved to `course:v2:` so entries that still hold
+      video URLs stop being served.
+
+**Verification**
+
+- `tsc --noEmit` passes in `apps/web`, `packages/ui`, `packages/auth`,
+  `packages/db`, `packages/storage`, `packages/cache` and `packages/store`.
+- `yarn lint` passes: 0 errors, 26 `no-explicit-any` warnings (unchanged).
+- Strict `yarn install --frozen-lockfile` passes under Node 22.
+- `next build` passes under Node 22 (28 routes; first-load JS down about 20 kB on
+  the home and admin pages after removing `framer-motion`).
+- The standalone server, laid out like the Dockerfile runner, returns the expected
+  security headers, rejects unauthenticated purchase, bookmark and progress
+  calls with 401, and rejects the old query-string revalidate secret.
+- Paywall integration tests run against a throwaway local database: 40 checks,
+  all passing with the fixes. The same suite against the original code fails 23
+  of them. The test database is separate from the dev database.
+- **Not verified here:** the Docker image build (the Docker daemon's API socket
+  timed out during this run), and a live browser pass over the CSP.
+
+## Phase 13 — Razorpay checkout hardening (test mode) ✅
+
+Phase 4 built the Razorpay flow. This pass checked it against the client's
+requirements and fixed the gaps. The test key ID (`rzp_test_…`) is set in the
+local env files. **The key secret and webhook secret are not set yet.**
+
+- [x] **Amount comes from the server.** The order endpoint takes only `courseId`
+      and ignores any `amount` in the body. The price is read from the database
+      and converted to paise. A tampered request can't change the charge.
+- [x] **Order endpoint:** rejects hidden, free and already-owned courses, and
+      rate limits to 10 orders per user per minute. It returns `orderId`,
+      `amount` (paise), `currency` and the key ID. Notes carry `userId` and
+      `courseId`.
+- [x] **Signature check** uses `crypto.timingSafeEqual` over the HMAC-SHA256 of
+      `order_id|payment_id`. Malformed input is rejected rather than throwing.
+- [x] **Webhook** checks its signature the same way and grants access only when
+      the captured amount matches the order. A missing secret returns a clear 500.
+- [x] **Missing configuration fails loudly** with "Payments are not configured
+      yet" in the logs and the response, instead of an unhandled crash.
+- [x] **Checkout button:** `checkout.js` loads once even under double clicks. It
+      is locked from the first click until the modal closes. Errors are shown
+      inline, including failed verification (with the payment ID for support).
+      Name and email are pre-filled from the session. The business name is
+      "Cloud Vidya Academy". It refuses to open checkout if the browser's key ID
+      differs from the key the server used for the order.
+- [x] **Env:** `NEXT_PUBLIC_RAZORPAY_KEY_ID` added to `.env.example`. The
+      Dockerfile takes it as a build argument, because `NEXT_PUBLIC_*` values
+      are compiled in at build time. The secret is never in the bundle (checked).
+- [ ] **Needed from the client:** `RAZORPAY_KEY_SECRET` and
+      `RAZORPAY_WEBHOOK_SECRET`. Without them, checkout reports "Payments are not
+      configured yet". Webhook URL to register in the dashboard:
+      `https://www.cloudvidyaacademy.com/api/razorpay/webhook`.
+- [ ] **Browser run of the full checkout** (test card `4111 1111 1111 1111`)
+      once the secret is set. Not done yet.
+- [ ] **Before going live:** switch to `rzp_live_` keys in App Runner and the
+      build argument, and publish Terms, Privacy and Refund pages (Razorpay
+      requires them, see Open risks).
+
+**Verification:** `tsc --noEmit` clean in `apps/web`; `yarn lint` 0 errors
+(25 pre-existing `no-explicit-any` warnings). 36 payment route checks pass
+against the throwaway database with the SDK stubbed, covering order pricing,
+signature verification, idempotency, webhook amount matching and missing
+configuration. Production build passes, and the browser bundle contains the
+public key ID but no secret variable names.
+
+## Phase 14 — Live Razorpay and production hardening ✅ (code); deploy pending
+
+**Live keys:** the client's live key ID and secret are in `apps/web/.env.production.local`
+(gitignored, mode 600, excluded from the Docker build). The key pair was checked
+with one read-only API call. Local `.env` keeps the test key, so `yarn dev` cannot
+create live charges. Live values belong in App Runner, not in files in the repo.
+
+- [x] **Live integration:** same flow as Phase 13. The order amount comes from the
+      database and is converted to paise. Verification uses `crypto.timingSafeEqual`.
+      The webhook returns explicit statuses: 400 for bad signature or body, 500 when
+      unconfigured, and 200 with `granted`, `already_granted`, `ignored`,
+      `unknown_order` or `amount_mismatch`. Checkout locks the button while processing.
+- [x] **Startup check** (`apps/web/lib/env.ts`, `instrumentation.ts`): in production the
+      server refuses to start when a required variable is missing, and names every
+      missing one. Verified: an empty environment fails with the full list.
+- [x] **No silent fallbacks:** `REDIS_URL` and `QDRANT_URL` no longer default to
+      localhost. Production uploads refuse local disk, which is lost on every deploy.
+      Production email refuses to skip sending when SMTP is unset.
+- [x] **Logging:** all `console.log` and `console.warn` removed from application code.
+      `console.error` stays for real failures. The dev-only email print is gated to
+      `NODE_ENV=development`. The seed script keeps its `console.log` (CLI only).
+- [x] **Boundaries and metadata:** `not-found.tsx`, `error.tsx`, `global-error.tsx`,
+      an icon (`app/icon.png`), a title template and `metadataBase`. The description
+      no longer promises certificates.
+- [x] **Assets:** the logo was reduced to 256 px and the instructor photo to 320 px.
+      Removed the untracked local dev upload output.
+- [x] **Build:** `tsc --noEmit` clean in every package. `yarn lint`: 0 errors, 25
+      `no-explicit-any` warnings. Standalone build passes with
+      `NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_…` as build argument. The browser bundle
+      contains the live public key ID and not the secret.
+- [x] **Tests:** 36 payment checks, 40 paywall checks and the helper checks pass.
+      The standalone server boots with a full placeholder environment, and returns
+      the 404 page, the favicon, the security headers, 401/400 on unauthenticated
+      Razorpay routes, and no stack traces in responses.
+- [ ] **Docker image build not run.** The Docker daemon's API socket timed out. Run
+      `docker build --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_… -f apps/web/Dockerfile -t cloudvidya-web .`
+      from the repo root once Docker Desktop responds.
+- [ ] **Browser check of checkout, and a first real payment.** Do this with a low-price
+      course, then refund it from the dashboard. Live charges move real money.
+- [ ] **Rotate the live key secret.** It was pasted into a chat transcript. Regenerate
+      it in the Razorpay dashboard, then update App Runner.
+- [ ] **Webhook secret:** `RAZORPAY_WEBHOOK_SECRET` has not been provided. Until it is set,
+      the webhook returns 500 and Razorpay keeps retrying. Register
+      `https://www.cloudvidyaacademy.com/api/razorpay/webhook` in the dashboard.
+
+**Required in App Runner (production runtime):**
+`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GITHUB_ID`, `GITHUB_SECRET`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`,
+`SMTP_FROM`, `RAZORPAY_KEY_ID` (`rzp_live_…`), `RAZORPAY_KEY_SECRET`,
+`RAZORPAY_WEBHOOK_SECRET`, `BLOB_READ_WRITE_TOKEN`, `REDIS_URL`, `REVALIDATE_SECRET`.
+Optional: `QDRANT_URL`, `QDRANT_API_KEY`, `GOOGLEAI_API_KEY`, `VECTOR_SIZE`.
+**Docker build argument:** `NEXT_PUBLIC_RAZORPAY_KEY_ID`, set to the same value as `RAZORPAY_KEY_ID`.
+
+## Phase 15 — Launch blockers resolved (code) ✅; Docker and deploy pending
+
+- [x] **Certificate promises removed** from the feature grid, hero card, featured
+      course list, marketing intro and README. Replaced with practice quizzes and
+      lesson Q&A, which exist. The instructor's own AWS certifications stay: they
+      are real credentials.
+- [x] **Email verification required for password login when SMTP is configured.**
+      The check runs after the password matches, so it reveals nothing about
+      whether an address exists. With SMTP unset (development), login is not gated.
+      The sign-in page explains the situation and points to "Forgot password".
+      Following a password-reset link also marks the email verified. This is the
+      way out for accounts that never verified.
+- [x] **Post-registration sign-in no longer redirects** to a generic error. The
+      "check your inbox" message stays on screen when verification is required.
+- [x] **`/notes` renders per request** (`dynamic = "force-dynamic"`). It used to be
+      prerendered hourly, which needed the database and Redis during `next build`.
+      The Docker build has neither, so it would have failed. The track list is still
+      cached in Redis. The ISR hour is gone.
+- [x] **Build no longer depends on the environment.** The standalone build passes
+      with `DATABASE_URL` and `REDIS_URL` unset.
+- [x] **Verified:** `tsc --noEmit` clean in every package. `yarn lint` 0 errors (25
+      `no-explicit-any` warnings). The authorize gate was tested against the real
+      `config.ts` and database: 7 of 7 pass. Helper checks pass.
+- [ ] **Docker image not built.** The Docker Desktop daemon is unresponsive. A restart
+      attempt stopped the local Postgres container that serves port 5433, so the dev
+      database is down until Docker is running again.
+- [ ] **Re-run the database suites** (payments 36, paywall 40) once Postgres is back.
+      They passed before the auth change. The auth change is covered by the gate tests.
+
+**Before taking password logins in production:** count existing accounts that will be
+gated. Run this on the production database and decide what to do with the result:
+`SELECT count(*) FROM "User" WHERE password IS NOT NULL AND "emailVerified" IS NULL;`
+Those accounts can verify through "Forgot password". Marking them verified in bulk is
+a decision for the client.
+
 ## Open risks / known issues
 
 - `turbo.json` uses the Turbo v1 `"pipeline"` key while `turbo@^2.0.0` is
@@ -796,3 +1023,35 @@ Local login: **admin@example.com / admin123** (from the seed script).
   instructor photo; make it private before pushing.
 - Legal pages (Terms, Privacy, Refund/Cancellation) still don't exist and are
   expected by Razorpay before live payments — waiting on the client's text.
+
+- ~~**Certificates are advertised but not built.**~~ Resolved in Phase 15: the
+  promise was removed from the copy. Building certificates later is a separate feature.
+- **Partly resolved (Phase 15):** password login now requires a verified email
+  when SMTP is configured. **Still open:** GitHub and Google use
+  `allowDangerousEmailAccountLinking`. Removing it, or using a verified-email
+  check, closes the remaining path where an OAuth sign-in attaches to an existing
+  account with the same address.
+- **Password reset does not end existing sessions.** JWTs are stateless. Fix:
+  store `passwordChangedAt` and reject tokens issued before it.
+- **Rate limits are in-memory per instance.** Behind App Runner with more than
+  one instance, each instance has its own counters. Move them to the Redis
+  already used by `packages/cache`. Comments, questions and quiz submissions
+  are not rate limited.
+- **Quiz answers ship to the browser.** Instant feedback needs `correctOption` on
+  the client. Scores are checked for range, not authenticity.
+- **Paid video is a plain URL.** Once a student has bought a course they can
+  download the file, and the right-click block in `VideoPlayer` is cosmetic.
+  Protecting it needs signed or expiring URLs.
+- **Uploads are buffered in memory.** A 1 GB video takes about 1 GB of container
+  memory. Large lectures need direct-to-storage uploads (S3 or Blob).
+- **CSP allows `unsafe-inline` scripts** because Next.js hydration needs them.
+  Nonces would be stronger. The policy has not been checked in a browser.
+- **Server Actions behind a proxy:** Next.js rejects a Server Action whose Origin
+  does not match the host. Confirm a comment submission works on the custom
+  domain after deploy, and set `serverActions.allowedOrigins` if it doesn't.
+- **Certificate and Notion dead branches**: `courses/[courseSlug]/[contentId]`
+  still renders a "Notion content" placeholder. Remove it after confirming no
+  `NOTION` rows exist. The Prisma schema is left as-is.
+- **Operational:** set AWS Budgets alerts and App Runner max instances; use Neon's
+  pooled URL in the app and the direct URL for migrations; make the repo private
+  before pushing.

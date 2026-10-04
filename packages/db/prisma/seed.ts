@@ -39,7 +39,7 @@ async function main() {
       title: "What is TypeScript?",
       description: "An introduction to TypeScript and why it exists.",
       // Placeholder — a real upload replaces this file once the admin adds one.
-      pptUrl: "/uploads/placeholder.pptx",
+      pptUrl: null,
       type: ProblemType.PPT,
     },
   });
@@ -85,7 +85,7 @@ async function main() {
     create: {
       title: "Full Stack Development 101",
       description: "A complete guide to modern full stack development.",
-      imageUrl: "/course-fullstack-thumbnail.jpg",
+      imageUrl: null,
       price: 0,
       slug: "fullstack-dev-101",
     },
@@ -111,7 +111,8 @@ async function main() {
       parentId: rootFolder.id,
       videoMetadata: {
         create: {
-          videoUrl: "/demo-lesson.mp4",
+          // Dev-only placeholder: replace with any YouTube URL to preview playback.
+          videoUrl: "https://www.youtube.com/watch?v=dev-seed-placeholder",
           drmProtected: false,
         },
       },

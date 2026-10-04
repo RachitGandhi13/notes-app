@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+FROM node:22-alpine AS base
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # ── deps ──────────────────────────────────────────────────────────────────────
@@ -27,6 +27,11 @@ COPY . .
 RUN yarn db:generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* values are compiled into the browser bundle, and .dockerignore
+# keeps .env out of the build context, so the Razorpay public key ID must be
+# passed as a build argument. It is not a secret.
+ARG NEXT_PUBLIC_RAZORPAY_KEY_ID
+ENV NEXT_PUBLIC_RAZORPAY_KEY_ID=$NEXT_PUBLIC_RAZORPAY_KEY_ID
 RUN yarn workspace @repo/web build
 
 # ── runner ────────────────────────────────────────────────────────────────────

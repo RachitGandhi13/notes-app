@@ -57,7 +57,7 @@ export function FeaturedCourse({
           </div>
 
           <ul className="text-muted-foreground space-y-2 text-sm">
-            {["Lifetime access", "Progress tracking & bookmarks", "Certificate on completion"].map(
+            {["Lifetime access", "Progress tracking & bookmarks", "Q&A on every lesson"].map(
               (item) => (
                 <li key={item} className="flex items-center gap-2">
                   <BadgeCheck className="h-4 w-4 shrink-0 text-green-500" />

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { requestPasswordReset } from "@repo/auth";
+import { clientIp } from "@/lib/security";
+import { requestPasswordReset, getAppUrl } from "@repo/auth";
 
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
-    const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-    const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+    const ip = clientIp(req);
+    const appUrl = getAppUrl();
 
     await requestPasswordReset(email, ip, appUrl);
 

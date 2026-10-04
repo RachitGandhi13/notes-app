@@ -1,9 +1,10 @@
 "use server";
 
 import { prisma } from "@repo/db/client";
-import { getSession, requireAuth, requireAdmin } from "@repo/auth";
+import { AuthError, getSession, requireAuth, requireAdmin } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
+import { userCanAccessContent } from "@/lib/access";
 
 // ── Courses ────────────────────────────────────────────────────────────────────
 
@@ -11,9 +12,10 @@ export async function getCourses(query?: string) {
   // Search results aren't cached — arbitrary query strings would pollute the
   // cache; a plain title filter is cheap enough to run straight against
   // Postgres every time.
-  if (query?.trim()) {
+  const search = query?.trim().slice(0, 200);
+  if (search) {
     return prisma.course.findMany({
-      where: { hidden: false, title: { contains: query.trim(), mode: "insensitive" } },
+      where: { hidden: false, title: { contains: search, mode: "insensitive" } },
       include: { _count: { select: { purchases: true } } },
       orderBy: { createdAt: "desc" },
     });
@@ -36,8 +38,11 @@ function _fetchCourses() {
   });
 }
 
+// The course outline is public, so it carries no playable URLs. Video and
+// Notion metadata come from getContent(), which checks purchase first. The
+// cache key is versioned because older entries still hold the URLs.
 export async function getCourse(slug: string) {
-  const CACHE_KEY = `course:${slug}`;
+  const CACHE_KEY = `course:v2:${slug}`;
   const cached = await cacheGet<Awaited<ReturnType<typeof _fetchCourse>>>(CACHE_KEY);
   if (cached) return cached;
 
@@ -56,14 +61,8 @@ function _fetchCourse(slug: string) {
         include: {
           content: {
             include: {
-              videoMetadata: true,
-              notionMetadata: true,
               children: {
                 where: { hidden: false },
-                include: {
-                  videoMetadata: true,
-                  notionMetadata: true,
-                },
                 orderBy: { createdAt: "asc" },
               },
             },
@@ -77,8 +76,11 @@ function _fetchCourse(slug: string) {
 
 // ── Content ────────────────────────────────────────────────────────────────────
 
+// Returns the lesson with its playable URL, but only to someone who owns its
+// course. Anyone else gets null, the same as an unknown ID, so the response
+// doesn't reveal that the content exists.
 export async function getContent(contentId: string) {
-  return prisma.content.findUnique({
+  const content = await prisma.content.findUnique({
     where: { id: contentId },
     include: {
       videoMetadata: true,
@@ -86,6 +88,10 @@ export async function getContent(contentId: string) {
       parent: true,
     },
   });
+  if (!content) return null;
+  if (content.hidden && !(await getSession())?.user?.admin) return null;
+  if (!(await userCanAccessContent(contentId))) return null;
+  return content;
 }
 
 // ── Purchases ──────────────────────────────────────────────────────────────────
@@ -119,9 +125,20 @@ export async function hasPurchased(courseId: string): Promise<boolean> {
   return !!purchase;
 }
 
-// Free-course direct enrollment (Razorpay handles paid courses via /api/razorpay/*)
+// Free-course direct enrollment (Razorpay handles paid courses via /api/razorpay/*).
+// The price is checked here, on the server: without that check, any signed-in
+// user could enroll in a paid course by calling this action directly.
 export async function purchaseCourse(courseId: string) {
   const session = await requireAuth();
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { price: true, hidden: true },
+  });
+  if (!course || course.hidden) throw new AuthError(403, "This course is not available.");
+  if (course.price > 0) {
+    throw new AuthError(403, "This course is paid. Use checkout to enroll.");
+  }
+
   const existing = await prisma.userPurchases.findUnique({
     where: { userId_courseId: { userId: session.user.id, courseId } },
   });
@@ -154,6 +171,9 @@ export async function getCourseProgress(courseId: string) {
 
 export async function markProgress(contentId: string, markAsRead: boolean) {
   const session = await requireAuth();
+  if (!(await userCanAccessContent(contentId))) {
+    throw new AuthError(403, "Buy this course to track progress.");
+  }
   await prisma.videoProgress.upsert({
     where: { userId_contentId: { userId: session.user.id, contentId } },
     create: { userId: session.user.id, contentId, markAsRead },
@@ -164,18 +184,27 @@ export async function markProgress(contentId: string, markAsRead: boolean) {
 
 // ── Bookmarks ──────────────────────────────────────────────────────────────────
 
+// Titles and thumbnails only. The bookmark list never carries a playable URL.
 export async function getBookmarks() {
   const session = await getSession();
   if (!session?.user) return [];
   return prisma.bookmark.findMany({
     where: { userId: session.user.id },
-    include: { content: { include: { videoMetadata: true } } },
+    select: {
+      id: true,
+      contentId: true,
+      createdAt: true,
+      content: { select: { id: true, title: true, type: true, thumbnail: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 }
 
 export async function toggleBookmark(contentId: string) {
   const session = await requireAuth();
+  if (!(await userCanAccessContent(contentId))) {
+    throw new AuthError(403, "Buy this course to bookmark its lessons.");
+  }
   const existing = await prisma.bookmark.findUnique({
     where: { userId_contentId: { userId: session.user.id, contentId } },
   });
@@ -187,25 +216,6 @@ export async function toggleBookmark(contentId: string) {
     data: { userId: session.user.id, contentId },
   });
   return true;
-}
-
-// ── Certificate ────────────────────────────────────────────────────────────────
-
-export async function getCertificate(courseId: string) {
-  const session = await getSession();
-  if (!session?.user) return null;
-  return prisma.certificate.findUnique({
-    where: { userId_courseId: { userId: session.user.id, courseId } },
-  });
-}
-
-export async function claimCertificate(courseId: string) {
-  const session = await requireAuth();
-  return prisma.certificate.upsert({
-    where: { userId_courseId: { userId: session.user.id, courseId } },
-    update: {},
-    create: { userId: session.user.id, courseId },
-  });
 }
 
 // ── Admin: Course / section / video management ────────────────────────────────

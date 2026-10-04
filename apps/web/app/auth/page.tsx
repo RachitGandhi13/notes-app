@@ -40,7 +40,11 @@ function AuthPageInner() {
       redirect: false,
     });
     setLoading(false);
-    if (res?.error) {
+    if (res?.error === "EMAIL_NOT_VERIFIED") {
+      setCredError(
+        'Verify your email before signing in. Check your inbox for the link, or use "Forgot password" to get a new one.'
+      );
+    } else if (res?.error) {
       setCredError("Invalid email or password.");
     } else if (res?.url) {
       window.location.href = res.url;
@@ -62,7 +66,15 @@ function AuthPageInner() {
         setCredError(data.error ?? "Registration failed.");
       } else {
         setRegisterSuccess(true);
-        await signIn("credentials", { email, password, callbackUrl });
+        // No redirect: when email verification is required, this fails and the
+        // success message ("check your inbox") stays on screen instead.
+        const signed = await signIn("credentials", {
+          email,
+          password,
+          callbackUrl,
+          redirect: false,
+        });
+        if (signed?.url && !signed.error) window.location.href = signed.url;
       }
     } catch {
       setCredError("Something went wrong. Please try again.");

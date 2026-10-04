@@ -4,14 +4,16 @@ import NextTopLoader from "nextjs-toploader";
 import { Navbar, Footer } from "@repo/ui";
 import { Providers } from "./providers";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "CloudVidya Academy",
+  metadataBase: new URL(SITE_URL),
+  title: { default: "CloudVidya Academy", template: "%s · CloudVidya Academy" },
   description:
-    "Video courses, structured notes and quizzes for AWS, DevOps and Cloud — with progress tracking and certificates.",
+    "Video courses, structured notes and quizzes for AWS, DevOps and Cloud, with progress tracking.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

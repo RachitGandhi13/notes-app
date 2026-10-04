@@ -24,7 +24,6 @@ with purchase-gated access for paid courses.
   (Checkout modal + signature-verified confirmation + a webhook backstop)
 - Course search from the navbar and hero
 - Per-video progress tracking, bookmarks, comments, and Q&A per video
-- Certificates on course completion
 - Admin can download a full student roster as an Excel file (name, email,
   course, amount paid, Razorpay order/payment IDs, purchase date)
 
@@ -94,7 +93,7 @@ packages/
 ## Getting started
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (Node 22 or newer)
 yarn install
 
 # 2. Copy env template and fill in values. Next.js only loads env files from
@@ -118,7 +117,7 @@ yarn dev        # http://localhost:3000
 
 ### Required environment variables
 
-See `.env.example` for the full list. At minimum you'll need:
+See `.env.example` for the full list, including the production variables the server checks at startup. At minimum you'll need:
 
 - `DATABASE_URL` — Postgres connection string
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL` — `NEXTAUTH_URL` is the site's own public URL
@@ -129,17 +128,18 @@ See `.env.example` for the full list. At minimum you'll need:
 - `BLOB_READ_WRITE_TOKEN` — cloud storage for uploads (thumbnails, slides, videos).
   Without it files go to local disk, which only works in development: a
   production server won't serve files written after it started
-- `SMTP_*` — verification and password-reset emails (logged instead of sent when unset)
+- `SMTP_*` — verification and password-reset emails (required in production; printed to the terminal in development)
 
 ## Deployment
 
 The site is a single Next.js app that goes on one domain
-(`www.cloudvidyaacademy.com`). The production Postgres is on Neon; apply
-migrations with `prisma migrate deploy` using Neon's direct (non-pooled)
-connection string, and give the running app the pooled one. Where the app
-itself is hosted (Vercel or otherwise) is still being decided — see the
-open risks in `DEVELOPMENT.md` before choosing. A `Dockerfile` for
-container hosting is at `apps/web/Dockerfile`.
+(`www.cloudvidyaacademy.com`). It is hosted on AWS App Runner from the
+container image built by `apps/web/Dockerfile` (run from the repo root), with
+DNS in Route 53. The production Postgres is on Neon; apply migrations with
+`prisma migrate deploy` using Neon's direct (non-pooled) connection string,
+and give the running app the pooled one. Secrets are set as App Runner
+environment variables, never copied into the image. See `DEVELOPMENT.md`
+(Phase 12 and the open risks) before going live.
 
 ## Status
 

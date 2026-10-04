@@ -1,10 +1,11 @@
 "use server";
 
 import { prisma } from "@repo/db/client";
-import { getSession, requireAdmin, requireAuth } from "@repo/auth";
+import { AuthError, getSession, requireAdmin, requireAuth } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
 import { validateQuestion, type QuestionInput } from "@/lib/question-validation";
+import { userCanAccessProblem } from "@/lib/access";
 
 // ── Tracks ─────────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function _fetchTracks() {
 }
 
 export async function getTrack(trackId: string) {
-  return prisma.track.findUnique({
+  const track = await prisma.track.findUnique({
     where: { id: trackId },
     include: {
       categories: { include: { category: true } },
@@ -44,6 +45,19 @@ export async function getTrack(trackId: string) {
       course: { select: { id: true, slug: true, price: true, title: true } },
     },
   });
+  if (!track) return null;
+
+  const session = await getSession();
+  if (session?.user?.admin || (await hasTrackAccess(track))) return track;
+
+  // Locked: keep the outline (titles) for the paywall, but drop the slide URLs.
+  return {
+    ...track,
+    problems: track.problems.map((tp) => ({
+      ...tp,
+      problem: { ...tp.problem, pptUrl: null },
+    })),
+  };
 }
 
 // ── Track entitlement (Phase 3) ─────────────────────────────────────────────────
@@ -64,7 +78,10 @@ export async function hasTrackAccess(track: { courseId: string | null }): Promis
 
 // ── Problems ───────────────────────────────────────────────────────────────────
 
+// A section's slides and quiz are paid content for bundled tracks, so they are
+// returned only to users who can open one of the tracks it appears in.
 export async function getProblem(problemId: string) {
+  if (!(await userCanAccessProblem(problemId))) return null;
   return prisma.problem.findUnique({
     where: { id: problemId },
     include: { mcqQuestions: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
@@ -75,6 +92,15 @@ export async function getProblem(problemId: string) {
 
 export async function submitQuizScore(problemId: string, score: number) {
   const session = await requireAuth();
+  if (!(await userCanAccessProblem(problemId))) {
+    throw new AuthError(403, "Buy this track to save quiz scores.");
+  }
+  // The score is computed in the browser, so check it is a plausible count of
+  // correct answers before it is saved.
+  const total = await prisma.mCQQuestion.count({ where: { problemId } });
+  if (!Number.isInteger(score) || score < 0 || score > total) {
+    throw new Error("Invalid score.");
+  }
   await prisma.quizScore.create({
     data: { problemId, score, userId: session.user.id },
   });
@@ -301,12 +327,6 @@ export async function deleteQuestion(questionId: string) {
   const q = await prisma.mCQQuestion.delete({ where: { id: questionId } });
   const trackId = await trackIdOfProblem(q.problemId);
   if (trackId) await refreshTrack(trackId);
-}
-
-export async function markTrackIndexed(trackId: string) {
-  await requireAdmin();
-  await prisma.track.update({ where: { id: trackId }, data: { inSearch: true } });
-  await cacheDel("tracks:all");
 }
 
 // ── AI Semantic Search ─────────────────────────────────────────────────────────

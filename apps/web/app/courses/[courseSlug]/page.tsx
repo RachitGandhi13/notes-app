@@ -181,6 +181,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                 courseId={course.id}
                 price={course.price}
                 courseSlug={params.courseSlug}
+                prefill={{ name: session?.user?.name, email: session?.user?.email }}
               />
             )}
 

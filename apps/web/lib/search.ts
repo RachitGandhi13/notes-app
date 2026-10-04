@@ -7,8 +7,11 @@ const COLLECTION_NAME = "notes_platform";
 const VECTOR_SIZE = Number(process.env.VECTOR_SIZE ?? 768);
 
 function getQdrant() {
+  // No localhost default: a missing URL is an explicit error in every environment.
+  const url = process.env.QDRANT_URL;
+  if (!url) throw new Error("QDRANT_URL is not set. AI search needs a Qdrant instance.");
   return new QdrantClient({
-    url: process.env.QDRANT_URL ?? "http://localhost:6333",
+    url,
     apiKey: process.env.QDRANT_API_KEY,
   });
 }

@@ -25,9 +25,28 @@ export function checkRateLimit(key: string, maxRequests = 10, windowMs = 60_000)
 }
 
 // ── Shared NextAuth options ────────────────────────────────────────────────────
+export const MAX_PASSWORD_LENGTH = 128;
+
+/**
+ * The site's public URL, used to build links in emails. There is deliberately
+ * no localhost fallback: if this is unset, a verification or reset link would
+ * silently point at localhost, so fail loudly instead.
+ */
+export function getAppUrl(): string {
+  const url = process.env.NEXTAUTH_URL;
+  if (!url) {
+    throw new Error("NEXTAUTH_URL is not set. It is required to build links in emails.");
+  }
+  return url.replace(/\/$/, "");
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  debug: false,
+  // Shorter than NextAuth's 30-day default. The session is a signed JWT with
+  // no server-side revocation, so a shorter lifetime limits how long a stolen
+  // token stays useful.
+  session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 },
   pages: {
     signIn: "/auth",
   },
@@ -40,6 +59,12 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
+        // bcrypt cost is fixed, but its input isn't: refuse absurdly long passwords.
+        if (credentials.password.length > MAX_PASSWORD_LENGTH) return null;
+        // Keyed by email, not IP, so the limit holds however the client's address is spoofed.
+        if (!checkRateLimit(`login:${credentials.email.toLowerCase()}`, 10, 15 * 60_000)) {
+          return null;
+        }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
@@ -49,6 +74,13 @@ export const authOptions: NextAuthOptions = {
 
         const valid = await compare(credentials.password, user.password);
         if (!valid) return null;
+
+        // Checked only after the password matches, so this reveals nothing to someone
+        // guessing addresses. Skipped when SMTP isn't configured: without email, nobody
+        // could ever verify, so requiring it would lock everyone out.
+        if (process.env.SMTP_HOST && !user.emailVerified) {
+          throw new Error("EMAIL_NOT_VERIFIED");
+        }
 
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },

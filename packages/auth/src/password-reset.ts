@@ -1,6 +1,6 @@
 import { hash } from "bcryptjs";
 import { prisma } from "@repo/db/client";
-import { checkRateLimit } from "./config";
+import { checkRateLimit, MAX_PASSWORD_LENGTH } from "./config";
 import { createVerificationToken, consumeVerificationToken } from "./tokens";
 import { sendEmail } from "./email";
 import { AuthActionError } from "./action-error";
@@ -38,6 +38,9 @@ export async function resetPassword(
   if (newPassword.length < 8) {
     throw new AuthActionError(400, "Password must be at least 8 characters.");
   }
+  if (newPassword.length > MAX_PASSWORD_LENGTH) {
+    throw new AuthActionError(400, `Password must be at most ${MAX_PASSWORD_LENGTH} characters.`);
+  }
 
   const valid = await consumeVerificationToken(email, token);
   if (!valid) {
@@ -45,5 +48,10 @@ export async function resetPassword(
   }
 
   const hashed = await hash(newPassword, 10);
-  await prisma.user.update({ where: { email }, data: { password: hashed } });
+  // Following the reset link proves control of the inbox, so it also verifies the
+  // email. That lets accounts that never verified recover through password reset.
+  await prisma.user.update({
+    where: { email },
+    data: { password: hashed, emailVerified: new Date() },
+  });
 }

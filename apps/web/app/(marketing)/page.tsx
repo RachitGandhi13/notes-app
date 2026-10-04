@@ -74,8 +74,8 @@ export default async function HomePage({ searchParams }: Props) {
             </h1>
 
             <p className="text-muted-foreground animate-fade-up max-w-xl text-lg leading-relaxed [animation-delay:160ms]">
-              Hands-on video courses by {instructor.name} — with notes, practice quizzes, progress
-              tracking and certificates. Learn at your own pace.
+              Hands-on video courses by {instructor.name} — with notes, practice quizzes and
+              progress tracking. Learn at your own pace.
             </p>
 
             <div className="animate-fade-up flex flex-wrap items-center gap-3 [animation-delay:240ms]">

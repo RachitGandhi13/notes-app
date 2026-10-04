@@ -1,12 +1,12 @@
 import Image from "next/image";
 import {
   Award,
-  BadgeCheck,
   Cloud,
   Container,
   Database,
   GitBranch,
   LineChart,
+  ListChecks,
   Server,
   Terminal,
   type LucideIcon,
@@ -52,9 +52,9 @@ const CARDS: {
     delay: "-4s",
   },
   {
-    Icon: BadgeCheck,
-    title: "Earn certificates",
-    text: "When you complete a course",
+    Icon: ListChecks,
+    title: "Practice quizzes",
+    text: "Test yourself as you go",
     className: "right-[-2%] bottom-[2%]",
     delay: "-1s",
   },
