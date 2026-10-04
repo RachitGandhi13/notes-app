@@ -11,7 +11,7 @@
 // and fails since there's no runtime file to resolve — the triple-slash
 // form is compile-time-only for TypeScript and invisible to bundlers.
 
-export { authOptions, checkRateLimit } from "./config";
+export { authOptions, checkRateLimit, getAppUrl, MAX_PASSWORD_LENGTH } from "./config";
 export { getSession, requireAuth, requireAdmin, AuthError } from "./helpers";
 export { AuthActionError } from "./action-error";
 export { createVerificationToken, consumeVerificationToken } from "./tokens";

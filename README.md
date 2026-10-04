@@ -1,85 +1,89 @@
-# Notes & Video Learning Platform
+# CloudVidya Academy — Learning Platform
 
-An ed-tech platform combining Notion-based study notes with quizzes, and a
-video course platform for recorded lectures. Built as a Turborepo monorepo
-with two Next.js apps sharing a single Postgres database.
+An ed-tech platform in a single Next.js app: recorded video courses with
+purchases and progress tracking, plus study notes (slide lessons and quizzes)
+organised into tracks. Built as a Turborepo monorepo around one Postgres
+database.
 
 > This README describes what's actually built and working today. For the
 > phase-by-phase implementation plan and what's still in progress, see
 > [`DEVELOPMENT.md`](./DEVELOPMENT.md).
 
-## Apps
+## What's in the app (`apps/web`, port 3000)
 
-### `apps/notes` (port 3000)
+### Courses
 
-Study tracks built from Notion pages, organized into categories, with
-multiple-choice quizzes attached to individual problems/lessons.
-
-- Admin pastes a Notion page ID; the app fetches that page's blocks and creates
-  a `Track` from it — or creates a track with no Notion page at all, for
-  content the admin supplies directly
-- Admin can add slide-deck lessons (a pasted Canva/Google Slides embed link,
-  for the client's own uploaded PPTs) and hand-written MCQ quizzes to any
-  track, no Notion page required for either
-- AI-powered search over notes content (Gemini embeddings → Qdrant vector search)
-- MCQ quizzes with score tracking per user
-
-### `apps/video` (port 3001)
-
-Recorded video courses, organized into sections (playlist-style groupings),
+Recorded video courses, organised into sections (playlist-style groupings),
 with purchase-gated access for paid courses.
 
-- Admin can create courses, add playlist-style sections, and add videos by
-  pasting an Unlisted YouTube link — no video files are ever uploaded to our
-  own servers/storage
-- Courses contain ordered sections, each holding one or more videos
+- Admin creates courses, adds sections (playlists) and uploads lecture videos
+  directly, with an upload progress bar
+- Thumbnails are uploaded, not pasted as links: one for the course, one for
+  each playlist, and optionally one per video
 - Free courses enroll directly; paid courses are purchased via **Razorpay**
   (Checkout modal + signature-verified confirmation + a webhook backstop)
-- A course can optionally be linked to a matching notes-app track — one
-  purchase unlocks both apps' content for that topic (see "Cross-app
-  bundling" below)
+- Course search from the navbar and hero
 - Per-video progress tracking, bookmarks, comments, and Q&A per video
-- Certificates on course completion
 - Admin can download a full student roster as an Excel file (name, email,
   course, amount paid, Razorpay order/payment IDs, purchase date)
 
-Video hosting: recordings are uploaded as **Unlisted YouTube videos** and
-embedded behind the app's purchase/login gate — see `DEVELOPMENT.md` for why.
+### Notes
 
-### Cross-app bundling
+Study tracks organised into categories, browsable at `/notes`.
 
-A video course can be linked to one notes track (set from the video app's
-admin panel when creating the course). Purchasing that course — free or paid
-— unlocks the linked track in the notes app automatically, since both apps
-read the same `UserPurchases` table in the shared database. A track with no
-linked course stays open to everyone, exactly as before.
+- A track is a topic made of **sections**. Each section has slides (a PPT,
+  PPTX or PDF uploaded by the admin) and/or practice questions
+- Admins edit right on the track page: add a section and upload its slides,
+  replace or remove the slides, add/edit/delete practice questions, reorder or
+  delete sections
+- Students see the slides on the page (PDFs inline; PPT/PPTX through
+  Microsoft's viewer once the site is live), then practise the multiple-choice
+  questions with instant feedback and "Try again"
+- Scores are saved to the student's profile when signed in; anyone can practise
+  without an account
+- Cmd/Ctrl+K search on `/notes`: fuzzy search over tracks, plus AI-powered
+  search (Gemini embeddings → Qdrant vector search)
+
+### Course + notes bundling
+
+A course can be linked to one notes track (set in the admin panel when
+creating the course). Purchasing that course — free or paid — unlocks the
+linked track automatically, since both read the same `UserPurchases` table.
+A track with no linked course stays open to everyone.
+
+### Accounts and admin
+
+One sign-in for everything (email/password, GitHub, Google), one profile page
+(courses, bookmarks, quiz history) and one `/admin` page with Courses, Notes
+and Comments tabs.
 
 ## Tech stack
 
 - **Monorepo:** Turborepo 2.x + Yarn 1 workspaces
-- **Framework:** Next.js 14 (App Router) for both apps
-- **Database:** PostgreSQL via Prisma, shared schema (`packages/db`) across both apps
+- **Framework:** Next.js 14 (App Router)
+- **Database:** PostgreSQL via Prisma (`packages/db`)
 - **Auth:** NextAuth v4 — Credentials + GitHub + Google, Prisma adapter (`packages/auth`)
 - **Cache:** Redis via `ioredis` (`packages/cache`) — best-effort TTL caching
 - **State:** Recoil (`packages/store`)
 - **UI:** Shared Radix/Shadcn-style components (`packages/ui`)
-- **Payments:** Razorpay (video app only)
-- **Excel export:** ExcelJS — admin student roster download (video app only)
-- **AI search:** Gemini embeddings → Qdrant vector search (notes app only)
+- **File storage:** Vercel Blob when configured, local disk in dev (`packages/storage`)
+- **Payments:** Razorpay
+- **Excel export:** ExcelJS
+- **AI search:** Gemini embeddings → Qdrant vector search
 
-All backing services run on free tiers — see `DEVELOPMENT.md` for the specific
-providers and reasoning.
+Backing services are chosen to run on free tiers — see `DEVELOPMENT.md` for
+the specific providers and reasoning.
 
 ## Project structure
 
 ```
 apps/
-  notes/          Notion notes + MCQ quizzes
-  video/          Video courses, purchases, community features
+  web/            The whole site: courses, notes, admin, auth, API routes
 packages/
   auth/           Shared NextAuth config
   cache/          Shared Redis client
-  db/             Shared Prisma schema + client + seed
+  db/             Prisma schema + client + migrations + seed
+  storage/        File upload storage (Vercel Blob / local disk)
   store/          Shared Recoil atoms
   ui/             Shared UI components
   eslint-config/  Shared ESLint config
@@ -89,11 +93,13 @@ packages/
 ## Getting started
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (Node 22 or newer)
 yarn install
 
-# 2. Copy env template and fill in values
+# 2. Copy env template and fill in values. Next.js only loads env files from
+#    the app directory, so the app needs its own copy too.
 cp .env.example .env
+cp .env apps/web/.env
 
 # 3. Local infra (Postgres/Redis/Qdrant) — for local dev only;
 #    production uses free managed equivalents (see DEVELOPMENT.md)
@@ -102,28 +108,38 @@ docker-compose up -d
 # 4. Set up the database
 yarn db:setup   # runs migrations, then seeds admin@example.com / admin123
 
-# 5. Run both apps
-yarn dev        # notes on :3000, video on :3001
+# 5. Run the app
+yarn dev        # http://localhost:3000
 ```
+
+> The seed creates a well-known admin login. It is for **local development
+> only** — never run `yarn db:seed` against a production database.
 
 ### Required environment variables
 
-See `.env.example` for the full list. At minimum you'll need:
+See `.env.example` for the full list, including the production variables the server checks at startup. At minimum you'll need:
 
 - `DATABASE_URL` — Postgres connection string
-- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`, `NEXTAUTH_URL` — `NEXTAUTH_URL` is the site's own public URL
 - `GITHUB_ID`/`GITHUB_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` — OAuth login
-- `QDRANT_URL`, `GOOGLEAI_API_KEY` — AI search in the notes app (optional, deferrable)
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` — paid courses
+- `QDRANT_URL`, `GOOGLEAI_API_KEY` — AI search (optional, deferrable)
 - `REDIS_URL` — caching (optional, best-effort)
-- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` — paid courses in the video app
-- `NEXT_PUBLIC_VIDEO_APP_URL` — lets the notes app link out to the video app's purchase page for bundled tracks
-- `NEXT_PUBLIC_NOTES_APP_URL` — lets the video app's navbar link to the notes app
+- `BLOB_READ_WRITE_TOKEN` — cloud storage for uploads (thumbnails, slides, videos).
+  Without it files go to local disk, which only works in development: a
+  production server won't serve files written after it started
+- `SMTP_*` — verification and password-reset emails (required in production; printed to the terminal in development)
 
 ## Deployment
 
-Both apps deploy to Vercel (free Hobby tier), pointed at the same Neon
-Postgres instance, Upstash Redis, and Qdrant Cloud cluster. Custom domain
-attaches to Vercel for free — the only cost is domain registration itself.
+The site is a single Next.js app that goes on one domain
+(`www.cloudvidyaacademy.com`). It is hosted on AWS App Runner from the
+container image built by `apps/web/Dockerfile` (run from the repo root), with
+DNS in Route 53. The production Postgres is on Neon; apply migrations with
+`prisma migrate deploy` using Neon's direct (non-pooled) connection string,
+and give the running app the pooled one. Secrets are set as App Runner
+environment variables, never copied into the image. See `DEVELOPMENT.md`
+(Phase 12 and the open risks) before going live.
 
 ## Status
 

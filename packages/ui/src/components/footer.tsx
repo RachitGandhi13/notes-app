@@ -97,7 +97,7 @@ export function Footer({
         </div>
 
         <div className="overflow-hidden pt-8 text-center" aria-hidden="true">
-          <span className="text-primary/10 select-none whitespace-nowrap text-[12vw] font-extrabold leading-none tracking-tight">
+          <span className="text-primary/10 select-none whitespace-nowrap text-[8vw] font-extrabold leading-none tracking-tight">
             {wordmark}
           </span>
         </div>

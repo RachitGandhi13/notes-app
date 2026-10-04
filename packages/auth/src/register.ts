@@ -1,9 +1,19 @@
 import { hash } from "bcryptjs";
 import { prisma } from "@repo/db/client";
-import { checkRateLimit } from "./config";
+import { checkRateLimit, MAX_PASSWORD_LENGTH } from "./config";
 import { createVerificationToken } from "./tokens";
 import { sendEmail } from "./email";
 import { AuthActionError } from "./action-error";
+
+/** Escapes text placed inside HTML, so a name like "<img src=x>" is shown as text. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 /**
  * Shared by both apps' /api/auth/register routes: validates, rate-limits,
@@ -26,6 +36,12 @@ export async function registerUser(params: {
   if (password.length < 8) {
     throw new AuthActionError(400, "Password must be at least 8 characters.");
   }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    throw new AuthActionError(400, `Password must be at most ${MAX_PASSWORD_LENGTH} characters.`);
+  }
+  if (name.length > 100) {
+    throw new AuthActionError(400, "Name must be at most 100 characters.");
+  }
   if (!checkRateLimit(`register:${ip}`, 5, 60_000)) {
     throw new AuthActionError(429, "Too many requests. Please wait a moment.");
   }
@@ -43,6 +59,6 @@ export async function registerUser(params: {
   await sendEmail(
     email,
     "Verify your email",
-    `<p>Hi ${name},</p><p>Click below to verify your email address:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 1 hour.</p>`
+    `<p>Hi ${escapeHtml(name)},</p><p>Click below to verify your email address:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 1 hour.</p>`
   );
 }

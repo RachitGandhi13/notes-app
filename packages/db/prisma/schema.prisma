@@ -137,6 +137,8 @@ model MCQQuestion {
   correctOption String
   problem       Problem @relation(fields: [problemId], references: [id])
   problemId     String
+  // Questions are listed in the order they were added (ties broken by id).
+  createdAt     DateTime @default(now())
 }
 
 model QuizScore {

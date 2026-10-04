@@ -1,0 +1,148 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { QdrantClient } from "@qdrant/js-client-rest";
+
+// ── Singletons ─────────────────────────────────────────────────────────────────
+
+const COLLECTION_NAME = "notes_platform";
+const VECTOR_SIZE = Number(process.env.VECTOR_SIZE ?? 768);
+
+function getQdrant() {
+  // No localhost default: a missing URL is an explicit error in every environment.
+  const url = process.env.QDRANT_URL;
+  if (!url) throw new Error("QDRANT_URL is not set. AI search needs a Qdrant instance.");
+  return new QdrantClient({
+    url,
+    apiKey: process.env.QDRANT_API_KEY,
+  });
+}
+
+function getEmbeddingModel() {
+  const genai = new GoogleGenerativeAI(process.env.GOOGLEAI_API_KEY!);
+  return genai.getGenerativeModel({ model: "embedding-001" });
+}
+
+// ── Collection bootstrap ───────────────────────────────────────────────────────
+
+export async function ensureCollection() {
+  const qdrant = getQdrant();
+  const { collections } = await qdrant.getCollections();
+  const exists = collections.some((c) => c.name === COLLECTION_NAME);
+
+  if (!exists) {
+    await qdrant.createCollection(COLLECTION_NAME, {
+      vectors: { size: VECTOR_SIZE, distance: "Dot" },
+    });
+  }
+}
+
+// ── Embedding helper ───────────────────────────────────────────────────────────
+
+async function embed(text: string): Promise<number[]> {
+  const model = getEmbeddingModel();
+  const result = await model.embedContent(text);
+  const values = result.embedding.values;
+  // Slice to VECTOR_SIZE in case the model returns more dimensions
+  return values.slice(0, VECTOR_SIZE);
+}
+
+// ── Indexing ───────────────────────────────────────────────────────────────────
+
+export interface IndexPayload {
+  trackId: string;
+  trackTitle: string;
+  image: string;
+  problemTitle: string;
+  problemId: string;
+  [key: string]: unknown; // required by the Qdrant client's payload type
+}
+
+/**
+ * Index all problems of a track into Qdrant.
+ * Called by the admin after creating or updating a track.
+ *
+ * There's no Notion page (or any other parsed document body) to pull text
+ * from anymore — lessons are either an uploaded PPT file (no extracted text)
+ * or a hand-written MCQ quiz. So the embedding signal is whatever text
+ * actually exists: the lesson's title/description, plus its question text
+ * for MCQ lessons.
+ */
+export async function insertData(
+  trackId: string,
+  trackTitle: string,
+  image: string,
+  problems: { id: string; title: string; description: string; questions: string[] }[]
+) {
+  await ensureCollection();
+  const qdrant = getQdrant();
+
+  const points: {
+    id: string;
+    vector: number[];
+    payload: IndexPayload;
+  }[] = [];
+
+  for (const problem of problems) {
+    try {
+      const textToEmbed = [problem.title, problem.description, ...problem.questions]
+        .filter(Boolean)
+        .join("\n\n")
+        .trim();
+      if (!textToEmbed) continue;
+
+      const vector = await embed(textToEmbed);
+
+      points.push({
+        id: problem.id, // UUID — Qdrant accepts UUID string IDs
+        vector,
+        payload: {
+          trackId,
+          trackTitle,
+          image,
+          problemTitle: problem.title,
+          problemId: problem.id,
+        },
+      });
+    } catch (err) {
+      console.error(`[search] Failed to index problem ${problem.id}:`, err);
+    }
+  }
+
+  if (points.length > 0) {
+    await qdrant.upsert(COLLECTION_NAME, { points, wait: true });
+  }
+
+  return points.length;
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────────
+
+export interface SearchResult {
+  score: number;
+  payload: IndexPayload;
+}
+
+/**
+ * Embed a user query and return the top-5 nearest Qdrant matches.
+ *
+ * Uses the Query API (`.query`) rather than the older `.search` method —
+ * `.search` was removed from @qdrant/js-client-rest in favor of the unified
+ * Query API (the installed version resolved well past what this code was
+ * originally written against, since no lockfile existed before now).
+ */
+export async function getSearchResults(query: string): Promise<SearchResult[]> {
+  await ensureCollection();
+  const qdrant = getQdrant();
+
+  const vector = await embed(query);
+
+  const response = await qdrant.query(COLLECTION_NAME, {
+    query: vector,
+    limit: 5,
+    with_payload: true,
+  });
+
+  return response.points.map((r) => ({
+    score: r.score,
+    payload: r.payload as unknown as IndexPayload,
+  }));
+}

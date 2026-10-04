@@ -3,24 +3,37 @@ node_modules
 
 # Build outputs
 .next
+out
+build
 dist
 *.tsbuildinfo
 
 # Turbo cache
 .turbo
 
-# Env files (never commit secrets)
+# Test and lint caches
+coverage
+.eslintcache
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env files (never commit secrets). Only the example template is tracked.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+
+# Hosting CLI state
+.vercel
 
 # Local docker-compose port overrides (machine-specific conflicts)
 docker-compose.override.yml
 
-# Local upload-fallback output and large client sample media (not for git)
+# Local upload-fallback output (not for git)
 apps/*/public/uploads/
-sampleimg/
-apps/video/public/demo-lesson.mp4
 
 # OS
 .DS_Store

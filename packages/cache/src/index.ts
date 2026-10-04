@@ -2,17 +2,27 @@ import Redis from "ioredis";
 
 // ── Singleton ──────────────────────────────────────────────────────────────────
 
+/** A missing setting. Unlike a network error, this is never swallowed. */
+export class CacheConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CacheConfigError";
+  }
+}
+
 let _client: Redis | null = null;
 
 function getClient(): Redis {
   if (!_client) {
-    _client = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
+    const url = process.env.REDIS_URL;
+    if (!url) throw new CacheConfigError("REDIS_URL is not set.");
+    _client = new Redis(url, {
       maxRetriesPerRequest: 1,
       lazyConnect: true,
     });
     _client.on("error", (err) => {
-      // Log but don't crash — caching is best-effort
-      console.warn("[cache] Redis error:", err.message);
+      // Caching is best-effort, so a dropped connection is logged and the app carries on.
+      console.error("[cache] Redis error:", err.message);
     });
   }
   return _client;
@@ -22,20 +32,27 @@ function getClient(): Redis {
 
 const DEFAULT_TTL = 3600; // 1 hour
 
+// Network and parse failures degrade to "no cache". Configuration errors are rethrown.
 export async function cacheGet<T>(key: string): Promise<T | null> {
   try {
     const raw = await getClient().get(key);
     if (!raw) return null;
     return JSON.parse(raw) as T;
-  } catch {
+  } catch (err) {
+    if (err instanceof CacheConfigError) throw err;
     return null;
   }
 }
 
-export async function cacheSet(key: string, value: unknown, ttlSeconds = DEFAULT_TTL): Promise<void> {
+export async function cacheSet(
+  key: string,
+  value: unknown,
+  ttlSeconds = DEFAULT_TTL
+): Promise<void> {
   try {
     await getClient().set(key, JSON.stringify(value), "EX", ttlSeconds);
-  } catch {
+  } catch (err) {
+    if (err instanceof CacheConfigError) throw err;
     // best-effort
   }
 }
@@ -43,7 +60,8 @@ export async function cacheSet(key: string, value: unknown, ttlSeconds = DEFAULT
 export async function cacheDel(...keys: string[]): Promise<void> {
   try {
     if (keys.length > 0) await getClient().del(...keys);
-  } catch {
+  } catch (err) {
+    if (err instanceof CacheConfigError) throw err;
     // best-effort
   }
 }

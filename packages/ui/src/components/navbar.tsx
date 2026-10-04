@@ -44,12 +44,14 @@ export function Navbar({
     <header className="bg-background/95 sticky top-0 z-40 w-full border-b backdrop-blur">
       <div className="container flex h-16 items-center gap-4">
         {/* Brand */}
-        <Link href={brandHref} className="flex shrink-0 items-center gap-2">
+        <Link href={brandHref} className="flex min-w-0 items-center gap-2">
           {brandLogo && (
             // eslint-disable-next-line
-            <img src={brandLogo} alt="" className="h-8 w-8 rounded-full object-cover" />
+            <img src={brandLogo} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
           )}
-          <span className="text-primary text-lg font-extrabold tracking-tight">{brand}</span>
+          <span className="text-primary text-sm font-extrabold leading-tight tracking-tight sm:text-lg">
+            {brand}
+          </span>
         </Link>
 
         {/* Search */}
@@ -65,7 +67,9 @@ export function Navbar({
               ))}
             </nav>
           )}
-          <ThemeToggle />
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
 
           {/* Auth */}
           {session?.user ? (

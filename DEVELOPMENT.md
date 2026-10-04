@@ -118,7 +118,7 @@ below are deliberately terse; open the file for exact code.
 - **Generic Radix/shadcn wrappers, verified to contain zero custom logic beyond Tailwind classes**: `Badge`, `Button` (cva variants: default/destructive/outline/secondary/ghost/link), `Card`, `Checkbox`, `Dialog`, `DropdownMenu`, `Input`, `Label`, `Pagination`, `ScrollArea`, `Select`, `Separator`, `Sheet` (built on `@radix-ui/react-dialog`, not a separate package — see bug fixed above), `Skeleton`, `Switch`, `Table`, `Tabs`, `Textarea`, `Toast`/`Toaster`, `Tooltip`.
 - Both apps' `tailwind.config.ts` point `content` at `../../packages/ui/src/**/*.tsx` so these compile correctly in each app.
 
-### `apps/notes` (port 3000)
+### `apps/notes` (port 3000) — merged into `apps/web`, see Phase 9
 
 - `app/layout.tsx` / `providers.tsx` — root layout wraps children in `SessionProvider` → `RecoilRoot` → `next-themes` `ThemeProvider`.
 - `app/(marketing)/layout.tsx` — fetches all tracks server-side, renders `Navbar` + `SearchDialog` (client component fed server data) + page content.
@@ -138,7 +138,7 @@ below are deliberately terse; open the file for exact code.
 - `lib/search.ts` — Gemini `embedding-001` → Qdrant. `ensureCollection()` creates the `notes_platform` collection (Dot distance, `VECTOR_SIZE` env, default 768) if missing. `insertData()` walks a track's problems, pulls each Notion page, extracts plain text from known block types (`extractTextFromRecordMap`), embeds title+body, upserts one point per problem keyed by problem UUID. `getSearchResults(query)` embeds the query and returns top-5 Qdrant matches.
 - Components: `MCQQuiz` (client-side answer state, submits score once all answered, shows correct/incorrect highlighting after submit), `NotionRenderer` (dynamically-imported `react-notion-x` renderer, code/collection/equation/modal sub-renderers lazy-loaded), `ProblemSidebar` (collapsible lesson list), `SearchDialog` (Cmd/Ctrl+K palette with two tabs — Fuse.js fuzzy search over client-side track data, and a debounced AI-search tab calling `semanticSearch`; also has experimental Web Speech API voice input), `TrackCard`.
 
-### `apps/video` (port 3001)
+### `apps/video` (port 3001) — became `apps/web`, see Phase 9
 
 - `app/layout.tsx` / `providers.tsx` — identical provider stack to notes app.
 - `app/(marketing)/layout.tsx` — nav links: Courses / Profile / **Admin** (visible to everyone in the nav, but the page itself is `requireAdmin`-gated — not a security issue, just a UX note that non-admins see a nav link that will redirect them).
@@ -417,6 +417,190 @@ for the client's decision, not decided unilaterally.
 
 ---
 
+## Phase 9 — Merge notes + video into one app ✅
+
+**Client decision (2026-09-26):** one website at `www.cloudvidyaacademy.com`
+with everything in it; the client will remove the old static site there and
+put this one up. The domain is registered with Amazon Registrar, DNS is in
+Route 53, and the same zone carries the client's Google email (`MX
+smtp.google.com` + a `google-site-verification` TXT) — **DNS changes must be
+additive and must never touch MX/TXT.** The old site (S3 + CloudFront) serves
+both the apex and `www`; note its alias records before repointing so the
+change can be rolled back.
+
+- [x] `apps/video` renamed to `apps/web` (`@repo/web`, port 3000); `apps/notes`
+      folded in and removed. Dependencies unioned (`@google/generative-ai`,
+      `@qdrant/js-client-rest`, `fuse.js` added).
+- [x] **Routes:** `/` course landing (unchanged), `/courses/...` (unchanged),
+      `/notes` (was the notes app's `/`; `app/notes/layout.tsx` mounts the
+      Cmd+K `SearchDialog`), `/tracks/...` (unchanged), one `/admin` with
+      Courses / Notes / Comments tabs, one `/profile` (courses, bookmarks,
+      quiz history, admin badge), one `/auth`, union of all `/api/*` routes.
+- [x] **Actions:** `lib/actions.ts` (courses/videos) and
+      `lib/track-actions.ts` (was the notes app's `lib/actions.ts`). The two
+      files have no overlapping export names, so they sit side by side
+      instead of being merged into one file.
+- [x] **Cross-app plumbing removed:** `NEXT_PUBLIC_VIDEO_APP_URL`,
+      `NEXT_PUBLIC_NOTES_APP_URL` and `NEXT_PUBLIC_APP_URL` are gone (nothing
+      read the last one). `TrackPaywall` now links to `/courses/<slug>`
+      internally; the navbar has Courses + Notes links. Only `NEXTAUTH_URL`
+      is needed for the site's own URL.
+- [x] **Tailwind:** took the notes config (a superset: `destructive`/`popover`
+      colors and the accordion keyframes the video config lacked). Replaced
+      `require("tailwindcss-animate")` with an ES import — the `require` was
+      an existing `no-require-imports` lint error in both apps.
+- [x] **Dockerfile:** single `apps/web/Dockerfile`, port 3000. Fixed two bugs
+      both old Dockerfiles had: `packages/storage/package.json` was never
+      copied (added after they were written), and in a monorepo the standalone
+      server lands at `apps/web/server.js`, so static assets, `public/` and
+      the `CMD` all needed the `apps/web/` prefix.
+- [x] **Verified:** `tsc --noEmit` clean; `next build` generates 25 pages; the
+      standalone output run in the Docker image's layout
+      (`node apps/web/server.js`) returns 200 for `/`, `/notes`, `/auth`,
+      static assets and `/api/auth/providers`, 404 for unknown course/track
+      slugs, and 307 → `/auth` for `/admin` and `/profile` when signed out.
+      Docker itself isn't runnable on the dev machine, so the image was never
+      actually built.
+- [ ] **Follow-up:** the navbar search is courses-only and the notes Cmd+K
+      search only exists on `/notes`; a single search across both is a
+      possible improvement, not done.
+
+The `### apps/notes` and `### apps/video` reference sections above describe
+the two apps as they were before this merge and are kept for history.
+
+---
+
+## Phase 10 — Notes sections (slides + practice questions), playlist thumbnails, rebrand ✅
+
+Client requirements (2026-09-26): in Notes he uploads a PPT for each section
+directly on the page, with MCQs for students to practise; in Courses he
+uploads the videos and needs a thumbnail option for each new playlist; and
+the institution name is "CloudVidya Academy" everywhere.
+
+- [x] **Rebrand:** navbar/footer brand and the giant footer wordmark now say
+      "CloudVidya Academy" (all other copy already did). Wordmark shrunk
+      (`12vw` → `8vw`) so the longer name isn't clipped; the navbar brand can
+      wrap on phones and the theme toggle is hidden below `sm` (the site is
+      dark-only by design) so nothing overflows at 375px.
+- [x] **Notes model — no data-model change beyond one column.** A "section" is
+      still a `Problem` row and can now carry a presentation (`pptUrl`),
+      practice MCQs, or both; `type` is kept as `PPT` when a file exists,
+      `MCQ` otherwise. New migration `20260926120000_mcq_question_created_at`
+      adds `MCQQuestion.createdAt` so questions keep the order they were added
+      in (Postgres doesn't guarantee row order). **Must be applied to Neon:**
+      `prisma migrate deploy` from `packages/db` with the direct URL.
+- [x] **In-page admin editing** (admins only, on the track page itself):
+      sidebar "Add section" form (title, description, optional slides upload);
+      per-section "Edit this section" panel — rename, upload/replace/remove
+      slides, add/edit/delete practice questions, move up/down, delete (with
+      an in-page confirm, no browser dialogs). Server actions in
+      `lib/track-actions.ts` (`addSection`, `updateSection`, `setSectionPPT`,
+      `deleteSection`, `moveSection`, `addQuestion`, `updateQuestion`,
+      `deleteQuestion`, `toggleTrackHidden`). The old separate "PPT lesson" /
+      "MCQ lesson" forms and `addPPTLesson`/`addMCQLesson` are gone; `/admin`
+      → Notes now only creates tracks, lists them ("Open & edit", hide/show)
+      and runs AI indexing.
+- [x] **Slides show on the page.** `PPTViewer` embeds PDFs natively and PPT/PPTX
+      through Microsoft's Office viewer iframe (needs a public https URL, so it
+      only works once files live in cloud storage; locally it falls back to an
+      "open in a new tab" card). `/api/admin/upload-ppt` now accepts
+      `.ppt/.pptx/.pdf` (100MB soft cap) and either creates a section or
+      replaces a section's file. **PPTX embedding is untested** — it needs a
+      deployed public URL; only PDF embedding and the fallback were exercised.
+- [x] **Practice mode for students:** questions render under the slides,
+      "Try again" resets the quiz, scores save when signed in, and a visitor who
+      isn't signed in still sees their result (previously the submit threw and
+      the button stuck on "Submitting…"). Prev/Next section links added.
+- [x] **Security fix found on the way:** a section could be opened through any
+      track's URL (`/tracks/<free track>/<paid track's section id>`), bypassing
+      the paywall, because only the track was access-checked. The page now
+      404s unless the section belongs to the track. Admins can also open
+      bundled tracks without "buying" them.
+- [x] **Thumbnails by upload:** new `/api/admin/upload-image` (JPG/PNG/WebP,
+      4MB, no SVG) and a shared `ThumbnailPicker` replace every "Image URL"
+      text box — course create/edit, track create — and add thumbnails to
+      playlists (sections) and videos, with a change-thumbnail button on
+      existing ones. Sections' thumbnail shows in the course curriculum
+      header; a video's is stored both as `Content.thumbnail` (list) and
+      `VideoMetadata.thumbnail1Url` (player poster). No schema change
+      (`Content.thumbnail` already existed).
+- [x] **Upload progress:** video, slide and section uploads use XHR with a
+      progress bar (`components/admin/upload.tsx`); stored filenames are
+      sanitised (a `../` in an uploaded name could previously escape the
+      local uploads folder).
+- [x] **Validation shown reliably:** Next.js anonymises errors thrown from
+      server actions in production builds, so question rules live in
+      `lib/question-validation.ts` and run in the form first (the server
+      re-checks). Other older admin forms still rely on thrown messages and
+      would show a generic error in production.
+- [x] **Track page** now renders on demand (`force-dynamic`) and
+      `generateStaticParams` is gone — it depends on who is looking, and the
+      old version needed a database at build time. Fixed the page height
+      (`3.5rem` → `4rem` navbar) and made the section list stack above the
+      lesson on phones (it squeezed the lesson into ~100px).
+- [x] **Verified** with a real browser (Playwright driving headless Chrome)
+      against a throwaway Postgres running all 4 migrations from scratch (no
+      drift): 26 checks on the notes flow pass against both the dev server and a
+      production build (`next build` + `next start`); the video/thumbnail flow
+      passes on the dev server. Also checked at a 375px phone width.
+      Docker was not available, and the E2E scripts are not in the repo.
+- [ ] **Not done — production file storage.** `next start` returns 404 for
+      files written to `public/` after startup (checked), so uploads only work
+      locally. `@repo/storage` supports Vercel Blob (`BLOB_READ_WRITE_TOKEN`)
+      or local disk only — there is no S3 backend, and on serverless hosts big
+      uploads still hit the ~4.5MB request cap (see Open risks). Decision
+      needed on hosting + storage before real uploads work when deployed.
+
+---
+
+## Phase 11 — Fuller home and notes pages (client: "not minimalistic") ✅
+
+The client found the home hero sparse — big empty margins, and a single
+course leaving two thirds of its row blank — and wants it to look full, with
+images or animation.
+
+- [x] **Home hero** (`app/(marketing)/page.tsx`): full-bleed, two columns.
+      Left — badge, gradient headline ("Level up your Cloud & DevOps skills"),
+      copy, Browse courses / Explore notes buttons, search, and stat tiles.
+      Right (`components/home/HeroArt.tsx`, desktop) — the instructor's photo
+      in a gradient frame, a rotating dashed orbit, pulsing rings, five
+      infrastructure icons joined by animated dashed lines, and four floating
+      glass cards. Behind it `AnimatedBackdrop`: fading grid + three drifting
+      colour blobs.
+- [x] **New sections:** scrolling topics strip (`TechMarquee`), 8-card feature
+      grid (`FeatureGrid`), a notes showcase with a mock slide + quiz
+      (`NotesShowcase`), and a sign-up / "keep going" banner (`JoinBanner`).
+      The instructor section gained bottom spacing. The marketing layout no
+      longer wraps everything in a narrow `container` so sections can run edge
+      to edge. Search results (`/?q=`) hide the marketing sections.
+- [x] **Few courses no longer look empty:** exactly one course renders as a
+      wide `FeaturedCourse` card; two courses use a two-column grid; three or
+      more keep the three-column grid. Same idea for tracks on `/notes`.
+- [x] **Notes page** gets the same backdrop, stat tiles, a 3-step "how it
+      works" row and the adaptive track grid; track cards say "sections".
+- [x] **Nothing invented:** every number and claim comes from real data or
+      from the client's own instructor content in `lib/instructor.ts` — course
+      and enrolled counts from the database, "6 AWS certifications" from the
+      certification list, "7+ years" from the bio (`experienceYears`), topics
+      from `expertise`. Each feature card describes something the platform
+      does. No testimonials, student counts or logos were made up.
+- [x] **Motion:** pure CSS keyframes added to `tailwind.config.ts` (`float`,
+      `blob`, `marquee`, `dash`, `fade-up`, `pulse-ring`, `spin-slow`,
+      `gradient-shift`); all animated pieces use `motion-reduce:animate-none`.
+      No extra JavaScript or new dependencies.
+- [x] **Verified** in headless Chrome at 1440px in light and dark, and at
+      360/390/430/768px. That found a real phone bug (headline forcing the
+      hero column wider than the screen, clipping the buttons and search bar),
+      fixed by only keeping "Cloud & DevOps" on one line from `sm` up and
+      adding `min-w-0` to the column. Type-check, lint and `next build` pass.
+      Lighthouse/performance were not measured.
+- [ ] **Not done:** no stock photography or generated imagery — visuals are the
+      instructor photo plus drawn shapes. The hero art is hidden below `lg`
+      (phones get the text, stats, topics strip and cards). If the client has
+      real photos or a short promo video, they would slot into `HeroArt`.
+
+---
+
 ## First real build — critical bugs found and fixed
 
 Everything up to this point had only been read, schema-validated, and
@@ -558,6 +742,233 @@ Local login: **admin@example.com / admin123** (from the seed script).
 
 ---
 
+## Phase 12 — Pre-deployment cleanup & security hardening ✅
+
+**Decision (2026-10-04):** hosting is **AWS App Runner** running the
+`apps/web/Dockerfile` image, with Route 53 for DNS. The app is server-rendered
+(16 route handlers, 4 `"use server"` modules, session-gated pages), so it cannot
+be a static S3 + CloudFront site. A `next build` with `output: "export"` fails
+on the first API route, and the full list of server-only features is above.
+
+- [x] **Deleted:** `apps/notes/` (untracked leftover with a stale `.env`),
+      `apps/cloudVidya.png` and `apps/veerannaSir.png` (byte-identical copies of
+      files in `public/`), `apps/web/public/demo-lesson.mp4` and
+      `course-fullstack-thumbnail.jpg` (seed-only; the video was identical to the
+      deleted `sampleimg/` copy, so it is gone from disk), `sampleimg/`,
+      `components/NavSearchTrigger.tsx`, and dead actions `getCertificate`,
+      `claimCertificate`, `markTrackIndexed`.
+- [x] **UI package:** removed 17 unused shadcn components, plus `use-toast.ts`
+      (imported the deleted toast) and `globals.css` (never imported). The index
+      exports only the 8 active modules. `packages/ui` typechecks; it previously
+      failed on a missing session type.
+- [x] **Dependencies removed:** `framer-motion` (apps/web, packages/ui),
+      `react-scroll-to-top`, and 10 unused Radix packages.
+- [x] **Node 22** everywhere (Dockerfile `node:22-alpine`, root `engines`). Node 20
+      is past end-of-life, and the locked `eslint-visitor-keys@5` needs Node
+      20.19+. `openssl` added to the Alpine image for Prisma.
+- [x] **Qdrant pinned** to `~1.18.0` in `apps/web`. `1.19` requires Node 22+ and
+      `1.18` still exposes the `query()` call `lib/search.ts` uses (checked in the
+      published typings). Relax to `^1.18` on Node 22 if you want the latest.
+- [x] **Ignores:** `.gitignore` and `.dockerignore` now cover `out/`, `build/`,
+      `*.log`, `.env*` (except `.env.example`), `.vercel/`, `.eslintcache`,
+      `coverage/`, and `apps/*/public/uploads`.
+
+**Security fixes**
+
+- [x] **Paid courses could be taken for free.** `purchaseCourse` never checked
+      the price, so any signed-in user could `POST /api/purchase` with a paid
+      course ID. It now refuses paid and hidden courses.
+- [x] **Paid lessons readable by anyone.** `getCourse` returned every `videoUrl`
+      and `getContent` returned any lesson by ID. Both are now gated. The course
+      outline has no URLs, and `getContent` returns `null` unless the caller owns
+      the lesson's course (or is an admin). Lessons were also reachable across
+      courses (buy course A, read course B's lessons by ID). Fixed by resolving
+      each lesson's course.
+- [x] **Bundled slides and quizzes readable by anyone.** `getTrack` returned
+      `pptUrl` for every section, and `getProblem` returned any section. Both are
+      now gated on the section's track.
+- [x] **Bookmarks leaked video URLs.** `toggleBookmark` had no purchase check,
+      and `getBookmarks` returned `videoMetadata`. Both are fixed.
+- [x] **Comments, questions and answers** on paid lessons need the purchase.
+      Text fields have length limits (5000 characters, 200 for titles).
+- [x] **Quiz scores** are checked as integers in `0..questionCount` and need
+      access to the section.
+- [x] **Rate limiting** trusted the leftmost `x-forwarded-for` hop, which the
+      client controls. It now uses the rightmost hop. Login was not rate limited
+      at all. It is now 10 attempts per email per 15 minutes.
+- [x] **Razorpay:** signatures compared in constant time, and the webhook grants
+      access only when the captured amount matches the order.
+- [x] **Upload validation:** each file must match an allowlist of extension and
+      magic bytes (JPEG/PNG/WebP, PDF/PPT/PPTX, MP4/MOV/WebM). Video is capped at
+      1 GB. Cross-origin multipart posts are rejected by Origin. A declared
+      `Content-Length` over the cap gets a 413. Before this, a renamed `.html`
+      could be stored under `public/`.
+- [x] **Revalidate endpoint:** the secret moved from the query string to an
+      `Authorization: Bearer` header and is compared with `timingSafeEqual`.
+      `path` must be site-relative.
+- [x] **Email:** the register name is HTML-escaped in the verification email.
+      Password length is capped at 128. The recipient address is no longer logged.
+- [x] **No localhost fallback** for `NEXTAUTH_URL`, so links can't silently point
+      at localhost. (The brief said `AUTH_URL`; this codebase reads `NEXTAUTH_URL`.)
+- [x] **Security headers** in `next.config.js`: HSTS, a Content-Security-Policy
+      limited to the hosts the app uses (Razorpay, Office viewer), X-Frame-Options,
+      nosniff, Referrer-Policy and Permissions-Policy. `X-Powered-By` is off.
+- [x] **Session lifetime** is 7 days (NextAuth's default is 30).
+- [x] **Search** query capped at 200 characters. Qdrant URL fails loudly in
+      production rather than defaulting to localhost.
+- [x] **Cache key** for courses moved to `course:v2:` so entries that still hold
+      video URLs stop being served.
+
+**Verification**
+
+- `tsc --noEmit` passes in `apps/web`, `packages/ui`, `packages/auth`,
+  `packages/db`, `packages/storage`, `packages/cache` and `packages/store`.
+- `yarn lint` passes: 0 errors, 26 `no-explicit-any` warnings (unchanged).
+- Strict `yarn install --frozen-lockfile` passes under Node 22.
+- `next build` passes under Node 22 (28 routes; first-load JS down about 20 kB on
+  the home and admin pages after removing `framer-motion`).
+- The standalone server, laid out like the Dockerfile runner, returns the expected
+  security headers, rejects unauthenticated purchase, bookmark and progress
+  calls with 401, and rejects the old query-string revalidate secret.
+- Paywall integration tests run against a throwaway local database: 40 checks,
+  all passing with the fixes. The same suite against the original code fails 23
+  of them. The test database is separate from the dev database.
+- **Not verified here:** the Docker image build (the Docker daemon's API socket
+  timed out during this run), and a live browser pass over the CSP.
+
+## Phase 13 — Razorpay checkout hardening (test mode) ✅
+
+Phase 4 built the Razorpay flow. This pass checked it against the client's
+requirements and fixed the gaps. The test key ID (`rzp_test_…`) is set in the
+local env files. **The key secret and webhook secret are not set yet.**
+
+- [x] **Amount comes from the server.** The order endpoint takes only `courseId`
+      and ignores any `amount` in the body. The price is read from the database
+      and converted to paise. A tampered request can't change the charge.
+- [x] **Order endpoint:** rejects hidden, free and already-owned courses, and
+      rate limits to 10 orders per user per minute. It returns `orderId`,
+      `amount` (paise), `currency` and the key ID. Notes carry `userId` and
+      `courseId`.
+- [x] **Signature check** uses `crypto.timingSafeEqual` over the HMAC-SHA256 of
+      `order_id|payment_id`. Malformed input is rejected rather than throwing.
+- [x] **Webhook** checks its signature the same way and grants access only when
+      the captured amount matches the order. A missing secret returns a clear 500.
+- [x] **Missing configuration fails loudly** with "Payments are not configured
+      yet" in the logs and the response, instead of an unhandled crash.
+- [x] **Checkout button:** `checkout.js` loads once even under double clicks. It
+      is locked from the first click until the modal closes. Errors are shown
+      inline, including failed verification (with the payment ID for support).
+      Name and email are pre-filled from the session. The business name is
+      "Cloud Vidya Academy". It refuses to open checkout if the browser's key ID
+      differs from the key the server used for the order.
+- [x] **Env:** `NEXT_PUBLIC_RAZORPAY_KEY_ID` added to `.env.example`. The
+      Dockerfile takes it as a build argument, because `NEXT_PUBLIC_*` values
+      are compiled in at build time. The secret is never in the bundle (checked).
+- [ ] **Needed from the client:** `RAZORPAY_KEY_SECRET` and
+      `RAZORPAY_WEBHOOK_SECRET`. Without them, checkout reports "Payments are not
+      configured yet". Webhook URL to register in the dashboard:
+      `https://www.cloudvidyaacademy.com/api/razorpay/webhook`.
+- [ ] **Browser run of the full checkout** (test card `4111 1111 1111 1111`)
+      once the secret is set. Not done yet.
+- [ ] **Before going live:** switch to `rzp_live_` keys in App Runner and the
+      build argument, and publish Terms, Privacy and Refund pages (Razorpay
+      requires them, see Open risks).
+
+**Verification:** `tsc --noEmit` clean in `apps/web`; `yarn lint` 0 errors
+(25 pre-existing `no-explicit-any` warnings). 36 payment route checks pass
+against the throwaway database with the SDK stubbed, covering order pricing,
+signature verification, idempotency, webhook amount matching and missing
+configuration. Production build passes, and the browser bundle contains the
+public key ID but no secret variable names.
+
+## Phase 14 — Live Razorpay and production hardening ✅ (code); deploy pending
+
+**Live keys:** the client's live key ID and secret are in `apps/web/.env.production.local`
+(gitignored, mode 600, excluded from the Docker build). The key pair was checked
+with one read-only API call. Local `.env` keeps the test key, so `yarn dev` cannot
+create live charges. Live values belong in App Runner, not in files in the repo.
+
+- [x] **Live integration:** same flow as Phase 13. The order amount comes from the
+      database and is converted to paise. Verification uses `crypto.timingSafeEqual`.
+      The webhook returns explicit statuses: 400 for bad signature or body, 500 when
+      unconfigured, and 200 with `granted`, `already_granted`, `ignored`,
+      `unknown_order` or `amount_mismatch`. Checkout locks the button while processing.
+- [x] **Startup check** (`apps/web/lib/env.ts`, `instrumentation.ts`): in production the
+      server refuses to start when a required variable is missing, and names every
+      missing one. Verified: an empty environment fails with the full list.
+- [x] **No silent fallbacks:** `REDIS_URL` and `QDRANT_URL` no longer default to
+      localhost. Production uploads refuse local disk, which is lost on every deploy.
+      Production email refuses to skip sending when SMTP is unset.
+- [x] **Logging:** all `console.log` and `console.warn` removed from application code.
+      `console.error` stays for real failures. The dev-only email print is gated to
+      `NODE_ENV=development`. The seed script keeps its `console.log` (CLI only).
+- [x] **Boundaries and metadata:** `not-found.tsx`, `error.tsx`, `global-error.tsx`,
+      an icon (`app/icon.png`), a title template and `metadataBase`. The description
+      no longer promises certificates.
+- [x] **Assets:** the logo was reduced to 256 px and the instructor photo to 320 px.
+      Removed the untracked local dev upload output.
+- [x] **Build:** `tsc --noEmit` clean in every package. `yarn lint`: 0 errors, 25
+      `no-explicit-any` warnings. Standalone build passes with
+      `NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_…` as build argument. The browser bundle
+      contains the live public key ID and not the secret.
+- [x] **Tests:** 36 payment checks, 40 paywall checks and the helper checks pass.
+      The standalone server boots with a full placeholder environment, and returns
+      the 404 page, the favicon, the security headers, 401/400 on unauthenticated
+      Razorpay routes, and no stack traces in responses.
+- [ ] **Docker image build not run.** The Docker daemon's API socket timed out. Run
+      `docker build --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_… -f apps/web/Dockerfile -t cloudvidya-web .`
+      from the repo root once Docker Desktop responds.
+- [ ] **Browser check of checkout, and a first real payment.** Do this with a low-price
+      course, then refund it from the dashboard. Live charges move real money.
+- [ ] **Rotate the live key secret.** It was pasted into a chat transcript. Regenerate
+      it in the Razorpay dashboard, then update App Runner.
+- [ ] **Webhook secret:** `RAZORPAY_WEBHOOK_SECRET` has not been provided. Until it is set,
+      the webhook returns 500 and Razorpay keeps retrying. Register
+      `https://www.cloudvidyaacademy.com/api/razorpay/webhook` in the dashboard.
+
+**Required in App Runner (production runtime):**
+`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GITHUB_ID`, `GITHUB_SECRET`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`,
+`SMTP_FROM`, `RAZORPAY_KEY_ID` (`rzp_live_…`), `RAZORPAY_KEY_SECRET`,
+`RAZORPAY_WEBHOOK_SECRET`, `BLOB_READ_WRITE_TOKEN`, `REDIS_URL`, `REVALIDATE_SECRET`.
+Optional: `QDRANT_URL`, `QDRANT_API_KEY`, `GOOGLEAI_API_KEY`, `VECTOR_SIZE`.
+**Docker build argument:** `NEXT_PUBLIC_RAZORPAY_KEY_ID`, set to the same value as `RAZORPAY_KEY_ID`.
+
+## Phase 15 — Launch blockers resolved (code) ✅; Docker and deploy pending
+
+- [x] **Certificate promises removed** from the feature grid, hero card, featured
+      course list, marketing intro and README. Replaced with practice quizzes and
+      lesson Q&A, which exist. The instructor's own AWS certifications stay: they
+      are real credentials.
+- [x] **Email verification required for password login when SMTP is configured.**
+      The check runs after the password matches, so it reveals nothing about
+      whether an address exists. With SMTP unset (development), login is not gated.
+      The sign-in page explains the situation and points to "Forgot password".
+      Following a password-reset link also marks the email verified. This is the
+      way out for accounts that never verified.
+- [x] **Post-registration sign-in no longer redirects** to a generic error. The
+      "check your inbox" message stays on screen when verification is required.
+- [x] **`/notes` renders per request** (`dynamic = "force-dynamic"`). It used to be
+      prerendered hourly, which needed the database and Redis during `next build`.
+      The Docker build has neither, so it would have failed. The track list is still
+      cached in Redis. The ISR hour is gone.
+- [x] **Build no longer depends on the environment.** The standalone build passes
+      with `DATABASE_URL` and `REDIS_URL` unset.
+- [x] **Verified:** `tsc --noEmit` clean in every package. `yarn lint` 0 errors (25
+      `no-explicit-any` warnings). The authorize gate was tested against the real
+      `config.ts` and database: 7 of 7 pass. Helper checks pass.
+- [ ] **Docker image not built.** The Docker Desktop daemon is unresponsive. A restart
+      attempt stopped the local Postgres container that serves port 5433, so the dev
+      database is down until Docker is running again.
+- [ ] **Re-run the database suites** (payments 36, paywall 40) once Postgres is back.
+      They passed before the auth change. The auth change is covered by the gate tests.
+
+**Before taking password logins in production:** count existing accounts that will be
+gated. Run this on the production database and decide what to do with the result:
+`SELECT count(*) FROM "User" WHERE password IS NOT NULL AND "emailVerified" IS NULL;`
+Those accounts can verify through "Forgot password". Marking them verified in bulk is
+a decision for the client.
+
 ## Open risks / known issues
 
 - `turbo.json` uses the Turbo v1 `"pipeline"` key while `turbo@^2.0.0` is
@@ -588,3 +999,59 @@ Local login: **admin@example.com / admin123** (from the seed script).
   section+video, purchase it with a real Razorpay test key, confirm the
   linked notes track unlocks, download the Excel export, register/reset a
   real account) is still needed once Phase 1 infra exists.
+- **Production database is migrated but empty** (Neon, Singapore; all 3
+  migrations applied 2026-09-26, no drift). **Never run `yarn db:seed` against
+  it** — the seed creates `admin@example.com` / `admin123`. Create the real
+  admin by registering through the site, then
+  `UPDATE "User" SET admin = true WHERE email = '<their email>';`. Run
+  migrations with Neon's _direct_ (non-pooled) URL; the running app should use
+  the pooled URL plus `&pgbouncer=true&connect_timeout=15`.
+- **Vercel Hobby is for non-commercial use** and this site sells courses, so
+  the free-plan hosting assumption needs the client's decision (paid plan, or
+  another host). Vercel functions also cap the request body at ~4.5MB, which
+  breaks `/api/admin/upload-video` and `/api/admin/upload-ppt` for real lecture
+  files in production — they need client-side direct uploads to Blob/S3 (or a
+  host without that cap) before large uploads work when deployed.
+- **Uploaded files don't survive/serve in production without cloud storage.**
+  Verified: a production Next server 404s anything written to `public/` after
+  it started, and serverless disks are ephemeral anyway. Thumbnails, slides
+  and videos therefore need Vercel Blob (`BLOB_READ_WRITE_TOKEN`, supported) or
+  an S3 backend (not built). Uploaded-image hosts must also be in
+  `next.config.js` `images.remotePatterns` (`**.amazonaws.com` and Vercel Blob
+  are; a custom CloudFront domain would need adding).
+- **The GitHub repo is public** and contains the client's logo and
+  instructor photo; make it private before pushing.
+- Legal pages (Terms, Privacy, Refund/Cancellation) still don't exist and are
+  expected by Razorpay before live payments — waiting on the client's text.
+
+- ~~**Certificates are advertised but not built.**~~ Resolved in Phase 15: the
+  promise was removed from the copy. Building certificates later is a separate feature.
+- **Partly resolved (Phase 15):** password login now requires a verified email
+  when SMTP is configured. **Still open:** GitHub and Google use
+  `allowDangerousEmailAccountLinking`. Removing it, or using a verified-email
+  check, closes the remaining path where an OAuth sign-in attaches to an existing
+  account with the same address.
+- **Password reset does not end existing sessions.** JWTs are stateless. Fix:
+  store `passwordChangedAt` and reject tokens issued before it.
+- **Rate limits are in-memory per instance.** Behind App Runner with more than
+  one instance, each instance has its own counters. Move them to the Redis
+  already used by `packages/cache`. Comments, questions and quiz submissions
+  are not rate limited.
+- **Quiz answers ship to the browser.** Instant feedback needs `correctOption` on
+  the client. Scores are checked for range, not authenticity.
+- **Paid video is a plain URL.** Once a student has bought a course they can
+  download the file, and the right-click block in `VideoPlayer` is cosmetic.
+  Protecting it needs signed or expiring URLs.
+- **Uploads are buffered in memory.** A 1 GB video takes about 1 GB of container
+  memory. Large lectures need direct-to-storage uploads (S3 or Blob).
+- **CSP allows `unsafe-inline` scripts** because Next.js hydration needs them.
+  Nonces would be stronger. The policy has not been checked in a browser.
+- **Server Actions behind a proxy:** Next.js rejects a Server Action whose Origin
+  does not match the host. Confirm a comment submission works on the custom
+  domain after deploy, and set `serverActions.allowedOrigins` if it doesn't.
+- **Certificate and Notion dead branches**: `courses/[courseSlug]/[contentId]`
+  still renders a "Notion content" placeholder. Remove it after confirming no
+  `NOTION` rows exist. The Prisma schema is left as-is.
+- **Operational:** set AWS Budgets alerts and App Runner max instances; use Neon's
+  pooled URL in the app and the direct URL for migrations; make the repo private
+  before pushing.

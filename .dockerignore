@@ -1,12 +1,18 @@
 **/.git
 **/.gitignore
 **/.next
-**/node_modules
-**/.env
-**/.env.local
-**/.env.*.local
-**/dist
+**/out
 **/build
-**/*.log
+**/dist
+**/node_modules
 **/coverage
 **/.turbo
+**/.vercel
+**/.eslintcache
+**/*.log
+**/.env
+**/.env.*
+**/.DS_Store
+
+# Local upload-fallback output must never ship in the image
+apps/*/public/uploads

@@ -44,6 +44,12 @@ export async function storeFile({
     return blob.url;
   }
 
+  // Local disk is for development only. In production it would be lost on
+  // every deploy, because the container filesystem is ephemeral.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("BLOB_READ_WRITE_TOKEN is not set. Uploads need Vercel Blob in production.");
+  }
+
   const destPath = path.join(publicDir, "uploads", pathname);
   await mkdir(path.dirname(destPath), { recursive: true });
   await writeFile(destPath, data);
