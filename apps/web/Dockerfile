@@ -52,7 +52,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
 EXPOSE 3000
+
+# Bind to all interfaces. Next.js falls back to a different host if HOSTNAME is
+# unset, and Docker sets HOSTNAME to the container ID by default, so both are pinned.
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+# Used by `docker run` and local testing. Lightsail and App Runner run their own
+# checks against /api/health. The route makes no external calls, so a database
+# outage doesn't mark the container unhealthy.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1
 
 CMD ["node", "apps/web/server.js"]

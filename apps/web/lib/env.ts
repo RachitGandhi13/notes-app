@@ -23,13 +23,15 @@ export const REQUIRED_IN_PRODUCTION = [
   "REVALIDATE_SECRET",
 ] as const;
 
-/**
- * Throws if any required production variable is missing or empty. Does nothing
- * outside production, so local development can run with a partial .env.
- */
+/** The required production variables that are missing or empty. */
+export function missingProductionEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  if (env.NODE_ENV !== "production") return [];
+  return REQUIRED_IN_PRODUCTION.filter((name) => !env[name]?.trim());
+}
+
+/** Throws if any required production variable is missing or empty. */
 export function assertProductionEnv(env: NodeJS.ProcessEnv = process.env): void {
-  if (env.NODE_ENV !== "production") return;
-  const missing = REQUIRED_IN_PRODUCTION.filter((name) => !env[name]?.trim());
+  const missing = missingProductionEnv(env);
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables for production: ${missing.join(", ")}. ` +
