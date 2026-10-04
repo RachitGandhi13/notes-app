@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getCourse, getUserPurchases } from "@/lib/actions";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import { CurriculumAccordion } from "@/components/CurriculumAccordion";
+import { needsUnoptimized } from "@/lib/images";
 
 interface Props {
   params: { courseSlug: string };
@@ -100,7 +101,13 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
           <div className="bg-card overflow-hidden rounded-2xl border">
             {course.imageUrl && (
               <div className="bg-muted relative aspect-video w-full overflow-hidden">
-                <Image src={course.imageUrl} alt={course.title} fill className="object-cover" />
+                <Image
+                  src={course.imageUrl}
+                  alt={course.title}
+                  fill
+                  unoptimized={needsUnoptimized(course.imageUrl)}
+                  className="object-cover"
+                />
               </div>
             )}
             <div className="p-6">

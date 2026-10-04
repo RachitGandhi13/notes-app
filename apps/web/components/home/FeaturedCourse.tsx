@@ -2,6 +2,7 @@ import { Badge } from "@repo/ui";
 import { ArrowRight, BadgeCheck, PlayCircle, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { needsUnoptimized } from "@/lib/images";
 
 interface FeaturedCourseProps {
   slug: string;
@@ -31,6 +32,7 @@ export function FeaturedCourse({
           {imageUrl ? (
             <Image
               src={imageUrl}
+              unoptimized={needsUnoptimized(imageUrl)}
               alt={title}
               fill
               priority
