@@ -40,6 +40,12 @@ jobs:
           NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
         run: |
           set -euo pipefail
+          # NEXT_PUBLIC_* values are compiled into the browser bundle. An empty value here
+          # ships a site where checkout can never open, so stop the deploy instead.
+          if [ -z "$NEXT_PUBLIC_RAZORPAY_KEY_ID" ]; then
+            echo "::error::The NEXT_PUBLIC_RAZORPAY_KEY_ID repository secret is empty. Add it under Settings, Secrets and variables, Actions."
+            exit 1
+          fi
           docker buildx build \
             --platform linux/amd64 \
             --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$NEXT_PUBLIC_RAZORPAY_KEY_ID" \

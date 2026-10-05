@@ -50,14 +50,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You already own this course." }, { status: 409 });
     }
 
-    // Razorpay takes amounts in paise (the smallest INR unit).
+    // Razorpay takes amounts in paise (the smallest INR unit). It rejects amounts under 100
+    // paise (INR 1), so a price such as 0.50 would fail at Razorpay with no explanation.
     const amountInPaise = Math.round(course.price * 100);
+    if (amountInPaise < 100) {
+      console.error(`[razorpay/order] course ${course.id} price ${course.price} is below INR 1`);
+      return NextResponse.json(
+        { error: "This course's price is too low to take online payment." },
+        { status: 400 }
+      );
+    }
 
     const order = await getRazorpay().orders.create({
       amount: amountInPaise,
       currency: "INR",
       receipt: makeReceipt(),
-      notes: { userId: session.user.id, courseId: course.id, courseTitle: course.title },
+      // Razorpay limits each note value to 256 characters.
+      notes: {
+        userId: session.user.id,
+        courseId: course.id,
+        courseTitle: course.title.slice(0, 200),
+      },
     });
 
     await prisma.paymentOrder.create({
