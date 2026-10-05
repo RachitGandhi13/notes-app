@@ -37,23 +37,38 @@ export function parseBlobUrl(raw: unknown, kind: MediaKind): string {
 
 /** Reads up to `count` bytes from the start of a file, without downloading the rest. */
 async function readHead(url: string, count: number): Promise<Buffer> {
-  const res = await fetch(url, {
-    headers: { Range: `bytes=0-${count - 1}` },
-    cache: "no-store",
-  });
+  // Bounded, so a stalled storage read can't hold the admin request past the load balancer's
+  // timeout (about 60 seconds). The client retries the save when it gets a 503.
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { Range: `bytes=0-${count - 1}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    console.error("[blob-check] read failed", err instanceof Error ? err.name : err);
+    throw new HttpError(503, "The uploaded file could not be checked yet. Try saving again.");
+  }
   if (!res.ok || !res.body) {
     throw new HttpError(400, "The uploaded file could not be read.");
   }
   const reader = res.body.getReader();
   const chunks: Buffer[] = [];
   let total = 0;
-  while (total < count) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(Buffer.from(value));
-    total += value.length;
+  try {
+    while (total < count) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(Buffer.from(value));
+      total += value.length;
+    }
+  } catch (err) {
+    console.error("[blob-check] read interrupted", err instanceof Error ? err.name : err);
+    throw new HttpError(503, "The uploaded file could not be checked yet. Try saving again.");
+  } finally {
+    await reader.cancel().catch(() => {});
   }
-  await reader.cancel();
   return Buffer.concat(chunks).subarray(0, count);
 }
 

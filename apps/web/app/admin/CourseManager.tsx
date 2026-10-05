@@ -103,14 +103,18 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         // Production: the file goes straight to Vercel Blob. The server then checks it and
         // saves the record.
         const videoUrl = await uploadToBlob("video", file, setPercent);
-        await postJson("/api/admin/videos", {
-          courseId,
-          parentId,
-          title,
-          description,
-          videoUrl,
-          thumbnail: thumbnail || undefined,
-        });
+        await postJson(
+          "/api/admin/videos",
+          {
+            courseId,
+            parentId,
+            title,
+            description,
+            videoUrl,
+            thumbnail: thumbnail || undefined,
+          },
+          2
+        );
       } else {
         // Development: the local-disk route.
         const formData = new FormData();
