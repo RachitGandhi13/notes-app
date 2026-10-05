@@ -4,9 +4,13 @@
 // 'unsafe-inline' is kept for scripts until nonces are added. Every other host
 // is one the app actually loads from: Razorpay Checkout (script and frames) and
 // the Microsoft Office viewer used to show uploaded slides.
+// Next.js development mode evaluates code from strings (fast refresh and source maps),
+// which needs 'unsafe-eval'. Production builds don't, so it is added only in development.
+const devEval = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
+  `script-src 'self' 'unsafe-inline'${devEval} https://checkout.razorpay.com`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",

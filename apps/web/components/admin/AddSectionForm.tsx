@@ -54,7 +54,7 @@ export function AddSectionForm({ trackId }: { trackId: string }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-primary hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+        className="text-primary hover:bg-accent flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium lg:min-h-0"
       >
         <Plus className="h-4 w-4" /> Add section
       </button>
@@ -83,7 +83,7 @@ export function AddSectionForm({ trackId }: { trackId: string }) {
       />
       <div className="space-y-1">
         <label htmlFor="new-section-file" className="text-xs font-medium">
-          Slides — PPT, PPTX or PDF (optional)
+          Slides: PPT, PPTX or PDF (optional)
         </label>
         <input
           id="new-section-file"

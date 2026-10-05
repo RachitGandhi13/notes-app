@@ -61,7 +61,7 @@ export function AdminPanel({ tracks: initialTracks }: { tracks: Track[] }) {
           page.
         </p>
         {tracks.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No tracks yet — create one above.</p>
+          <p className="text-muted-foreground text-sm">No tracks yet. Create one above.</p>
         ) : (
           <ul className="divide-y rounded border text-sm">
             {tracks.map((track) => (
@@ -79,7 +79,7 @@ export function AdminPanel({ tracks: initialTracks }: { tracks: Track[] }) {
                     onClick={() => handleToggleHidden(track)}
                     className="text-muted-foreground hover:bg-accent rounded p-1.5"
                     aria-label={track.hidden ? "Show track" : "Hide track"}
-                    title={track.hidden ? "Hidden — click to show" : "Visible — click to hide"}
+                    title={track.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
                   >
                     {track.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

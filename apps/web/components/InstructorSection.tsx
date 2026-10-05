@@ -29,14 +29,14 @@ export function InstructorSection() {
               href={instructor.linkedinUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary flex items-center gap-1.5 font-medium hover:underline"
+              className="text-primary flex min-h-11 items-center gap-1.5 font-medium hover:underline"
             >
               <Linkedin className="h-4 w-4" />
               LinkedIn
             </a>
             <a
               href={`mailto:${instructor.email}`}
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+              className="text-muted-foreground hover:text-foreground flex min-h-11 items-center gap-1.5 transition-colors"
             >
               <Mail className="h-4 w-4" />
               {instructor.email}
@@ -66,21 +66,24 @@ export function InstructorSection() {
 
 export function SupportSection() {
   return (
-    <div className="border-t py-14 text-center">
+    <div className="border-t py-10 text-center sm:py-14">
       <p className="text-primary text-sm font-semibold uppercase tracking-wide">Student Support</p>
       <h2 className="mt-2 text-4xl font-extrabold tracking-tight">
         Need <span className="text-primary">help?</span>
       </h2>
       <p className="text-muted-foreground mx-auto mt-3 max-w-md text-sm leading-relaxed">
         Have a question or need assistance? Email us at{" "}
-        <a href={`mailto:${instructor.email}`} className="text-primary font-medium hover:underline">
+        <a
+          href={`mailto:${instructor.email}`}
+          className="text-primary inline-flex min-h-11 items-center font-medium hover:underline"
+        >
           {instructor.email}
         </a>
         , and we&apos;ll get back to you as soon as we can.
       </p>
       <a
         href={`mailto:${instructor.email}`}
-        className="bg-card hover:bg-accent mt-6 inline-flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-semibold transition-colors"
+        className="bg-card hover:bg-accent mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-semibold transition-colors"
       >
         <Mail className="h-4 w-4" />
         Email support

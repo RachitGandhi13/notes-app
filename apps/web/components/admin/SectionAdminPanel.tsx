@@ -442,7 +442,7 @@ export function SectionAdminPanel({
         <Settings className="h-4 w-4" />
         Edit this section
         <span className="text-muted-foreground text-xs font-normal">
-          — slides, practice questions, order (admins only)
+          : slides, practice questions, order (admins only)
         </span>
       </button>
       {open && (

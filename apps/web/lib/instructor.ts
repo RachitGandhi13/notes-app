@@ -10,7 +10,7 @@ export const instructor = {
   linkedinUrl: "https://linkedin.com/in/drveerannagatate",
   email: "vcgatate@gmail.com",
   bio: [
-    "With 7+ years of IT experience, Dr. Veeranna Gatate specializes in AWS Cloud, DevOps, Infrastructure Automation, and CI/CD — currently working as an AWS and DevOps Expert at CloudThat Technologies, and previously at TCS.",
+    "With 7+ years of IT experience, Dr. Veeranna Gatate specializes in AWS Cloud, DevOps, Infrastructure Automation, and CI/CD, currently working as an AWS and DevOps Expert at CloudThat Technologies, and previously at TCS.",
     "He founded CloudVidya Academy to bridge the gap between academic learning and industry expectations through hands-on, project-based training, and has mentored aspiring professionals building careers in Cloud and DevOps.",
   ],
   certifications: [

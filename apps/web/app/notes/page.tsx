@@ -41,7 +41,7 @@ export default async function NotesPage() {
   return (
     <div className="space-y-16">
       {/* Hero */}
-      <section className="relative isolate overflow-hidden rounded-3xl border px-6 py-16 text-center sm:px-12 sm:py-20">
+      <section className="relative isolate overflow-hidden rounded-3xl border px-5 py-10 text-center sm:px-12 sm:py-20">
         <AnimatedBackdrop />
 
         <div className="mx-auto max-w-2xl space-y-7">
@@ -105,7 +105,7 @@ export default async function NotesPage() {
       {/* Track grid */}
       <div id="browse" className="scroll-mt-20">
         {tracks.length === 0 ? (
-          <div className="text-muted-foreground py-20 text-center">
+          <div className="text-muted-foreground py-12 text-center sm:py-20">
             No tracks yet. Ask an admin to add one.
           </div>
         ) : (

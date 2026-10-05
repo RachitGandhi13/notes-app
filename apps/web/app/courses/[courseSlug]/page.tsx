@@ -78,7 +78,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* Payment status banner */}
       {searchParams.payment === "success" && (
         <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
