@@ -1,19 +1,8 @@
 import { hash } from "bcryptjs";
 import { prisma } from "@repo/db/client";
 import { checkRateLimit, MAX_PASSWORD_LENGTH } from "./config";
-import { createVerificationToken } from "./tokens";
-import { sendEmail } from "./email";
+import { sendVerificationEmail } from "./verification";
 import { AuthActionError } from "./action-error";
-
-/** Escapes text placed inside HTML, so a name like "<img src=x>" is shown as text. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 /**
  * Shared by both apps' /api/auth/register routes: validates, rate-limits,
@@ -54,11 +43,5 @@ export async function registerUser(params: {
   const hashed = await hash(password, 10);
   await prisma.user.create({ data: { name, email, password: hashed } });
 
-  const token = await createVerificationToken(email);
-  const verifyUrl = `${appUrl}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
-  await sendEmail(
-    email,
-    "Verify your email",
-    `<p>Hi ${escapeHtml(name)},</p><p>Click below to verify your email address:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 1 hour.</p>`
-  );
+  await sendVerificationEmail({ email, name, appUrl });
 }

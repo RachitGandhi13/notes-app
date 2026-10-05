@@ -53,7 +53,7 @@ const CARDS: {
   },
   {
     Icon: ListChecks,
-    title: "Practice quizzes",
+    title: "Section reviews",
     text: "Test yourself as you go",
     className: "right-[-2%] bottom-[2%]",
     delay: "-1s",

@@ -2,19 +2,14 @@ import { NextResponse } from "next/server";
 import path from "path";
 import { randomUUID } from "crypto";
 import { AuthError, requireAdmin } from "@repo/auth";
-import { storeFile } from "@repo/storage";
+import { isBlobConfigured, storeFile } from "@repo/storage";
 import { createUploadedVideo } from "@/lib/actions";
 import { HttpError, assertBodyWithin, assertSameOrigin } from "@/lib/security";
 import { MAX_VIDEO_BYTES, validateUpload } from "@/lib/uploads";
 
-// A plain multipart upload, not a server action — server actions carry a
-// much smaller default body-size limit, which real lecture video files
-// (potentially hundreds of MB) can exceed.
-//
-// Caveat: Vercel's own Serverless Functions cap the *request body* at
-// ~4.5MB in production, independent of anything configurable here. Larger
-// lecture recordings need client-side direct uploads to storage (see
-// DEVELOPMENT.md).
+// Local-disk fallback for development, used only when BLOB_READ_WRITE_TOKEN is not set. With
+// Blob configured, the browser uploads straight to storage (see /api/admin/blob-upload) and
+// this route answers 410 so the server never buffers a lecture video.
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
@@ -22,6 +17,12 @@ export async function POST(request: Request) {
     // inside createUploadedVideo() would let an unauthenticated request still
     // write the file to storage before being rejected.
     await requireAdmin();
+    if (isBlobConfigured()) {
+      return NextResponse.json(
+        { error: "Videos upload directly to storage. Reload the page and try again." },
+        { status: 410 }
+      );
+    }
     assertBodyWithin(request, MAX_VIDEO_BYTES + 1024 * 1024);
 
     const formData = await request.formData();

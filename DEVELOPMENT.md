@@ -411,7 +411,7 @@ for the client's decision, not decided unilaterally.
 - **`?tab=register` deep link** added to both `/auth` pages so the navbar/footer "Join now"/"Register" links land directly on the register tab instead of always defaulting to sign-in.
 - **Homepage hero rebuilt** as a centered layout (previously two-column) matching the reference: small pill badge with the instructor's photo ("Programs by CloudVidya Academy"), bold headline with one word in the primary blue, subtitle, the search bar, then the real course/track count + enrolled/lesson stats.
 - **`InstructorSection` restructured** to match the reference's actual layout: square photo on the left (using the real photo now, not a placeholder path), "Founder of CloudVidya Academy" label + bold heading + bio on the right, then a real link row (LinkedIn, mailto: email) — kept the certifications list from the previous pass since it's real content the reference-2 site doesn't happen to show but adds genuine credibility.
-- **New `SupportSection`** ("Need help?") using the client's real email (`vcgatate@gmail.com`) as both a mailto: link and displayed text — matches the reference's student-support block.
+- **New `SupportSection`** ("Need help?") using the client's support email (`veeranna@cloudvidyaacademy.com`, previously `vcgatate@gmail.com`) as both a mailto: link and displayed text — matches the reference's student-support block.
 - **New shared `Footer` component** (`packages/ui/src/components/footer.tsx`) — brand + description, two link columns, LinkedIn/email icons, copyright, and the reference's giant low-opacity background wordmark. **Only real, working links included** — Home, Browse, Sign in, Register, Profile. Deliberately did **not** add Terms & Conditions / Privacy Policy / Refund & Cancellation links like the reference has, since those pages don't exist and fabricating either the links or placeholder legal text would be worse than not having them.
 - **Flagging, not fixing**: this is a payment-collecting platform now (Razorpay), and it currently has no Terms of Service, Privacy Policy, or Refund/Cancellation policy anywhere — genuinely worth the client's attention before going live (Razorpay's own merchant approval sometimes expects these), not something I should draft unilaterally since it's legal content, not UI.
 
@@ -968,6 +968,57 @@ gated. Run this on the production database and decide what to do with the result
 `SELECT count(*) FROM "User" WHERE password IS NOT NULL AND "emailVerified" IS NULL;`
 Those accounts can verify through "Forgot password". Marking them verified in bulk is
 a decision for the client.
+
+## Phase 16 — Auth UX, startup config checks, direct uploads ✅ (code); live Blob and OAuth untested
+
+- [x] **Social sign-in only shows when configured.** A GitHub or Google provider is
+      enabled only when both its ID and secret are set and neither is a placeholder
+      (`dummy`, `changeme`, `your…`, `example`, `<…>`, `.invalid`/`.example` hosts). The
+      same check gates the NextAuth provider list, so a hidden button can't be used.
+      `GET /api/auth/config` reports which are on. The sign-in page hides the buttons and
+      the "or continue with email" divider when neither is on.
+- [x] **Strict startup checks** (`apps/web/lib/env.ts`, run from `instrumentation.ts`).
+      In production a missing required variable, a bad format (`DATABASE_URL`,
+      `REDIS_URL`, `NEXTAUTH_URL` not https), a `BLOB_READ_WRITE_TOKEN` without the
+      `vercel_blob_rw_` prefix, or a placeholder secret stops the server. Findings are
+      printed by variable name only, never by value. Outside production they are warnings.
+- [x] **Resend verification email.** The sign-in page shows "Email not verified? Click
+      here to resend verification email" after an `EMAIL_NOT_VERIFIED` error.
+      `POST /api/auth/resend-verification` always answers with the same message, so it
+      can't reveal whether an address has an account. Limits: 10 per IP per hour, 3 per
+      email per hour.
+- [x] **Show/hide password** on sign-in, register and reset-password forms
+      (`components/PasswordInput.tsx`). The button has an accessible name and reports
+      its pressed state.
+- [x] **Direct browser-to-Blob uploads for videos and thumbnails.** When
+      `BLOB_READ_WRITE_TOKEN` is set, the admin page uploads straight to Vercel Blob using
+      `upload()` from `@vercel/blob/client`. The server never buffers the file. - `/api/admin/upload-config` tells the page which mode is on (admin only). - `/api/admin/blob-upload` issues the short-lived upload token. It requires an
+      admin and allows only the folder, extensions, content types and size for the
+      kind (images 4 MB; videos 500 MB, multipart). - `/api/admin/blob-verify` (images) and `/api/admin/videos` (videos, then the
+      record) check the file's first bytes against its extension. A mismatch deletes
+      the blob. Only URLs on `*.public.blob.vercel-storage.com`, under `images/` or
+      `videos/`, are accepted. - `/api/admin/upload-video` and `/api/admin/upload-image` answer 410 when Blob is
+      configured. Without a token (development) they still write to `public/uploads`. - The CSP `connect-src` now allows `https://blob.vercel-storage.com`.
+- [x] **Build regression fixed.** `env.ts` had imported the `@repo/auth` root, which
+      pulls in `next-auth` and its Node `crypto` import. `instrumentation.ts` is also
+      bundled for the Edge runtime, so the dev server and build failed. `env.ts` now
+      imports the `@repo/auth/placeholder` subpath.
+- [x] **Verified:** `tsc --noEmit` clean in `apps/web` and `packages/auth`. `yarn lint`
+      0 errors (26 `no-explicit-any` warnings). `next build` passes. Route checks on the
+      dev server: anonymous requests to every new admin route get 401. The token route
+      issues tokens for valid video and image requests and rejects 8 malformed requests
+      with 400 (test token, no network). The URL parser and byte check pass on real file
+      heads and on a local HTTP server. The auth page in headless Chrome hides the social
+      buttons and divider, and the eye toggle works on sign-in and register. Resend
+      returns the same message every time and gives 429 on the fourth request in an hour.
+- [ ] **Not verified (needs live credentials or data):** a real upload to Vercel Blob
+      (no token here), the admin page using direct mode end to end, the resend link after
+      a real `EMAIL_NOT_VERIFIED` login, and the social buttons with OAuth configured.
+- [ ] **Slides still buffer on the server.** `/api/admin/upload-ppt` is unchanged and
+      still reads files up to 100 MB into memory. Move it to direct upload if the
+      client's decks get large.
+- [ ] **Orphan blobs are possible.** A direct upload that succeeds, followed by a failed
+      save, leaves the file in storage with no record. Clean up later if it matters.
 
 ## Open risks / known issues
 

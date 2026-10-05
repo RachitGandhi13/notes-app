@@ -32,7 +32,7 @@ const FEATURES: { Icon: LucideIcon; title: string; text: string; tint: string }[
   },
   {
     Icon: ClipboardCheck,
-    title: "Practice quizzes",
+    title: "Learn from your mistakes",
     text: "Test yourself with multiple-choice questions, see the answers, and try again.",
     tint: "from-amber-500 to-orange-400",
   },
@@ -44,7 +44,7 @@ const FEATURES: { Icon: LucideIcon; title: string; text: string; tint: string }[
   },
   {
     Icon: ListChecks,
-    title: "Practice quizzes",
+    title: "Section reviews",
     text: "Check what you've learned with multiple-choice questions after every section.",
     tint: "from-rose-500 to-pink-400",
   },
