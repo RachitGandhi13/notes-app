@@ -1,7 +1,15 @@
+import { randomBytes } from "crypto";
 import { AuthError, checkRateLimit, requireAuth } from "@repo/auth";
 import { prisma } from "@repo/db/client";
 import { NextResponse } from "next/server";
 import { getRazorpay, getRazorpayKeyId, RazorpayConfigError } from "@/lib/razorpay";
+
+// Razorpay rejects a receipt longer than 40 characters. A course ID is a 36-character UUID,
+// so the old "course_<id>_<timestamp>" receipt (57 characters) failed on every purchase.
+// The receipt is only a reference for our records, so a short random value is enough.
+function makeReceipt(): string {
+  return `rcpt_${randomBytes(12).toString("hex")}`;
+}
 
 // Creates a Razorpay order for a paid course.
 //
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
     const order = await getRazorpay().orders.create({
       amount: amountInPaise,
       currency: "INR",
-      receipt: `course_${course.id}_${Date.now()}`,
+      receipt: makeReceipt(),
       notes: { userId: session.user.id, courseId: course.id, courseTitle: course.title },
     });
 
@@ -77,7 +85,23 @@ export async function POST(request: Request) {
       console.error("[razorpay/order] configuration:", err.message);
       return NextResponse.json({ error: "Payments are not configured yet." }, { status: 500 });
     }
-    console.error("[razorpay/order]", err);
+    // Razorpay's SDK rejects with its own error object: an HTTP status and a description such as
+    // "The api key provided is invalid". Log those so the cause shows in the server logs.
+    // The key secret is never logged.
+    const razorpayErr = err as {
+      statusCode?: number;
+      error?: { code?: string; description?: string };
+    };
+    if (razorpayErr?.error?.description) {
+      console.error(
+        "[razorpay/order] Razorpay rejected the order:",
+        razorpayErr.statusCode,
+        razorpayErr.error.code,
+        razorpayErr.error.description
+      );
+    } else {
+      console.error("[razorpay/order] unexpected error:", err);
+    }
     return NextResponse.json(
       { error: "Could not start checkout. Please try again." },
       { status: 500 }

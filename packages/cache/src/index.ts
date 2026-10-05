@@ -19,6 +19,10 @@ function getClient(): Redis {
     _client = new Redis(url, {
       maxRetriesPerRequest: 1,
       lazyConnect: true,
+      // Without these, an unreachable Redis holds the request open until the load balancer
+      // gives up (a 504 for the admin). Caching is best-effort, so fail fast instead.
+      connectTimeout: 3000,
+      commandTimeout: 2000,
     });
     _client.on("error", (err) => {
       // Caching is best-effort, so a dropped connection is logged and the app carries on.

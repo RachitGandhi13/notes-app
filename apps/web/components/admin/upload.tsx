@@ -34,15 +34,21 @@ export function postFormWithProgress<T = any>(
   });
 }
 
-export async function postJson<T = any>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error ?? `Request failed (${res.status}).`);
-  return data as T;
+// `retries` is for requests that are safe to repeat (the server must treat a repeat as a
+// no-op). It retries only gateway timeouts and "try again" responses, never validation errors.
+export async function postJson<T = any>(url: string, body: unknown, retries = 0): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok) return data as T;
+    const retryable = [502, 503, 504].includes(res.status) && attempt < retries;
+    if (!retryable) throw new Error(data?.error ?? `Request failed (${res.status}).`);
+    await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
+  }
 }
 
 // Whether files go straight to Vercel Blob (production) or to the local-disk routes
