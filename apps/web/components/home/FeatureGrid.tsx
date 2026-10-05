@@ -15,7 +15,7 @@ const FEATURES: { Icon: LucideIcon; title: string; text: string; tint: string }[
   {
     Icon: Rocket,
     title: "Project-based learning",
-    text: "Build real infrastructure and pipelines, guided step by step — not just slides.",
+    text: "Build real infrastructure and pipelines, guided step by step, not just slides.",
     tint: "from-blue-500 to-cyan-400",
   },
   {
@@ -64,7 +64,7 @@ const FEATURES: { Icon: LucideIcon; title: string; text: string; tint: string }[
 
 export function FeatureGrid() {
   return (
-    <section className="container py-20">
+    <section className="container py-12 sm:py-20">
       <div className="mx-auto max-w-2xl text-center">
         <p className="text-primary text-sm font-semibold uppercase tracking-wide">
           Why CloudVidya Academy
@@ -73,7 +73,7 @@ export function FeatureGrid() {
           Everything you need to go from learning to <span className="text-primary">doing</span>
         </h2>
         <p className="text-muted-foreground mt-3 leading-relaxed">
-          Video courses, notes and quizzes — all in one place, built around hands-on AWS and DevOps
+          Video courses, notes and quizzes. All in one place, built around hands-on AWS and DevOps
           training.
         </p>
       </div>

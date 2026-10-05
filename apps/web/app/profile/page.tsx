@@ -20,7 +20,7 @@ export default async function ProfilePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 py-8">
+    <div className="mx-auto max-w-2xl space-y-10 px-4 py-6 sm:px-6 sm:py-8">
       {/* User info */}
       <div className="flex items-center gap-4">
         {session.user.image && (

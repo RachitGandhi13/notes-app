@@ -61,7 +61,7 @@ export function MCQQuiz({ problemId, questions }: MCQQuizProps) {
           Practice questions
         </h2>
         <p className="text-muted-foreground text-sm">
-          {questions.length} {questions.length === 1 ? "question" : "questions"} — answer all, then
+          {questions.length} {questions.length === 1 ? "question" : "questions"}. Answer all, then
           submit to see the correct answers. You can try again as many times as you like.
         </p>
       </div>

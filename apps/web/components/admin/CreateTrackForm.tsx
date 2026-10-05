@@ -49,7 +49,7 @@ export function CreateTrackForm({ onCreated }: { onCreated: (track: CreatedTrack
     <div className="space-y-3 rounded-lg border p-4">
       <h2 className="font-semibold">Create a track</h2>
       <p className="text-muted-foreground text-sm">
-        A track is a topic. After creating it, open it to add sections — each with its slides and
+        A track is a topic. After creating it, open it to add sections, each with its slides and
         practice questions.
       </p>
       <form onSubmit={handleSubmit} className="space-y-3">

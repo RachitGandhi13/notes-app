@@ -26,7 +26,7 @@ export function postFormWithProgress<T = any>(
         reject(new Error(body?.error ?? `Upload failed (${xhr.status}).`));
       }
     };
-    xhr.onerror = () => reject(new Error("Network error — the upload did not finish."));
+    xhr.onerror = () => reject(new Error("Network error. The upload did not finish."));
     xhr.send(formData);
   });
 }
@@ -47,7 +47,7 @@ export function UploadBar({ percent }: { percent: number }) {
         />
       </div>
       <p className="text-muted-foreground text-xs">
-        {percent < 100 ? `Uploading… ${percent}%` : "Upload finished — saving…"}
+        {percent < 100 ? `Uploading… ${percent}%` : "Upload finished, saving…"}
       </p>
     </div>
   );

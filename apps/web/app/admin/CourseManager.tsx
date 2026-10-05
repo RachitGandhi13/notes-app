@@ -361,7 +361,7 @@ function ContentNodeRow({
             disabled={busy}
             className="text-muted-foreground hover:bg-accent rounded p-1 disabled:opacity-50"
             aria-label={node.hidden ? "Unhide" : "Hide"}
-            title={node.hidden ? "Hidden — click to show" : "Visible — click to hide"}
+            title={node.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
           >
             {node.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </button>
@@ -522,7 +522,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
               setEditing((v) => !v);
               setExpanded(true);
             }}
-            className="text-muted-foreground hover:bg-accent rounded p-1.5"
+            className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded lg:h-auto lg:w-auto lg:p-1.5"
             aria-label="Edit course"
           >
             <Pencil className="h-4 w-4" />
@@ -530,15 +530,15 @@ function CourseRow({ course }: { course: AdminCourse }) {
           <button
             onClick={handleToggleHidden}
             disabled={busy}
-            className="text-muted-foreground hover:bg-accent rounded p-1.5 disabled:opacity-50"
+            className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded disabled:opacity-50 lg:h-auto lg:w-auto lg:p-1.5"
             aria-label={course.hidden ? "Unhide course" : "Hide course"}
-            title={course.hidden ? "Hidden — click to show" : "Visible — click to hide"}
+            title={course.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
           >
             {course.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="text-muted-foreground hover:bg-accent rounded p-1.5"
+            className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded lg:h-auto lg:w-auto lg:p-1.5"
           >
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
@@ -679,7 +679,7 @@ function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
 
       <div className="space-y-1">
         <label className="text-xs font-medium">
-          Link to a notes track (optional — one purchase unlocks both)
+          Link to a notes track (optional): one purchase unlocks both
         </label>
         <select
           value={trackId}
@@ -701,7 +701,7 @@ function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
       <button
         type="submit"
         disabled={submitting}
-        className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+        className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
       >
         {submitting ? "Creating…" : "Create Course"}
       </button>

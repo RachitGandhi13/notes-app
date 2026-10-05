@@ -35,7 +35,7 @@ export function Footer({
         <div className="bg-card rounded-2xl border p-8">
           <div className="grid gap-8 sm:grid-cols-[1.2fr_1fr_1fr_auto]">
             <div>
-              <Link href={brandHref} className="flex items-center gap-2">
+              <Link href={brandHref} className="flex min-h-11 items-center gap-2">
                 {brandLogo && (
                   // eslint-disable-next-line
                   <img src={brandLogo} alt="" className="h-8 w-8 rounded-full object-cover" />
@@ -55,7 +55,7 @@ export function Footer({
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-sm transition-colors lg:min-h-0"
                       >
                         {link.label}
                       </Link>
@@ -72,7 +72,7 @@ export function Footer({
                     href={linkedinUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-secondary hover:bg-accent flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+                    className="bg-secondary hover:bg-accent flex h-11 w-11 items-center justify-center rounded-lg transition-colors lg:h-9 lg:w-9"
                     aria-label="LinkedIn"
                   >
                     <Linkedin className="h-4 w-4" />
@@ -81,7 +81,7 @@ export function Footer({
                 {email && (
                   <a
                     href={`mailto:${email}`}
-                    className="bg-secondary hover:bg-accent flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+                    className="bg-secondary hover:bg-accent flex h-11 w-11 items-center justify-center rounded-lg transition-colors lg:h-9 lg:w-9"
                     aria-label="Email"
                   >
                     <Mail className="h-4 w-4" />

@@ -1,8 +1,10 @@
 "use client";
 
-import { LogOut, Shield, User } from "lucide-react";
+import { LogOut, Menu, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "./button";
 import {
   DropdownMenu,
@@ -39,12 +41,19 @@ export function Navbar({
   search,
 }: NavbarProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the phone menu whenever the page changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   return (
     <header className="bg-background/95 sticky top-0 z-40 w-full border-b backdrop-blur">
-      <div className="container flex h-16 items-center gap-4">
+      <div className="container flex h-16 items-center gap-3 sm:gap-4">
         {/* Brand */}
-        <Link href={brandHref} className="flex min-w-0 items-center gap-2">
+        <Link href={brandHref} className="flex min-h-11 min-w-0 items-center gap-2">
           {brandLogo && (
             // eslint-disable-next-line
             <img src={brandLogo} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
@@ -54,12 +63,12 @@ export function Navbar({
           </span>
         </Link>
 
-        {/* Search */}
-        <div className="mx-auto hidden w-full max-w-md flex-1 sm:block">{search}</div>
+        {/* Search (desktop). On phones it lives in the menu panel instead. */}
+        <div className="mx-auto hidden w-full max-w-md flex-1 lg:block">{search}</div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           {links.length > 0 && (
-            <nav className="hidden items-center gap-1 sm:flex">
+            <nav className="hidden items-center gap-1 lg:flex">
               {links.map((link) => (
                 <Button key={link.href} asChild variant="ghost" size="sm">
                   <Link href={link.href}>{link.label}</Link>
@@ -67,7 +76,7 @@ export function Navbar({
               ))}
             </nav>
           )}
-          <div className="hidden sm:block">
+          <div className="hidden lg:block">
             <ThemeToggle />
           </div>
 
@@ -119,17 +128,96 @@ export function Navbar({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
+            <div className="hidden items-center gap-2 lg:flex">
               <Button asChild variant="outline" size="sm">
                 <Link href="/auth">Login</Link>
               </Button>
               <Button asChild size="sm">
                 <Link href="/auth?tab=register">Join now</Link>
               </Button>
-            </>
+            </div>
           )}
+
+          {/* Phone menu toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
+
+      {/* Phone menu panel */}
+      {menuOpen && (
+        <div id="mobile-menu" className="bg-background border-t lg:hidden">
+          <div className="container space-y-4 py-4">
+            {search && <div>{search}</div>}
+
+            {links.length > 0 && (
+              <nav className="flex flex-col">
+                {links.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+
+            <div className="flex min-h-11 items-center justify-between border-t pt-3">
+              <span className="text-muted-foreground text-sm">Theme</span>
+              <ThemeToggle />
+            </div>
+
+            {session?.user ? (
+              <div className="grid gap-1 border-t pt-3">
+                <Link
+                  href="/profile"
+                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+                {session.user.admin && (
+                  <Link
+                    href="/admin"
+                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="text-destructive hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 border-t pt-3">
+                <Button asChild variant="outline">
+                  <Link href="/auth">Login</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/auth?tab=register">Join now</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

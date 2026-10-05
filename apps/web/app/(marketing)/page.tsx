@@ -52,7 +52,7 @@ export default async function HomePage({ searchParams }: Props) {
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b">
         <AnimatedBackdrop />
-        <div className="container grid items-center gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <div className="container grid items-center gap-10 py-10 sm:gap-12 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
           <div className="min-w-0 space-y-7">
             <div className="bg-card/80 animate-fade-up inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm shadow-sm backdrop-blur">
               <Image
@@ -74,8 +74,8 @@ export default async function HomePage({ searchParams }: Props) {
             </h1>
 
             <p className="text-muted-foreground animate-fade-up max-w-xl text-lg leading-relaxed [animation-delay:160ms]">
-              Hands-on video courses by {instructor.name} — with notes, practice quizzes and
-              progress tracking. Learn at your own pace.
+              Hands-on video courses by {instructor.name}, with notes, practice quizzes and progress
+              tracking. Learn at your own pace.
             </p>
 
             <div className="animate-fade-up flex flex-wrap items-center gap-3 [animation-delay:240ms]">
@@ -122,7 +122,7 @@ export default async function HomePage({ searchParams }: Props) {
       {!query && <FeatureGrid />}
 
       {/* Courses */}
-      <section id="browse" className="container scroll-mt-20 py-16">
+      <section id="browse" className="container scroll-mt-20 py-10 sm:py-16">
         <div className="mb-10 text-center">
           <p className="text-primary text-sm font-semibold uppercase tracking-wide">
             {query ? "Search results" : "Courses"}
@@ -141,7 +141,7 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
 
         {courses.length === 0 ? (
-          <div className="text-muted-foreground py-20 text-center">
+          <div className="text-muted-foreground py-12 text-center sm:py-20">
             {query ? <>No courses match &ldquo;{query}&rdquo;.</> : <>No courses yet.</>}
           </div>
         ) : courses.length === 1 ? (

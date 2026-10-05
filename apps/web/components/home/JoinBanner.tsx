@@ -22,7 +22,7 @@ export function JoinBanner({ signedIn }: { signedIn: boolean }) {
               href={signedIn ? "/profile" : "/auth?tab=register"}
               className="text-primary inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold shadow-lg transition-all hover:gap-3"
             >
-              {signedIn ? "Go to my profile" : "Join now — it's free"}
+              {signedIn ? "Go to my profile" : "Join now, it's free"}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link

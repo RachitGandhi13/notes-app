@@ -19,7 +19,7 @@ export function TrackPaywall({ trackTitle, course }: TrackPaywallProps) {
         <p className="text-muted-foreground mt-2 text-sm">
           This track unlocks automatically once you purchase the <strong>{course.title}</strong>{" "}
           video course
-          {course.price > 0 ? ` for ₹${course.price}` : ""} — one payment unlocks both.
+          {course.price > 0 ? ` for ₹${course.price}` : ""}. One payment unlocks both.
         </p>
       </div>
       <div className="flex gap-3">

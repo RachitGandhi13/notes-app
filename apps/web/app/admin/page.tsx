@@ -27,8 +27,8 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 py-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Admin</h1>
           <p className="text-muted-foreground">
@@ -37,7 +37,7 @@ export default async function AdminPage() {
         </div>
         <a
           href="/api/admin/export-students"
-          className="hover:bg-accent flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+          className="hover:bg-accent flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors lg:min-h-0"
         >
           <Download className="h-4 w-4" />
           Export Students (Excel)

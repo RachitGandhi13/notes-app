@@ -93,7 +93,7 @@ function AuthPageInner() {
 
         {verified && (
           <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-            Email verified — you can now sign in.
+            Email verified. You can now sign in.
           </div>
         )}
 
@@ -111,14 +111,14 @@ function AuthPageInner() {
         <div className="space-y-3">
           <button
             onClick={() => signIn("github", { callbackUrl })}
-            className="bg-card hover:bg-accent flex w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
+            className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
           >
             <GitHubIcon />
             Continue with GitHub
           </button>
           <button
             onClick={() => signIn("google", { callbackUrl })}
-            className="bg-card hover:bg-accent flex w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
+            className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
           >
             <GoogleIcon />
             Continue with Google
@@ -141,7 +141,7 @@ function AuthPageInner() {
           </button>
           <button
             onClick={() => setTab("register")}
-            className={`flex-1 rounded py-1.5 text-sm font-medium transition-colors ${tab === "register" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+            className={`min-h-11 flex-1 rounded py-1.5 text-sm font-medium transition-colors ${tab === "register" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
           >
             Register
           </button>
@@ -151,7 +151,7 @@ function AuthPageInner() {
 
         {registerSuccess && (
           <p className="text-sm text-green-600 dark:text-green-400">
-            Account created — check your email to verify it.
+            Account created. Check your email to verify it.
           </p>
         )}
 
@@ -178,7 +178,7 @@ function AuthPageInner() {
                 </label>
                 <Link
                   href="/auth/forgot-password"
-                  className="text-muted-foreground hover:text-foreground text-xs underline"
+                  className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-xs underline"
                 >
                   Forgot password?
                 </Link>
@@ -196,7 +196,7 @@ function AuthPageInner() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "Signing in…" : "Sign in with Email"}
             </button>
@@ -249,7 +249,7 @@ function AuthPageInner() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "Creating account…" : "Create Account"}
             </button>

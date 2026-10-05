@@ -32,7 +32,7 @@ export function PPTViewer({ pptUrl, title }: PPTViewerProps) {
       {embedUrl ? (
         <iframe
           src={embedUrl}
-          title={`${title} — slides`}
+          title={`${title}: slides`}
           className="bg-muted/30 h-[70vh] min-h-[420px] w-full rounded-lg border"
           allowFullScreen
         />

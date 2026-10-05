@@ -48,7 +48,7 @@ export function ProblemSidebar({
       {/* Collapse toggle (side column only) */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="bg-background absolute -right-3 top-4 z-10 hidden h-6 w-6 items-center justify-center rounded-full border shadow-sm md:flex"
+        className="bg-background absolute -right-3 top-4 z-10 hidden h-11 w-11 items-center justify-center rounded-full border shadow-sm md:flex lg:h-6 lg:w-6"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
@@ -59,7 +59,10 @@ export function ProblemSidebar({
         <>
           {/* Track title */}
           <div className="border-b p-4">
-            <Link href="/notes" className="text-muted-foreground text-xs hover:underline">
+            <Link
+              href="/notes"
+              className="text-muted-foreground inline-flex min-h-11 items-center text-xs hover:underline"
+            >
               ← All tracks
             </Link>
             <h2 className="mt-1 text-sm font-semibold leading-snug">{trackTitle}</h2>
@@ -78,7 +81,7 @@ export function ProblemSidebar({
                     <Link
                       href={`/tracks/${trackId}/${problem.id}`}
                       className={cn(
-                        "flex items-start gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                        "flex min-h-11 items-start gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors",
                         isActive
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"

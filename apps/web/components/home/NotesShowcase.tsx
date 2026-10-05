@@ -94,7 +94,7 @@ export function NotesShowcase() {
                 { Icon: FileText, text: "A slide deck for every section, right on the page" },
                 {
                   Icon: ClipboardCheck,
-                  text: "Practice questions with instant feedback — try again as often as you like",
+                  text: "Practice questions with instant feedback. Try again as often as you like",
                 },
                 { Icon: LineChart, text: "Sign in and your quiz scores are saved to your profile" },
               ].map(({ Icon, text }) => (

@@ -49,7 +49,7 @@ export default async function TrackPage({ params }: Props) {
         />
         <div className="text-muted-foreground flex flex-1 items-center justify-center px-6 py-16 text-center">
           {isAdmin
-            ? "This track has no sections yet — use “Add section” in the sidebar."
+            ? "This track has no sections yet. Use “Add section” in the sidebar."
             : "This track has no sections yet."}
         </div>
       </div>
@@ -76,7 +76,7 @@ export default async function TrackPage({ params }: Props) {
       />
 
       <div className="flex-1 md:overflow-y-auto">
-        <div className="mx-auto max-w-4xl px-6 py-8">
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
           <h1 className="text-2xl font-bold">{problem.title}</h1>
           {problem.description && (
             <p className="text-muted-foreground mt-2 leading-relaxed">{problem.description}</p>
@@ -93,7 +93,7 @@ export default async function TrackPage({ params }: Props) {
             {!hasContent && (
               <p className="text-muted-foreground rounded-lg border border-dashed px-6 py-12 text-center">
                 {isAdmin
-                  ? "This section is empty — open “Edit this section” below to upload slides or add practice questions."
+                  ? "This section is empty. Open “Edit this section” below to upload slides or add practice questions."
                   : "Content for this section is coming soon."}
               </p>
             )}
@@ -104,7 +104,7 @@ export default async function TrackPage({ params }: Props) {
               {previous ? (
                 <Link
                   href={`/tracks/${trackId}/${previous.id}`}
-                  className="hover:bg-accent flex min-w-0 items-center gap-2 rounded-lg border px-4 py-2"
+                  className="hover:bg-accent flex min-h-11 min-w-0 items-center gap-2 rounded-lg border px-4 py-2"
                 >
                   <ChevronLeft className="h-4 w-4 shrink-0" />
                   <span className="truncate">{previous.title}</span>
@@ -115,7 +115,7 @@ export default async function TrackPage({ params }: Props) {
               {next && (
                 <Link
                   href={`/tracks/${trackId}/${next.id}`}
-                  className="hover:bg-accent flex min-w-0 items-center gap-2 rounded-lg border px-4 py-2"
+                  className="hover:bg-accent flex min-h-11 min-w-0 items-center gap-2 rounded-lg border px-4 py-2"
                 >
                   <span className="truncate">{next.title}</span>
                   <ChevronRight className="h-4 w-4 shrink-0" />

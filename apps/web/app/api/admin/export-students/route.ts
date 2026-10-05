@@ -46,12 +46,12 @@ export async function GET() {
     for (const purchase of purchases) {
       const order = orderByPurchase.get(`${purchase.userId}:${purchase.courseId}`);
       sheet.addRow({
-        name: purchase.user.name ?? "—",
-        email: purchase.user.email ?? "—",
+        name: purchase.user.name ?? "N/A",
+        email: purchase.user.email ?? "N/A",
         course: purchase.course.title,
         amount: order?.amount ?? 0,
         orderId: order?.razorpayOrderId ?? "(free enrollment)",
-        paymentId: order?.razorpayPaymentId ?? "—",
+        paymentId: order?.razorpayPaymentId ?? "N/A",
         purchasedAt: purchase.createdAt.toISOString().slice(0, 10),
       });
     }
