@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import path from "path";
 import { randomUUID } from "crypto";
 import { AuthError, requireAdmin } from "@repo/auth";
-import { storeFile } from "@repo/storage";
+import { isBlobConfigured, storeFile } from "@repo/storage";
 import { HttpError, assertBodyWithin, assertSameOrigin } from "@/lib/security";
 import { MAX_IMAGE_BYTES, validateUpload } from "@/lib/uploads";
 
-// Thumbnails for courses, playlists (sections), videos and tracks. Kept under
-// Vercel's ~4.5MB request-body cap so it still works once deployed there.
+// Thumbnails for courses, playlists (sections), videos and tracks. Local-disk
+// fallback for development. With Blob configured, the browser uploads straight
+// to storage (see /api/admin/blob-upload) and this route answers 410.
 // SVG is not allowed: it can carry scripts, and these files are served from
 // the site's own origin.
 export async function POST(request: Request) {
@@ -16,6 +17,12 @@ export async function POST(request: Request) {
     // Checked before storeFile() runs so an unauthenticated request can't
     // write a file to storage before being rejected.
     await requireAdmin();
+    if (isBlobConfigured()) {
+      return NextResponse.json(
+        { error: "Images upload directly to storage. Reload the page and try again." },
+        { status: 410 }
+      );
+    }
     assertBodyWithin(request, MAX_IMAGE_BYTES + 64 * 1024);
 
     const formData = await request.formData();

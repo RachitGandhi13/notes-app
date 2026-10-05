@@ -16,6 +16,8 @@ export { getSession, requireAuth, requireAdmin, AuthError } from "./helpers";
 export { AuthActionError } from "./action-error";
 export { createVerificationToken, consumeVerificationToken } from "./tokens";
 export { sendEmail } from "./email";
+export { isPlaceholder, enabledOAuthProviders } from "./placeholder";
+export { sendVerificationEmail, resendVerification, escapeHtml } from "./verification";
 export { registerUser } from "./register";
 export { requestPasswordReset, resetPassword } from "./password-reset";
 export type { Session } from "next-auth";

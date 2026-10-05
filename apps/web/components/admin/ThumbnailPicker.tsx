@@ -2,9 +2,29 @@
 
 import { useRef, useState } from "react";
 import { ImagePlus, Loader2 } from "lucide-react";
+import { isDirectUploadEnabled, postFormWithProgress, postJson, uploadToBlob } from "./upload";
+import { MAX_IMAGE_BYTES } from "@/lib/upload-types";
 
-const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
+const MAX_IMAGE_SIZE = MAX_IMAGE_BYTES;
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
+
+// Stores the image and returns its URL. In production the browser uploads straight to Vercel
+// Blob and the server then checks the bytes. In development the image goes through the
+// local-disk route.
+async function storeImage(file: File): Promise<string> {
+  if (await isDirectUploadEnabled()) {
+    const url = await uploadToBlob("image", file);
+    const checked = await postJson<{ url: string }>("/api/admin/blob-verify", {
+      kind: "image",
+      url,
+    });
+    return checked.url;
+  }
+  const formData = new FormData();
+  formData.set("file", file);
+  const data = await postFormWithProgress<{ url: string }>("/api/admin/upload-image", formData);
+  return data.url;
+}
 
 interface ThumbnailPickerProps {
   /** URL of the current thumbnail, or "" for none. */
@@ -15,9 +35,9 @@ interface ThumbnailPickerProps {
   compact?: boolean;
 }
 
-// Uploads the chosen image right away (to /api/admin/upload-image) and hands
-// the resulting URL to the parent form, so the parent only ever deals with a
-// plain string — the same shape the old "Image URL" text boxes had.
+// Uploads the chosen image right away and hands the resulting URL to the parent
+// form, so the parent only ever deals with a plain string — the same shape the
+// old "Image URL" text boxes had.
 export function ThumbnailPicker({
   value,
   onChange,
@@ -41,12 +61,7 @@ export function ThumbnailPicker({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to upload image.");
-      onChange(data.url);
+      onChange(await storeImage(file));
     } catch (err: any) {
       setError(err?.message ?? "Failed to upload image.");
     } finally {

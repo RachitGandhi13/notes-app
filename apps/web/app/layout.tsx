@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
               ]}
               linkedinUrl="https://linkedin.com/in/drveerannagatate"
-              email="vcgatate@gmail.com"
+              email="veeranna@cloudvidyaacademy.com"
               wordmark="CloudVidya Academy"
             />
           </div>

@@ -3,7 +3,11 @@
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { PasswordInput } from "@/components/PasswordInput";
+
+type OAuthFlags = { github: boolean; google: boolean };
+type ResendState = { status: "idle" | "sending" | "done" | "error"; message: string };
 
 export default function AuthPage() {
   return (
@@ -28,6 +32,19 @@ function AuthPageInner() {
   const [loading, setLoading] = useState(false);
   const [credError, setCredError] = useState("");
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  // Null until the server says which social providers are configured. Until then no
+  // social button is shown, so no broken button flashes on screen.
+  const [oauth, setOauth] = useState<OAuthFlags | null>(null);
+  // Set when sign-in is blocked because the email isn't verified yet.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resend, setResend] = useState<ResendState>({ status: "idle", message: "" });
+
+  useEffect(() => {
+    fetch("/api/auth/config")
+      .then((r) => r.json())
+      .then((data: OAuthFlags) => setOauth({ github: !!data.github, google: !!data.google }))
+      .catch(() => setOauth({ github: false, google: false }));
+  }, []);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -41,6 +58,8 @@ function AuthPageInner() {
     });
     setLoading(false);
     if (res?.error === "EMAIL_NOT_VERIFIED") {
+      setUnverifiedEmail(email);
+      setResend({ status: "idle", message: "" });
       setCredError(
         'Verify your email before signing in. Check your inbox for the link, or use "Forgot password" to get a new one.'
       );
@@ -83,6 +102,31 @@ function AuthPageInner() {
     }
   }
 
+  async function handleResend() {
+    if (!unverifiedEmail) return;
+    setResend({ status: "sending", message: "" });
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setResend({ status: "done", message: data.message ?? "A new link is on its way." });
+      } else {
+        setResend({
+          status: "error",
+          message: data.error ?? "Could not send the link. Try again.",
+        });
+      }
+    } catch {
+      setResend({ status: "error", message: "Network error. Try again." });
+    }
+  }
+
+  const hasSocial = !!oauth && (oauth.github || oauth.google);
+
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
@@ -107,29 +151,38 @@ function AuthPageInner() {
           </div>
         )}
 
-        {/* OAuth buttons */}
-        <div className="space-y-3">
-          <button
-            onClick={() => signIn("github", { callbackUrl })}
-            className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
-          >
-            <GitHubIcon />
-            Continue with GitHub
-          </button>
-          <button
-            onClick={() => signIn("google", { callbackUrl })}
-            className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-        </div>
+        {/* Social sign-in. Shown only for providers that are configured, and the divider
+            goes with it, so an email-only setup shows just the form. */}
+        {hasSocial && (
+          <>
+            <div className="space-y-3">
+              {oauth.github && (
+                <button
+                  onClick={() => signIn("github", { callbackUrl })}
+                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
+                >
+                  <GitHubIcon />
+                  Continue with GitHub
+                </button>
+              )}
+              {oauth.google && (
+                <button
+                  onClick={() => signIn("google", { callbackUrl })}
+                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+              )}
+            </div>
 
-        <div className="flex items-center gap-3">
-          <hr className="border-border flex-1" />
-          <span className="text-muted-foreground text-xs">or</span>
-          <hr className="border-border flex-1" />
-        </div>
+            <div className="flex items-center gap-3">
+              <hr className="border-border flex-1" />
+              <span className="text-muted-foreground text-xs">or continue with email</span>
+              <hr className="border-border flex-1" />
+            </div>
+          </>
+        )}
 
         {/* Tab switcher */}
         <div className="flex rounded-md border p-1">
@@ -148,6 +201,28 @@ function AuthPageInner() {
         </div>
 
         {credError && <p className="text-destructive text-sm">{credError}</p>}
+
+        {unverifiedEmail && tab === "signin" && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resend.status === "sending"}
+              className="text-primary inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4 disabled:opacity-50"
+            >
+              {resend.status === "sending"
+                ? "Sending a new link…"
+                : "Email not verified? Click here to resend verification email"}
+            </button>
+            <p
+              role="status"
+              aria-live="polite"
+              className={`text-sm ${resend.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+            >
+              {resend.message}
+            </p>
+          </div>
+        )}
 
         {registerSuccess && (
           <p className="text-sm text-green-600 dark:text-green-400">
@@ -183,9 +258,8 @@ function AuthPageInner() {
                   Forgot password?
                 </Link>
               </div>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={password}
@@ -235,9 +309,8 @@ function AuthPageInner() {
               <label className="text-sm font-medium" htmlFor="reg-password">
                 Password
               </label>
-              <input
+              <PasswordInput
                 id="reg-password"
-                type="password"
                 autoComplete="new-password"
                 required
                 minLength={8}

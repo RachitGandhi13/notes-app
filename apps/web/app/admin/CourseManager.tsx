@@ -23,7 +23,13 @@ import {
   setContentThumbnail,
 } from "@/lib/actions";
 import { ThumbnailPicker } from "@/components/admin/ThumbnailPicker";
-import { UploadBar, postFormWithProgress } from "@/components/admin/upload";
+import {
+  UploadBar,
+  isDirectUploadEnabled,
+  postFormWithProgress,
+  postJson,
+  uploadToBlob,
+} from "@/components/admin/upload";
 
 interface ContentNode {
   id: string;
@@ -82,20 +88,41 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
       setError("File is too large (max 500MB).");
       return;
     }
+    // Checked before a large upload starts. The server would reject a blank title only after
+    // the file had been uploaded.
+    if (!title.trim()) {
+      setError("Enter a title for the video.");
+      return;
+    }
 
     setSubmitting(true);
     setPercent(0);
     setError("");
     try {
-      const formData = new FormData();
-      formData.set("file", file);
-      formData.set("courseId", courseId);
-      if (parentId) formData.set("parentId", parentId);
-      formData.set("title", title);
-      formData.set("description", description);
-      if (thumbnail) formData.set("thumbnail", thumbnail);
+      if (await isDirectUploadEnabled()) {
+        // Production: the file goes straight to Vercel Blob. The server then checks it and
+        // saves the record.
+        const videoUrl = await uploadToBlob("video", file, setPercent);
+        await postJson("/api/admin/videos", {
+          courseId,
+          parentId,
+          title,
+          description,
+          videoUrl,
+          thumbnail: thumbnail || undefined,
+        });
+      } else {
+        // Development: the local-disk route.
+        const formData = new FormData();
+        formData.set("file", file);
+        formData.set("courseId", courseId);
+        if (parentId) formData.set("parentId", parentId);
+        formData.set("title", title);
+        formData.set("description", description);
+        if (thumbnail) formData.set("thumbnail", thumbnail);
 
-      await postFormWithProgress("/api/admin/upload-video", formData, setPercent);
+        await postFormWithProgress("/api/admin/upload-video", formData, setPercent);
+      }
 
       setTitle("");
       setDescription("");
