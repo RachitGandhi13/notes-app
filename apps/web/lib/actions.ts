@@ -41,8 +41,15 @@ function _fetchCourses() {
 // The course outline is public, so it carries no playable URLs. Video and
 // Notion metadata come from getContent(), which checks purchase first. The
 // cache key is versioned because older entries still hold the URLs.
+// One place builds the key, so the reader and the admin invalidation can't drift apart.
+// (They did before: the reader used "course:v2:<slug>" while invalidation cleared
+// "course:<slug>", so an edited price or new video stayed cached for up to an hour.)
+function courseCacheKey(slug: string) {
+  return `course:v2:${slug}`;
+}
+
 export async function getCourse(slug: string) {
-  const CACHE_KEY = `course:v2:${slug}`;
+  const CACHE_KEY = courseCacheKey(slug);
   const cached = await cacheGet<Awaited<ReturnType<typeof _fetchCourse>>>(CACHE_KEY);
   if (cached) return cached;
 
@@ -220,12 +227,15 @@ export async function toggleBookmark(contentId: string) {
 
 // ── Admin: Course / section / video management ────────────────────────────────
 
-async function invalidateCourseCache(courseId: string) {
+// Clears the cached course page and the course list. `previousSlug` is passed when the slug
+// changed, so the old URL's cache entry is cleared too.
+async function invalidateCourseCache(courseId: string, previousSlug?: string) {
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     select: { slug: true },
   });
-  if (course) await cacheDel(`course:${course.slug}`, "courses:all");
+  const slugs = new Set([course?.slug, previousSlug].filter((s): s is string => !!s));
+  await cacheDel(...[...slugs].map(courseCacheKey), "courses:all");
 }
 
 export async function getAllCoursesForAdmin() {
@@ -391,6 +401,10 @@ export async function updateCourse(
   data: { title: string; description: string; imageUrl?: string; price: number; slug: string }
 ) {
   await requireAdmin();
+  const before = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { slug: true },
+  });
   await prisma.course.update({
     where: { id: courseId },
     data: {
@@ -401,7 +415,7 @@ export async function updateCourse(
       slug: data.slug,
     },
   });
-  await invalidateCourseCache(courseId);
+  await invalidateCourseCache(courseId, before?.slug);
   revalidatePath("/admin");
   revalidatePath("/");
 }
