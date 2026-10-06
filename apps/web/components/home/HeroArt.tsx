@@ -1,4 +1,4 @@
-import Image from "next/image";
+// import Image from "next/image"; // Re-enable with the instructor photo below.
 import {
   Award,
   Cloud,
@@ -105,7 +105,8 @@ export function HeroArt() {
         </div>
       ))}
 
-      {/* the instructor, in a gradient frame */}
+      {/* Instructor photo and name, hidden for now. To restore, delete the comment markers below
+      and re-enable the `Image` import at the top of this file.
       <div className="absolute left-1/2 top-[45%] h-[64%] w-[54%] -translate-x-1/2 -translate-y-1/2">
         <div className="from-primary absolute -inset-1 rounded-[2rem] bg-gradient-to-br via-cyan-400 to-violet-500 opacity-90 blur-[2px]" />
         <div className="bg-card relative h-full w-full overflow-hidden rounded-[1.8rem]">
@@ -123,6 +124,7 @@ export function HeroArt() {
           </div>
         </div>
       </div>
+      */}
 
       {/* floating glass cards */}
       {CARDS.map(({ Icon, title, text, className, delay }) => (
