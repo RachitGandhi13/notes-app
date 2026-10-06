@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getSession } from "@repo/auth";
 import { getTrack, getProblem, hasTrackAccess } from "@/lib/track-actions";
+import { absoluteUrl, DEFAULT_OG_IMAGE, truncate } from "@/lib/seo";
 import { ProblemSidebar } from "@/components/ProblemSidebar";
 import { PPTViewer } from "@/components/PPTViewer";
 import { MCQQuiz } from "@/components/MCQQuiz";
@@ -17,12 +20,55 @@ interface Props {
   params: { trackIds: string[] };
 }
 
+// Shared by generateMetadata and the page, so one request reads the track only once.
+const loadTrack = cache((trackId: string) => getTrack(trackId));
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const [trackId] = params.trackIds;
+  // A section page (/tracks/<track>/<section>) canonicalises to itself, since each section
+  // has its own URL. The track page only mirrors the track title and description.
+  const path = `/tracks/${params.trackIds.join("/")}`;
+  if (!trackId) return {};
+  try {
+    const track = await loadTrack(trackId);
+    if (!track) {
+      return { title: "Track not found", robots: { index: false, follow: false } };
+    }
+    const description = truncate(track.description);
+    // Absolute, so social platforms never receive a relative path.
+    const image = absoluteUrl(track.image || DEFAULT_OG_IMAGE);
+    return {
+      title: track.title,
+      description,
+      alternates: { canonical: path },
+      // Hidden tracks still open by direct link, but they must not appear in search.
+      robots: track.hidden ? { index: false, follow: false } : undefined,
+      openGraph: {
+        title: track.title,
+        description,
+        url: path,
+        images: [{ url: image }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: track.title,
+        description,
+        images: [image],
+      },
+    };
+  } catch (err) {
+    // Metadata is optional. If it fails, the page still renders with the site defaults.
+    console.error("[seo] track metadata failed:", err);
+    return { alternates: { canonical: path } };
+  }
+}
+
 export default async function TrackPage({ params }: Props) {
   const [trackId, problemId] = params.trackIds;
 
   if (!trackId) notFound();
 
-  const track = await getTrack(trackId);
+  const track = await loadTrack(trackId);
   if (!track) notFound();
 
   const session = await getSession();

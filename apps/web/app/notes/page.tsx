@@ -1,6 +1,7 @@
 import { BookOpen, ClipboardCheck, Presentation } from "lucide-react";
 import Image from "next/image";
 import { getTracks } from "@/lib/track-actions";
+import { getUserPurchases } from "@/lib/actions";
 import { TrackCard } from "@/components/TrackCard";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 
@@ -25,6 +26,7 @@ const STEPS = [
 
 export default async function NotesPage() {
   const tracks = await getTracks();
+  const purchasedCourseIds = new Set((await getUserPurchases()).map((p) => p.courseId));
   const sectionCount = tracks.reduce((sum, t) => sum + t.problems.length, 0);
 
   const stats = [
@@ -135,7 +137,14 @@ export default async function NotesPage() {
                   image={track.image}
                   categories={track.categories}
                   problemCount={track.problems.length}
-                  course={track.course}
+                  course={
+                    track.course
+                      ? {
+                          price: track.course.price,
+                          owned: purchasedCourseIds.has(track.course.id),
+                        }
+                      : null
+                  }
                 />
               ))}
             </div>

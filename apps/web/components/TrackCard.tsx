@@ -1,5 +1,5 @@
 import { Badge } from "@repo/ui";
-import { ArrowRight, BookOpen, Lock } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
@@ -11,7 +11,7 @@ interface TrackCardProps {
   image: string;
   categories: { category: { category: string } }[];
   problemCount: number;
-  course?: { price: number } | null;
+  course?: { price: number; owned?: boolean } | null;
 }
 
 export function TrackCard({
@@ -68,7 +68,13 @@ export function TrackCard({
 
           <div className="flex items-center justify-between border-t pt-3">
             <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              {course ? (
+              {course?.owned ? (
+                // The student already bought the course this track is bundled with.
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Included in your course
+                </>
+              ) : course ? (
                 <>
                   <Lock className="h-3.5 w-3.5" />
                   {course.price > 0 ? `₹${course.price} bundle` : "Requires enrollment"}

@@ -1,5 +1,5 @@
 import { Badge } from "@repo/ui";
-import { ArrowRight, PlayCircle, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, PlayCircle, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
@@ -60,12 +60,23 @@ export function CourseCard({
 
           <div className="flex items-center justify-between border-t pt-3">
             <div className="flex items-center gap-3">
-              <Badge
-                variant={price === 0 ? "secondary" : "default"}
-                className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-              >
-                {price === 0 ? "Free" : `₹${price}`}
-              </Badge>
+              {purchased ? (
+                // Students who own the course see this instead of the price.
+                <Badge
+                  variant="secondary"
+                  className="gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Enrolled
+                </Badge>
+              ) : (
+                <Badge
+                  variant={price === 0 ? "secondary" : "default"}
+                  className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                >
+                  {price === 0 ? "Free" : `₹${price}`}
+                </Badge>
+              )}
               {!!enrolledCount && enrolledCount > 0 && (
                 <span className="text-muted-foreground flex items-center gap-1 text-xs">
                   <Users className="h-3.5 w-3.5" />

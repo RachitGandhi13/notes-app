@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { getSession } from "@repo/auth";
 import { BadgeCheck, CheckCircle2, PlayCircle, Users, XCircle } from "lucide-react";
 import Image from "next/image";
@@ -7,14 +9,81 @@ import { getCourse, getUserPurchases } from "@/lib/actions";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import { CurriculumAccordion } from "@/components/CurriculumAccordion";
 import { needsUnoptimized } from "@/lib/images";
+import { instructor } from "@/lib/instructor";
+import { absoluteUrl, DEFAULT_OG_IMAGE, jsonLd, truncate } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
 
 interface Props {
   params: { courseSlug: string };
   searchParams: { payment?: string };
 }
 
+// Shared by generateMetadata and the page, so one request reads the course only once.
+const loadCourse = cache((slug: string) => getCourse(slug));
+
+export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
+  const path = `/courses/${params.courseSlug}`;
+  try {
+    const course = await loadCourse(params.courseSlug);
+    if (!course) {
+      return { title: "Course not found", robots: { index: false, follow: false } };
+    }
+    const description = truncate(course.description);
+    // Absolute, so social platforms never receive a relative path.
+    const image = absoluteUrl(course.imageUrl || DEFAULT_OG_IMAGE);
+    return {
+      title: course.title,
+      description,
+      alternates: { canonical: path },
+      // Hidden courses still open by direct link, but they must not appear in search.
+      robots: course.hidden ? { index: false, follow: false } : undefined,
+      openGraph: {
+        title: course.title,
+        description,
+        url: path,
+        images: [{ url: image }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: course.title,
+        description,
+        images: [image],
+      },
+    };
+  } catch (err) {
+    // Metadata is optional. If it fails, the page still renders with the site defaults.
+    console.error("[seo] course metadata failed:", err);
+    return { alternates: { canonical: path } };
+  }
+}
+
+// schema.org "Course" for search results. A course is a single offering, so it doesn't use
+// EducationalOccupationalProgram, which describes degree and certificate programmes.
+function courseJsonLd(
+  course: { title: string; description: string; price: number; imageUrl: string | null },
+  path: string
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: course.title,
+    description: truncate(course.description, 500),
+    url: absoluteUrl(path),
+    image: absoluteUrl(course.imageUrl || DEFAULT_OG_IMAGE),
+    provider: { "@type": "Organization", name: "CloudVidya Academy", url: SITE_URL },
+    instructor: { "@type": "Person", name: instructor.name },
+    offers: {
+      "@type": "Offer",
+      price: course.price,
+      priceCurrency: "INR",
+      availability: "https://schema.org/InStock",
+      url: absoluteUrl(path),
+    },
+  };
+}
+
 export default async function CourseDetailPage({ params, searchParams }: Props) {
-  const course = await getCourse(params.courseSlug);
+  const course = await loadCourse(params.courseSlug);
   if (!course) notFound();
 
   const session = await getSession();
@@ -79,6 +148,15 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      {!course.hidden && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLd(courseJsonLd(course, `/courses/${params.courseSlug}`)),
+          }}
+        />
+      )}
+
       {/* Payment status banner */}
       {searchParams.payment === "success" && (
         <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
@@ -155,14 +233,22 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
         {/* Purchase panel */}
         <div className="lg:col-span-1">
           <div className="bg-card sticky top-20 space-y-4 rounded-2xl border p-6 shadow-sm">
-            <div className="flex items-baseline justify-between">
-              <span className="text-3xl font-bold tracking-tight">
-                {course.price === 0 ? "Free" : `₹${course.price}`}
-              </span>
-              {course.price > 0 && (
-                <span className="text-muted-foreground text-xs">one-time payment</span>
-              )}
-            </div>
+            {purchased ? (
+              // Students who own the course see this instead of the price.
+              <div className="flex items-center gap-2 text-2xl font-bold tracking-tight text-green-600">
+                <CheckCircle2 className="h-6 w-6" />
+                Enrolled
+              </div>
+            ) : (
+              <div className="flex items-baseline justify-between">
+                <span className="text-3xl font-bold tracking-tight">
+                  {course.price === 0 ? "Free" : `₹${course.price}`}
+                </span>
+                {course.price > 0 && (
+                  <span className="text-muted-foreground text-xs">one-time payment</span>
+                )}
+              </div>
+            )}
 
             {purchased ? (
               <Link
@@ -192,20 +278,23 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
               />
             )}
 
-            <ul className="text-muted-foreground space-y-2 border-t pt-4 text-sm">
-              <li className="flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 shrink-0 text-green-600" />
-                Lifetime access, no expiry
-              </li>
-              <li className="flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 shrink-0 text-green-600" />
-                {allContent.length} {allContent.length === 1 ? "lesson" : "lessons"} included
-              </li>
-              <li className="flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 shrink-0 text-green-600" />
-                Progress tracking &amp; bookmarks
-              </li>
-            </ul>
+            {!purchased && (
+              // Sales points are for visitors. Students who own the course don't need them.
+              <ul className="text-muted-foreground space-y-2 border-t pt-4 text-sm">
+                <li className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-green-600" />
+                  Lifetime access, no expiry
+                </li>
+                <li className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-green-600" />
+                  {allContent.length} {allContent.length === 1 ? "lesson" : "lessons"} included
+                </li>
+                <li className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-green-600" />
+                  Progress tracking &amp; bookmarks
+                </li>
+              </ul>
+            )}
           </div>
         </div>
       </div>
