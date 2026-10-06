@@ -455,6 +455,52 @@ export async function toggleContentHidden(contentId: string, courseId: string) {
   revalidatePath("/admin");
 }
 
+// Deletes a video or a playlist (section) and, for a playlist, every video inside it.
+// Dependent rows go first: comments, questions, answers and their votes, watch progress,
+// bookmarks, course links and video metadata. Purchases belong to the course, so they are kept.
+export async function deleteContent(contentId: string, courseId: string) {
+  await requireAdmin();
+  const root = await prisma.content.findUnique({ where: { id: contentId }, select: { id: true } });
+  if (!root) throw new Error("Content not found.");
+
+  // The item plus all descendants. Playlists hold videos, so this is normally one extra level.
+  const ids = [contentId];
+  let frontier = [contentId];
+  while (frontier.length > 0) {
+    const children = await prisma.content.findMany({
+      where: { parentId: { in: frontier } },
+      select: { id: true },
+    });
+    frontier = children.map((c) => c.id);
+    ids.push(...frontier);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vote.deleteMany({
+      where: {
+        OR: [
+          { comment: { is: { contentId: { in: ids } } } },
+          { question: { is: { contentId: { in: ids } } } },
+          { answer: { is: { question: { contentId: { in: ids } } } } },
+        ],
+      },
+    });
+    await tx.answer.deleteMany({ where: { question: { contentId: { in: ids } } } });
+    await tx.question.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.comment.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.videoProgress.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.bookmark.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.courseContent.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.videoMetadata.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.notionMetadata.deleteMany({ where: { contentId: { in: ids } } });
+    await tx.content.deleteMany({ where: { id: { in: ids } } });
+  });
+
+  await invalidateCourseCache(courseId);
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 // Swaps this top-level section/video's order with its adjacent sibling.
 // Only applies to top-level CourseContent rows (sections and standalone
 // videos) — videos nested inside a section aren't independently orderable

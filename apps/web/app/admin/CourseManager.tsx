@@ -12,6 +12,7 @@ import {
   Pencil,
   PlayCircle,
   Plus,
+  Trash2,
 } from "lucide-react";
 import {
   createCourse,
@@ -19,6 +20,7 @@ import {
   updateCourse,
   toggleCourseHidden,
   toggleContentHidden,
+  deleteContent,
   moveContentOrder,
   setContentThumbnail,
 } from "@/lib/actions";
@@ -296,6 +298,8 @@ function ContentNodeRow({
   const [expanded, setExpanded] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingThumb, setEditingThumb] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const isFolder = node.type === "FOLDER";
 
   async function handleThumbnailChange(url: string) {
@@ -314,6 +318,18 @@ function ContentNodeRow({
       await toggleContentHidden(node.id, courseId);
       router.refresh();
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    setBusy(true);
+    setDeleteError("");
+    try {
+      await deleteContent(node.id, courseId);
+      router.refresh();
+    } catch (err: any) {
+      setDeleteError(err?.message ?? "Couldn't delete this.");
       setBusy(false);
     }
   }
@@ -396,8 +412,43 @@ function ContentNodeRow({
           >
             {node.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </button>
+          {confirmingDelete ? (
+            <span className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">
+                {isFolder
+                  ? `Delete this playlist and its ${node.children.length} video${node.children.length === 1 ? "" : "s"}?`
+                  : "Delete this video?"}
+              </span>
+              <button
+                onClick={handleDelete}
+                disabled={busy}
+                className="text-destructive font-medium hover:underline disabled:opacity-50"
+              >
+                Yes, delete
+              </button>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                disabled={busy}
+                className="text-muted-foreground hover:underline disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              disabled={busy}
+              className="text-muted-foreground hover:text-destructive hover:bg-accent rounded p-1 disabled:opacity-50"
+              aria-label={isFolder ? "Delete playlist" : "Delete video"}
+              title={isFolder ? "Delete playlist and its videos" : "Delete video"}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
+
+      {deleteError && <p className="text-destructive mt-2 text-xs">{deleteError}</p>}
 
       {editingThumb && (
         <div className="mt-3 border-t pt-3">
