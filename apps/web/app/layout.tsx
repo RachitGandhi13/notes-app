@@ -5,21 +5,44 @@ import { Navbar, Footer } from "@repo/ui";
 import { Providers } from "./providers";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
 import { SITE_URL } from "@/lib/site";
+import { jsonLd } from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "CloudVidya Academy", template: "%s · CloudVidya Academy" },
-  description:
-    "Video courses, structured notes and quizzes for AWS, DevOps and Cloud, with progress tracking.",
+  title: {
+    default: "CloudVidya Academy - Master Cloud & DevOps",
+    template: "%s | CloudVidya Academy",
+  },
+  description: "Master Cloud Computing, DevOps, and Software Engineering.",
+  openGraph: {
+    siteName: "CloudVidya Academy",
+    title: "CloudVidya Academy",
+    description: "Master Cloud Computing, DevOps, and Software Engineering.",
+    url: SITE_URL,
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans`}>
+        {/* Tells search engines the official site name, which Google uses for the result's name. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLd({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "CloudVidya Academy",
+              alternateName: "CloudVidya",
+              url: SITE_URL,
+            }),
+          }}
+        />
         <Providers>
           <div className="flex min-h-screen flex-col">
             <NextTopLoader showSpinner={false} color="hsl(var(--primary))" />
