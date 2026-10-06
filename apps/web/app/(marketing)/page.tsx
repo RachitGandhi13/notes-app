@@ -6,7 +6,8 @@ import { getCourses, getUserPurchases } from "@/lib/actions";
 import { instructor } from "@/lib/instructor";
 import { CourseCard } from "@/components/CourseCard";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
-import { InstructorSection, SupportSection } from "@/components/InstructorSection";
+// import { InstructorSection, SupportSection } from "@/components/InstructorSection";
+import { SupportSection } from "@/components/InstructorSection";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
@@ -176,9 +177,12 @@ export default async function HomePage({ searchParams }: Props) {
 
       {!query && <NotesShowcase />}
 
+      {/* Instructor "About" section (photo, bio and mailto contact), hidden for now. To restore,
+          delete these comment markers and put InstructorSection back in the import on line 9.
       <div className="container pb-16">
         <InstructorSection />
       </div>
+      */}
 
       {!query && <JoinBanner signedIn={!!session?.user} />}
 
