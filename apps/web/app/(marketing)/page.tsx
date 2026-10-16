@@ -32,18 +32,13 @@ export default async function HomePage({ searchParams }: Props) {
     purchases.forEach((p) => purchasedIds.add(p.courseId));
   }
 
-  const totalStudents = courses.reduce((sum, c) => sum + c._count.purchases, 0);
-
   // Only real numbers: what's in the catalogue, plus facts from the
-  // instructor profile the client supplied.
+  // instructor profile the client supplied. Enrollment/student counts are
+  // deliberately not shown here — admin-only metric, see /admin.
   const stats = [
     courses.length > 0 && {
       value: String(courses.length),
       label: courses.length === 1 ? "Course" : "Courses",
-    },
-    totalStudents > 0 && {
-      value: totalStudents.toLocaleString(),
-      label: totalStudents === 1 ? "Student enrolled" : "Students enrolled",
     },
     { value: String(instructor.certifications.length), label: "AWS certifications" },
     { value: instructor.experienceYears, label: "Years of experience" },
@@ -154,7 +149,6 @@ export default async function HomePage({ searchParams }: Props) {
             imageUrl={courses[0]!.imageUrl}
             price={courses[0]!.price}
             purchased={purchasedIds.has(courses[0]!.id)}
-            enrolledCount={courses[0]!._count.purchases}
           />
         ) : (
           <div
@@ -169,7 +163,6 @@ export default async function HomePage({ searchParams }: Props) {
                 imageUrl={course.imageUrl}
                 price={course.price}
                 purchased={purchasedIds.has(course.id)}
-                enrolledCount={course._count.purchases}
               />
             ))}
           </div>
