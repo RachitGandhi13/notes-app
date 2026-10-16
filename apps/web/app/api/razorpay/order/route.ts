@@ -11,10 +11,12 @@ function makeReceipt(): string {
   return `rcpt_${randomBytes(12).toString("hex")}`;
 }
 
-// Creates a Razorpay order for a paid course.
+// Creates a Razorpay order for a paid course, or a paid combo bundle (a Track
+// with linked courses and its own bundlePrice).
 //
-// The client sends only the course ID. Any amount it sends is ignored: the price
-// is read from the database, so a tampered request can't change what is charged.
+// The client sends a courseId or a trackId — never both, never an amount: the
+// price is always read from the database, so a tampered request can't change
+// what is charged.
 export async function POST(request: Request) {
   try {
     const session = await requireAuth();
@@ -28,57 +30,97 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null);
     const courseId = typeof body?.courseId === "string" ? body.courseId : "";
-    if (!courseId) {
-      return NextResponse.json({ error: "courseId is required." }, { status: 400 });
+    const trackId = typeof body?.trackId === "string" ? body.trackId : "";
+    if (!courseId && !trackId) {
+      return NextResponse.json({ error: "courseId or trackId is required." }, { status: 400 });
+    }
+    if (courseId && trackId) {
+      return NextResponse.json({ error: "Send only one of courseId or trackId." }, { status: 400 });
     }
 
-    const course = await prisma.course.findUnique({ where: { id: courseId } });
-    if (!course || course.hidden) {
-      return NextResponse.json({ error: "Course not found." }, { status: 404 });
-    }
-    if (course.price <= 0) {
-      return NextResponse.json(
-        { error: "This course is free. Enroll directly instead." },
-        { status: 400 }
-      );
-    }
+    let price: number;
+    let name: string;
 
-    const existing = await prisma.userPurchases.findUnique({
-      where: { userId_courseId: { userId: session.user.id, courseId } },
-    });
-    if (existing) {
-      return NextResponse.json({ error: "You already own this course." }, { status: 409 });
+    if (courseId) {
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course || course.hidden) {
+        return NextResponse.json({ error: "Course not found." }, { status: 404 });
+      }
+      if (course.price <= 0) {
+        return NextResponse.json(
+          { error: "This course is free. Enroll directly instead." },
+          { status: 400 }
+        );
+      }
+      const existing = await prisma.userPurchases.findUnique({
+        where: { userId_courseId: { userId: session.user.id, courseId } },
+      });
+      if (existing) {
+        return NextResponse.json({ error: "You already own this course." }, { status: 409 });
+      }
+      price = course.price;
+      name = course.title;
+    } else {
+      const track = await prisma.track.findUnique({
+        where: { id: trackId },
+        include: { courses: { select: { courseId: true } } },
+      });
+      if (!track || track.hidden) {
+        return NextResponse.json({ error: "Track not found." }, { status: 404 });
+      }
+      if (track.courses.length === 0 || !track.bundlePrice || track.bundlePrice <= 0) {
+        return NextResponse.json(
+          { error: "This track isn't a purchasable combo." },
+          { status: 400 }
+        );
+      }
+      // Owning any one of the bundle's courses already unlocks the track — see
+      // hasTrackAccess() in lib/track-actions.ts, the same rule applied here.
+      const owned = await prisma.userPurchases.findFirst({
+        where: {
+          userId: session.user.id,
+          courseId: { in: track.courses.map((c) => c.courseId) },
+        },
+      });
+      if (owned) {
+        return NextResponse.json({ error: "You already own this bundle." }, { status: 409 });
+      }
+      price = track.bundlePrice;
+      name = track.title;
     }
 
     // Razorpay takes amounts in paise (the smallest INR unit). It rejects amounts under 100
     // paise (INR 1), so a price such as 0.50 would fail at Razorpay with no explanation.
-    const amountInPaise = Math.round(course.price * 100);
+    const amountInPaise = Math.round(price * 100);
     if (amountInPaise < 100) {
-      console.error(`[razorpay/order] course ${course.id} price ${course.price} is below INR 1`);
+      console.error(
+        `[razorpay/order] ${courseId ? "course" : "track"} ${courseId || trackId} price ${price} is below INR 1`
+      );
       return NextResponse.json(
-        { error: "This course's price is too low to take online payment." },
+        { error: "This price is too low to take online payment." },
         { status: 400 }
       );
     }
+
+    // Razorpay limits each note value to 256 characters.
+    const notes: Record<string, string> = courseId
+      ? { userId: session.user.id, courseId, title: name.slice(0, 200) }
+      : { userId: session.user.id, trackId, title: name.slice(0, 200) };
 
     const order = await getRazorpay().orders.create({
       amount: amountInPaise,
       currency: "INR",
       receipt: makeReceipt(),
-      // Razorpay limits each note value to 256 characters.
-      notes: {
-        userId: session.user.id,
-        courseId: course.id,
-        courseTitle: course.title.slice(0, 200),
-      },
+      notes,
     });
 
     await prisma.paymentOrder.create({
       data: {
         razorpayOrderId: order.id,
         userId: session.user.id,
-        courseId: course.id,
-        amount: course.price,
+        courseId: courseId || null,
+        trackId: trackId || null,
+        amount: price,
         status: "CREATED",
       },
     });
@@ -88,7 +130,7 @@ export async function POST(request: Request) {
       amount: amountInPaise,
       currency: "INR",
       keyId: getRazorpayKeyId(),
-      courseName: course.title,
+      courseName: name,
     });
   } catch (err) {
     if (err instanceof AuthError) {

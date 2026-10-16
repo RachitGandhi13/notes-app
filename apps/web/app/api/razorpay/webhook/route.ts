@@ -1,7 +1,6 @@
 import { prisma } from "@repo/db/client";
-import { cacheDel } from "@repo/cache";
 import { NextResponse } from "next/server";
-import { RazorpayConfigError, verifyWebhookSignature } from "@/lib/razorpay";
+import { grantOrderAccess, RazorpayConfigError, verifyWebhookSignature } from "@/lib/razorpay";
 
 // Durability backstop for /api/razorpay/verify. If the browser closes before the
 // Checkout success callback runs, Razorpay still delivers payment.captured here.
@@ -85,12 +84,7 @@ export async function POST(request: Request) {
     where: { id: order.id },
     data: { status: "PAID", razorpayPaymentId: paymentId },
   });
-  await prisma.userPurchases.upsert({
-    where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
-    update: {},
-    create: { userId: order.userId, courseId: order.courseId },
-  });
-  await cacheDel(`purchases:${order.userId}`, "courses:all");
+  await grantOrderAccess(order);
 
   return NextResponse.json({ status: "granted", orderId });
 }

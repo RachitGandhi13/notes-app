@@ -1,5 +1,8 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { prisma } from "@repo/db/client";
+import type { PaymentOrder } from "@repo/db";
+import { cacheDel } from "@repo/cache";
 
 // Server-only. RAZORPAY_KEY_SECRET must never reach the browser: this module is
 // imported only from route handlers and server code, never from client components.
@@ -68,4 +71,42 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
   if (!secret) throw new RazorpayConfigError("RAZORPAY_WEBHOOK_SECRET is not set.");
   const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
   return hexEqualConstantTime(expected, signature);
+}
+
+/**
+ * Grants access for a PAID order. Called by both /api/razorpay/verify and
+ * /api/razorpay/webhook once each has independently confirmed the payment is
+ * real (signature + amount), so this itself does no verification — it only
+ * decides what a confirmed order unlocks.
+ *
+ * A course order upserts one UserPurchases row (unchanged from before combo
+ * bundles existed). A track (combo) order upserts one UserPurchases row per
+ * course the track bundles, in a single transaction, so a student can never
+ * end up with some of a bundle's courses granted and others not.
+ */
+export async function grantOrderAccess(
+  order: Pick<PaymentOrder, "userId" | "courseId" | "trackId">
+): Promise<void> {
+  if (order.courseId) {
+    await prisma.userPurchases.upsert({
+      where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
+      update: {},
+      create: { userId: order.userId, courseId: order.courseId },
+    });
+  } else if (order.trackId) {
+    const links = await prisma.trackCourse.findMany({
+      where: { trackId: order.trackId },
+      select: { courseId: true },
+    });
+    await prisma.$transaction(
+      links.map((link) =>
+        prisma.userPurchases.upsert({
+          where: { userId_courseId: { userId: order.userId, courseId: link.courseId } },
+          update: {},
+          create: { userId: order.userId, courseId: link.courseId },
+        })
+      )
+    );
+  }
+  await cacheDel(`purchases:${order.userId}`, "courses:all");
 }

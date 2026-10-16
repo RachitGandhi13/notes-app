@@ -8,6 +8,7 @@ import { CourseCard } from "@/components/CourseCard";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
 // import { InstructorSection, SupportSection } from "@/components/InstructorSection";
 import { SupportSection } from "@/components/InstructorSection";
+import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
@@ -183,6 +184,8 @@ export default async function HomePage({ searchParams }: Props) {
         <InstructorSection />
       </div>
       */}
+
+      {!query && <GalleryGrid />}
 
       {!query && <JoinBanner signedIn={!!session?.user} />}
 

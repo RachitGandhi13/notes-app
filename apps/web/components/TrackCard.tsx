@@ -11,7 +11,8 @@ interface TrackCardProps {
   image: string;
   categories: { category: { category: string } }[];
   problemCount: number;
-  course?: { price: number; owned?: boolean } | null;
+  /** Combo bundle price and whether the viewer already owns any of its linked courses. */
+  bundle?: { price: number; owned?: boolean } | null;
 }
 
 export function TrackCard({
@@ -21,7 +22,7 @@ export function TrackCard({
   image,
   categories,
   problemCount,
-  course,
+  bundle,
 }: TrackCardProps) {
   return (
     <Link href={`/tracks/${id}`} className="group block">
@@ -68,16 +69,16 @@ export function TrackCard({
 
           <div className="flex items-center justify-between border-t pt-3">
             <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              {course?.owned ? (
-                // The student already bought the course this track is bundled with.
+              {bundle?.owned ? (
+                // The student already owns one of the courses this track is bundled with.
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Included in your course
                 </>
-              ) : course ? (
+              ) : bundle ? (
                 <>
                   <Lock className="h-3.5 w-3.5" />
-                  {course.price > 0 ? `₹${course.price} bundle` : "Requires enrollment"}
+                  {bundle.price > 0 ? `₹${bundle.price} combo` : "Requires enrollment"}
                 </>
               ) : (
                 <>

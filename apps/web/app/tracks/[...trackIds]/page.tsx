@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getSession } from "@repo/auth";
-import { getTrack, getProblem, hasTrackAccess } from "@/lib/track-actions";
+import { getTrack, getProblem, hasTrackAccess, getCoursesForBundling } from "@/lib/track-actions";
 import { absoluteUrl, DEFAULT_OG_IMAGE, truncate } from "@/lib/seo";
 import { ProblemSidebar } from "@/components/ProblemSidebar";
 import { PPTViewer } from "@/components/PPTViewer";
@@ -76,12 +76,29 @@ export default async function TrackPage({ params }: Props) {
 
   // Admins can always open a track, even a bundled one they haven't "bought".
   const hasAccess = isAdmin || (await hasTrackAccess(track));
-  if (!hasAccess && track.course) {
-    return <TrackPaywall trackTitle={track.title} course={track.course} />;
+  if (!hasAccess && track.courses.length > 0) {
+    return (
+      <TrackPaywall
+        trackId={track.id}
+        trackTitle={track.title}
+        courses={track.courses.map((tc) => tc.course)}
+        bundlePrice={track.bundlePrice ?? 0}
+        prefill={session?.user ? { name: session.user.name, email: session.user.email } : null}
+      />
+    );
   }
 
   // Default to first section if none specified
   const activeProblemId = problemId ?? track.problems[0]?.problem.id;
+
+  // Only admins see the combo-bundle panel, so this extra query is skipped for everyone else.
+  const bundleAdmin = isAdmin
+    ? {
+        allCourses: await getCoursesForBundling(),
+        linkedCourseIds: track.courses.map((tc) => tc.courseId),
+        bundlePrice: track.bundlePrice,
+      }
+    : undefined;
 
   if (!activeProblemId) {
     return (
@@ -92,6 +109,7 @@ export default async function TrackPage({ params }: Props) {
           problems={track.problems}
           activeProblemId=""
           isAdmin={isAdmin}
+          bundleAdmin={bundleAdmin}
         />
         <div className="text-muted-foreground flex flex-1 items-center justify-center px-6 py-16 text-center">
           {isAdmin
@@ -119,6 +137,7 @@ export default async function TrackPage({ params }: Props) {
         problems={track.problems}
         activeProblemId={activeProblemId}
         isAdmin={isAdmin}
+        bundleAdmin={bundleAdmin}
       />
 
       <div className="flex-1 md:overflow-y-auto">

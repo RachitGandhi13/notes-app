@@ -137,11 +137,11 @@ export default async function NotesPage() {
                   image={track.image}
                   categories={track.categories}
                   problemCount={track.problems.length}
-                  course={
-                    track.course
+                  bundle={
+                    track.courses.length > 0
                       ? {
-                          price: track.course.price,
-                          owned: purchasedCourseIds.has(track.course.id),
+                          price: track.bundlePrice ?? 0,
+                          owned: track.courses.some((c) => purchasedCourseIds.has(c.course.id)),
                         }
                       : null
                   }

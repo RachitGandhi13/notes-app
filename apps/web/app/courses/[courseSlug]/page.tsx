@@ -271,9 +271,10 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
               </div>
             ) : (
               <PurchaseButton
-                courseId={course.id}
+                kind="course"
+                id={course.id}
                 price={course.price}
-                courseSlug={params.courseSlug}
+                redirectSlug={params.courseSlug}
                 prefill={{ name: session?.user?.name, email: session?.user?.email }}
               />
             )}

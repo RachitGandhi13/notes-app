@@ -244,6 +244,9 @@ export async function getAllCoursesForAdmin() {
     orderBy: { createdAt: "desc" },
     include: {
       linkedTrack: { select: { id: true, title: true } },
+      // Lets the admin UI grey out / explain "Delete" before the admin even tries it,
+      // rather than only finding out from the error deleteCourse() throws.
+      _count: { select: { purchases: true, paymentOrders: true, certificate: true } },
       content: {
         include: {
           content: {
@@ -259,21 +262,16 @@ export async function getAllCoursesForAdmin() {
   });
 }
 
-export async function getLinkableTracks() {
-  await requireAdmin();
-  return prisma.track.findMany({
-    select: { id: true, title: true, courseId: true },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
+// Linking a course into a combo bundle now happens from the track side
+// (lib/track-actions.ts's setTrackBundle) rather than here, so a new course
+// doesn't need a track at creation time — it can be added to any bundle
+// afterwards.
 export async function createCourse(data: {
   title: string;
   description: string;
   imageUrl?: string;
   price: number;
   slug: string;
-  trackId?: string;
 }) {
   await requireAdmin();
 
@@ -286,12 +284,6 @@ export async function createCourse(data: {
       slug: data.slug,
     },
   });
-
-  if (data.trackId) {
-    await prisma.track.update({ where: { id: data.trackId }, data: { courseId: course.id } });
-    // Invalidate the notes track list, which caches under "tracks:all"
-    await cacheDel("tracks:all");
-  }
 
   await cacheDel("courses:all");
   revalidatePath("/");
@@ -420,12 +412,11 @@ export async function updateCourse(
   revalidatePath("/");
 }
 
-// Courses aren't hard-deleted — a course can have purchases, payment orders,
-// and certificates referencing it with no cascade delete configured, so a
-// hard delete would fail once there's any real usage. "Hidden" (an existing
-// schema field) removes it from public listings while keeping it directly
-// reachable by URL for anyone who already purchased it — the same model
-// already used for "Unlisted" YouTube videos.
+// Hiding is the default way to retire a course — it removes it from public
+// listings while keeping it directly reachable by URL for anyone who already
+// purchased it, the same model already used for "Unlisted" YouTube videos.
+// See deleteCourse() below for the one case where a hard delete is also
+// allowed.
 export async function toggleCourseHidden(courseId: string) {
   await requireAdmin();
   const course = await prisma.course.findUnique({
@@ -437,6 +428,84 @@ export async function toggleCourseHidden(courseId: string) {
   await invalidateCourseCache(courseId);
   revalidatePath("/admin");
   revalidatePath("/");
+}
+
+// Hard-deletes a course, but only when nothing of real consequence
+// references it yet. A course with any purchase, payment order or
+// certificate is left alone — deleting those rows would corrupt the
+// client's own payment history and the Excel export, so toggleCourseHidden()
+// above is the only option once a course has real activity. A brand new
+// course with none of those has nothing stopping a clean delete: this walks
+// its whole content tree (the same cascade deleteContent() uses, just seeded
+// from every top-level section/video instead of one) and removes it, the
+// course's own CourseContent rows, any bundled Track's link to it (the track
+// itself is kept — only the paid bundle is undone), and finally the course
+// row, all in one transaction.
+export async function deleteCourse(courseId: string) {
+  await requireAdmin();
+
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      slug: true,
+      _count: { select: { purchases: true, paymentOrders: true, certificate: true } },
+    },
+  });
+  if (!course) throw new Error("Course not found.");
+
+  const { purchases, paymentOrders, certificate } = course._count;
+  if (purchases > 0 || paymentOrders > 0 || certificate > 0) {
+    throw new Error(
+      "This course has purchase, payment or certificate records and can't be deleted. Hide it instead to remove it from listings without losing them."
+    );
+  }
+
+  const topLevel = await prisma.courseContent.findMany({
+    where: { courseId },
+    select: { contentId: true },
+  });
+  const ids = topLevel.map((c) => c.contentId);
+  let frontier = [...ids];
+  while (frontier.length > 0) {
+    const children = await prisma.content.findMany({
+      where: { parentId: { in: frontier } },
+      select: { id: true },
+    });
+    frontier = children.map((c) => c.id);
+    ids.push(...frontier);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (ids.length > 0) {
+      await tx.vote.deleteMany({
+        where: {
+          OR: [
+            { comment: { is: { contentId: { in: ids } } } },
+            { question: { is: { contentId: { in: ids } } } },
+            { answer: { is: { question: { contentId: { in: ids } } } } },
+          ],
+        },
+      });
+      await tx.answer.deleteMany({ where: { question: { contentId: { in: ids } } } });
+      await tx.question.deleteMany({ where: { contentId: { in: ids } } });
+      await tx.comment.deleteMany({ where: { contentId: { in: ids } } });
+      await tx.videoProgress.deleteMany({ where: { contentId: { in: ids } } });
+      await tx.bookmark.deleteMany({ where: { contentId: { in: ids } } });
+    }
+    await tx.courseContent.deleteMany({ where: { courseId } });
+    if (ids.length > 0) {
+      await tx.videoMetadata.deleteMany({ where: { contentId: { in: ids } } });
+      await tx.notionMetadata.deleteMany({ where: { contentId: { in: ids } } });
+      await tx.content.deleteMany({ where: { id: { in: ids } } });
+    }
+    await tx.track.updateMany({ where: { courseId }, data: { courseId: null } });
+    await tx.course.delete({ where: { id: courseId } });
+  });
+
+  await cacheDel(courseCacheKey(course.slug), "courses:all", "tracks:all");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/notes");
 }
 
 // Same reasoning as toggleCourseHidden — a Content node can have progress,

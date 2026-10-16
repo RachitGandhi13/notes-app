@@ -100,6 +100,10 @@ const config: Config = {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
         },
+        breathe: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.035)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -112,6 +116,7 @@ const config: Config = {
         "pulse-ring": "pulse-ring 2.8s ease-out infinite",
         "spin-slow": "spin-slow 60s linear infinite",
         "gradient-shift": "gradient-shift 8s ease infinite",
+        breathe: "breathe 5s ease-in-out infinite",
       },
     },
   },
