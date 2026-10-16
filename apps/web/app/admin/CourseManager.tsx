@@ -14,11 +14,13 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { Dialog, DialogContent } from "@repo/ui";
 import {
   createCourse,
   createSection,
   updateCourse,
   toggleCourseHidden,
+  deleteCourse,
   toggleContentHidden,
   deleteContent,
   moveContentOrder,
@@ -58,12 +60,7 @@ interface AdminCourse {
   hidden: boolean;
   linkedTrack: { id: string; title: string } | null;
   content: CourseContentRow[];
-}
-
-interface LinkableTrack {
-  id: string;
-  title: string;
-  courseId: string | null;
+  _count: { purchases: number; paymentOrders: number; certificate: number };
 }
 
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB — soft client-side sanity cap
@@ -568,6 +565,9 @@ function CourseRow({ course }: { course: AdminCourse }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function handleToggleHidden(e: React.MouseEvent) {
     e.stopPropagation();
@@ -577,6 +577,24 @@ function CourseRow({ course }: { course: AdminCourse }) {
       router.refresh();
     } finally {
       setBusy(false);
+    }
+  }
+
+  const activity =
+    course._count.purchases + course._count.paymentOrders + course._count.certificate;
+  const canDelete = activity === 0;
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteCourse(course.id);
+      setConfirmingDelete(false);
+      router.refresh();
+    } catch (err: any) {
+      setDeleteError(err?.message ?? "Failed to delete course.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -619,6 +637,23 @@ function CourseRow({ course }: { course: AdminCourse }) {
             {course.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
           <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteError("");
+              setConfirmingDelete(true);
+            }}
+            disabled={!canDelete}
+            className="text-destructive hover:bg-destructive/10 disabled:text-muted-foreground flex h-11 w-11 items-center justify-center rounded disabled:cursor-not-allowed disabled:opacity-50 lg:h-auto lg:w-auto lg:p-1.5"
+            aria-label="Delete course"
+            title={
+              canDelete
+                ? "Delete course"
+                : "Can't delete — this course has purchase, payment or certificate records. Hide it instead."
+            }
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+          <button
             onClick={() => setExpanded((e) => !e)}
             className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded lg:h-auto lg:w-auto lg:p-1.5"
           >
@@ -628,6 +663,38 @@ function CourseRow({ course }: { course: AdminCourse }) {
       </div>
 
       {editing && <EditCourseForm course={course} onDone={() => setEditing(false)} />}
+
+      <Dialog
+        open={confirmingDelete}
+        onOpenChange={(open) => !deleting && setConfirmingDelete(open)}
+      >
+        <DialogContent className="max-w-sm">
+          <h3 className="text-lg font-semibold">Delete &quot;{course.title}&quot;?</h3>
+          <p className="text-muted-foreground text-sm">
+            This permanently removes the course, its sections and videos, and any comments or
+            questions on them. This can&apos;t be undone.
+          </p>
+          {deleteError && <p className="text-destructive text-sm">{deleteError}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              disabled={deleting}
+              className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete course"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {expanded && !editing && (
         <div className="space-y-3 border-t p-4">
@@ -657,19 +724,16 @@ function CourseRow({ course }: { course: AdminCourse }) {
   );
 }
 
-function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
+function CreateCourseForm() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [slug, setSlug] = useState("");
   const [price, setPrice] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
-  const [trackId, setTrackId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  const unlinkedTracks = tracks.filter((t) => !t.courseId);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -682,14 +746,12 @@ function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
         slug,
         price: Number(price) || 0,
         imageUrl: imageUrl || undefined,
-        trackId: trackId || undefined,
       });
       setTitle("");
       setDescription("");
       setSlug("");
       setPrice("0");
       setImageUrl("");
-      setTrackId("");
       setSuccess(true);
       router.refresh();
       setTimeout(() => setSuccess(false), 2500);
@@ -759,27 +821,6 @@ function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
         onChange={setImageUrl}
       />
 
-      <div className="space-y-1">
-        <label className="text-xs font-medium">
-          Link to a notes track (optional): one purchase unlocks both
-        </label>
-        <select
-          value={trackId}
-          onChange={(e) => setTrackId(e.target.value)}
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-        >
-          <option value="">None</option>
-          {unlinkedTracks.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title}
-            </option>
-          ))}
-        </select>
-        {unlinkedTracks.length === 0 && (
-          <p className="text-muted-foreground text-xs">No unlinked tracks available.</p>
-        )}
-      </div>
-
       <button
         type="submit"
         disabled={submitting}
@@ -791,16 +832,10 @@ function CreateCourseForm({ tracks }: { tracks: LinkableTrack[] }) {
   );
 }
 
-export function CourseManager({
-  courses,
-  tracks,
-}: {
-  courses: AdminCourse[];
-  tracks: LinkableTrack[];
-}) {
+export function CourseManager({ courses }: { courses: AdminCourse[] }) {
   return (
     <div className="space-y-6">
-      <CreateCourseForm tracks={tracks} />
+      <CreateCourseForm />
 
       {courses.length === 0 ? (
         <p className="text-muted-foreground text-sm">No courses yet.</p>

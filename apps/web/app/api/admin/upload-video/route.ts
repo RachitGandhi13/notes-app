@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // inside createUploadedVideo() would let an unauthenticated request still
     // write the file to storage before being rejected.
     await requireAdmin();
-    if (isBlobConfigured()) {
+    if (await isBlobConfigured()) {
       return NextResponse.json(
         { error: "Videos upload directly to storage. Reload the page and try again." },
         { status: 410 }

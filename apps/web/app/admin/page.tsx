@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { getPendingComments } from "@/lib/community";
-import { getAllCoursesForAdmin, getLinkableTracks } from "@/lib/actions";
+import { getAllCoursesForAdmin } from "@/lib/actions";
 import { ModerationPanel } from "./ModerationPanel";
 import { CourseManager } from "./CourseManager";
 import { AdminPanel } from "./AdminPanel";
@@ -16,10 +16,9 @@ export default async function AdminPage() {
     redirect("/auth");
   }
 
-  const [pending, courses, tracks, notesTracks] = await Promise.all([
+  const [pending, courses, notesTracks] = await Promise.all([
     getPendingComments(),
     getAllCoursesForAdmin(),
-    getLinkableTracks(),
     prisma.track.findMany({
       select: { id: true, title: true, image: true, inSearch: true, hidden: true },
       orderBy: { createdAt: "desc" },
@@ -54,7 +53,7 @@ export default async function AdminPage() {
         </TabsList>
 
         <TabsContent value="courses" className="pt-4">
-          <CourseManager courses={courses as any} tracks={tracks} />
+          <CourseManager courses={courses as any} />
         </TabsContent>
 
         <TabsContent value="notes" className="pt-4">

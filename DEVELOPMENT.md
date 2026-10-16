@@ -744,7 +744,8 @@ Local login: **admin@example.com / admin123** (from the seed script).
 
 ## Phase 12 — Pre-deployment cleanup & security hardening ✅
 
-**Decision (2026-10-04):** hosting is **AWS App Runner** running the
+**Decision (2026-10-04, superseded 2026-10-05 — see Phase 17):** hosting is
+**AWS App Runner** running the
 `apps/web/Dockerfile` image, with Route 53 for DNS. The app is server-rendered
 (16 route handlers, 4 `"use server"` modules, session-gated pages), so it cannot
 be a static S3 + CloudFront site. A `next build` with `output: "export"` fails
@@ -1020,6 +1021,138 @@ a decision for the client.
 - [ ] **Orphan blobs are possible.** A direct upload that succeeds, followed by a failed
       save, leaves the file in storage with no record. Clean up later if it matters.
 
+## Phase 17 — Lightsail hosting correction + documentation catch-up ✅
+
+**This phase is written after the fact.** PRs #2–#13 on `fix/image-host-fallback`
+shipped and merged to `main` (and, per the deploy workflow below, to production)
+without their own DEVELOPMENT.md entries — only PR #6 (Phase 16) got one. This
+phase closes that gap in one pass rather than retroactively splitting it into
+many small phases. Checkmarks below mean "shipped and merged," not "freshly
+re-verified in this session" — the actual testing claims belong to each
+commit's own message (`git log`), not to a new test run done here.
+
+- [x] **Hosting decision corrected: AWS Lightsail, not App Runner.** Phase 12
+      (2026-10-04) decided App Runner; `fe5ae79` (2026-10-05) shipped Lightsail
+      instead — a container service deployed by `.github/workflows/deploy.yml`
+      on every push to `main` (and manually via `workflow_dispatch`). The
+      pipeline: build the image `linux/amd64` (GitHub's runners are already
+      x86-64, so no emulation) with `NEXT_PUBLIC_RAZORPAY_KEY_ID` as a build
+      arg; push it with `lightsailctl` (`aws lightsail push-container-image`);
+      build the deployment's container/endpoint JSON with
+      `.github/scripts/make-lightsail-deployment.py` from the single
+      `CV_PRODUCTION_ENV` secret (a full dotenv — a deployment replaces the
+      whole container config, so every value is sent every time); call
+      `create-container-service-deployment`; poll `get-container-services`
+      until the state is `ACTIVE` on the pushed image or `FAILED`; finally curl
+      `https://www.cloudvidyaacademy.com/api/health` until it's 200. `1b950fe`
+      made the build step hard-fail if `NEXT_PUBLIC_RAZORPAY_KEY_ID` is empty,
+      instead of shipping a build where checkout can never open. Every other
+      mention of "App Runner" in Phases 12–14 and the required-env-vars list
+      below them is historical — written when that was still the plan — and is
+      left as-is rather than rewritten; the **Open risks** section has been
+      corrected in place since it's a living list, not a decision record.
+- [x] **`/api/health`** (`f4bec29`) — 200 JSON, no DB/Redis/external calls, so a
+      dependency outage never marks the container unhealthy. Fixes a real
+      failure mode: the production startup check had been throwing inside
+      Next's server preparation, which broke every request including the
+      health check itself, so containers stayed "running" but never became
+      healthy and Lightsail kept cancelling them. The startup check now logs
+      every missing variable name and exits 1 (a clear, fast failure) instead
+      of throwing. Dockerfile pins `HOSTNAME=0.0.0.0`/`PORT=3000` and adds a
+      `HEALTHCHECK` for local `docker run` testing.
+- [x] **TypeScript 6 compatibility** (`bbd3176`) — the editor runs TS6, which
+      flagged three things the repo's 5.9 compiler accepts: dropped the
+      deprecated `baseUrl` from `apps/web/tsconfig.json` (the `@/*` alias still
+      resolves through `paths`); added `apps/web/types/css.d.ts` so the
+      side-effect CSS import in `app/layout.tsx` type-checks; added `node` to
+      `packages/db/tsconfig.json`'s `types` (TS6 stopped auto-loading Node's
+      type definitions).
+- [x] **Image-host fallback** (`13f52e7` — the branch's namesake) —
+      `lib/images.ts`'s `needsUnoptimized()` renders a data-driven image
+      (course/track thumbnails, seed data) unoptimized instead of crashing the
+      page when its host isn't in `next.config.js`'s `images.remotePatterns`
+      allow-list. One stray external URL (e.g. a seeded `placehold.co` thumbnail)
+      had been 500ing the entire `/notes` route. Uploads on the Blob/S3 hosts are
+      still optimized as before; only hosts outside the allow-list fall back.
+- [x] **Responsive/touch pass + copy cleanup** (`2d8ccdc`) — navbar collapses
+      into a menu panel below 1024px (desktop header unchanged above it);
+      buttons, tabs, sidebar rows and admin icon buttons are at least 44px tall
+      on phone/tablet; consistent page gutters (16px phone / 24px tablet / 32px
+      desktop) added to pages that had none (course, admin, profile, lesson).
+      Dev-only: CSP allows `unsafe-eval` outside production only (Next dev mode
+      needs it; the production policy is unchanged). Also replaced every em
+      dash in user-visible copy with punctuation that fits the sentence (code
+      comments and official AWS certification names untouched).
+- [x] **Razorpay hardening round 2** (`beb6398`, `1b950fe`) — **a real bug that
+      had been silently failing every purchase attempt:** the order receipt
+      (`course_<uuid>_<timestamp>`) was 57 characters; Razorpay rejects any
+      receipt over 40. Replaced with a short random receipt (`rcpt_<hex>`), and
+      Razorpay's actual rejection reason (status/code/description, never the
+      key secret) is now logged instead of a bare error object. Also: amounts
+      under ₹1 are rejected with a clear message (Razorpay's own minimum), and
+      order notes are capped at Razorpay's 256-character limit.
+- [x] **Admin upload reliability** (`beb6398`) — the Blob byte-verification
+      fetch and Redis connect/command calls are now time-bounded (10s / 3s /
+      2s respectively) so a stalled external dependency fails fast with a 503
+      instead of holding the request open past the load balancer's own
+      timeout. `/api/admin/videos` is idempotent on an already-saved
+      `videoUrl` (a retry can't create a duplicate course entry), and the
+      admin page's save call now retries once on 502/503/504 — the upload
+      itself to Blob is never repeated, only the save-the-record step.
+- [x] **Course cache invalidation bug fixed** (`32f436a`) — the course page
+      read from cache key `course:v2:<slug>` but the admin's invalidation
+      cleared `course:<slug>` (no `v2:`), so an edited price or a newly added
+      video could stay cached and wrong for up to an hour. Both sides now go
+      through one `courseCacheKey()` function, and changing a course's slug
+      also clears the old URL's stale entry.
+- [x] **Delete for videos and playlists** (`9b12481`) — a trash button next to
+      the existing hide button on each video/playlist row in `CourseManager.tsx`,
+      with an in-page confirm (no browser dialogs) that states how many videos a
+      playlist holds before deleting it. `deleteContent()` (`lib/actions.ts`)
+      removes the content tree's dependent rows first, in one transaction —
+      votes, answers, questions, comments, watch progress, bookmarks, course
+      links, video/Notion metadata — then the `Content` row(s) themselves.
+      `UserPurchases` belongs to the course, not the content, so it's untouched.
+      Hide/show (Phase 2) is still the default way to retire something without
+      losing it; delete is for when it should actually be gone.
+- [x] **SEO: dynamic metadata, JSON-LD, sitemap & robots.txt** (`7675bf9`) —
+      per-page `generateMetadata` (title, description truncated to ~160 chars,
+      Open Graph + Twitter card images) and `schema.org/Course` JSON-LD on the
+      course detail page, with the same metadata pattern extended to the track
+      and notes pages. New `lib/seo.ts` (`truncate`, `jsonLd` — escapes `<` so a
+      title containing `</script>` can't close the tag early, `absoluteUrl`)
+      and `lib/site.ts` (`SITE_URL` as a source constant, not an env var, so a
+      build with no runtime env still gets correct metadata). New
+      `app/sitemap.ts` (force-dynamic, Redis-cached 1hr, lists non-hidden
+      courses/tracks, falls back to just the static paths if the database is
+      unreachable rather than failing the route) and `app/robots.ts`
+      (disallows `/admin`, `/api`, `/profile`, points at the sitemap). A hidden
+      course also gets `robots: {index: false}` in its own page metadata, not
+      just omission from the sitemap. Bundled in the same commit: the course
+      purchase panel now shows "Enrolled" instead of the price and sales
+      bullets once the signed-in user owns the course, and
+      `packages/db/src/client.ts` gained an opt-in `PRISMA_CONNECTION_LIMIT` env
+      var (off by default, never set yet) to cap each server process's
+      Postgres pool against Neon's pooled-connection ceiling if load testing
+      ever shows it's needed.
+- [x] **Copy fixes:** the site's title template and name for search-result
+      snippets, set in `app/layout.tsx` (`5dc3505`); the home hero subheading
+      now credits "the Academy" rather than the instructor by name (`8375b03`).
+- [x] **Instructor photo/About section temporarily hidden** (`578bd2b`) —
+      commented out, not deleted, in `app/(marketing)/page.tsx` and
+      `HeroArt.tsx`, with restore instructions left inline in the comments
+      (remove the markers, re-enable the `Image` import and the
+      `InstructorSection` import). The support section is unaffected. No
+      DEVELOPMENT.md record existed of why — flagging that the reason (client
+      request vs. a content issue) isn't captured anywhere; worth confirming
+      with the client before the next design pass touches the homepage.
+
+**Not verified in this pass:** no Lightsail deployment was actually triggered
+from this environment — the workflow, the deployment script and the
+health-check polling were read and reasoned through, not executed.
+`CV_PRODUCTION_ENV`'s actual contents (the full production dotenv held in the
+GitHub secret) were not audited here.
+
 ## Open risks / known issues
 
 - `turbo.json` uses the Turbo v1 `"pipeline"` key while `turbo@^2.0.0` is
@@ -1057,12 +1190,11 @@ a decision for the client.
   `UPDATE "User" SET admin = true WHERE email = '<their email>';`. Run
   migrations with Neon's _direct_ (non-pooled) URL; the running app should use
   the pooled URL plus `&pgbouncer=true&connect_timeout=15`.
-- **Vercel Hobby is for non-commercial use** and this site sells courses, so
-  the free-plan hosting assumption needs the client's decision (paid plan, or
-  another host). Vercel functions also cap the request body at ~4.5MB, which
-  breaks `/api/admin/upload-video` and `/api/admin/upload-ppt` for real lecture
-  files in production — they need client-side direct uploads to Blob/S3 (or a
-  host without that cap) before large uploads work when deployed.
+- ~~**Vercel Hobby is for non-commercial use** and this site sells courses...~~
+  Resolved in Phase 17: hosting moved to AWS Lightsail (a container service, not
+  Vercel), so the Hobby-plan commercial-use restriction doesn't apply. The
+  request-body-size concern it raised was separately resolved in Phase 16 —
+  direct browser-to-Blob uploads bypass the server entirely for videos/thumbnails.
 - **Uploaded files don't survive/serve in production without cloud storage.**
   Verified: a production Next server 404s anything written to `public/` after
   it started, and serverless disks are ephemeral anyway. Thumbnails, slides
@@ -1084,8 +1216,8 @@ a decision for the client.
   account with the same address.
 - **Password reset does not end existing sessions.** JWTs are stateless. Fix:
   store `passwordChangedAt` and reject tokens issued before it.
-- **Rate limits are in-memory per instance.** Behind App Runner with more than
-  one instance, each instance has its own counters. Move them to the Redis
+- **Rate limits are in-memory per instance.** Behind Lightsail with more than
+  one node, each node has its own counters. Move them to the Redis
   already used by `packages/cache`. Comments, questions and quiz submissions
   are not rate limited.
 - **Quiz answers ship to the browser.** Instant feedback needs `correctOption` on
@@ -1103,6 +1235,7 @@ a decision for the client.
 - **Certificate and Notion dead branches**: `courses/[courseSlug]/[contentId]`
   still renders a "Notion content" placeholder. Remove it after confirming no
   `NOTION` rows exist. The Prisma schema is left as-is.
-- **Operational:** set AWS Budgets alerts and App Runner max instances; use Neon's
+- **Operational:** set AWS Budgets alerts and the Lightsail container service's
+  scale/power; use Neon's
   pooled URL in the app and the direct URL for migrations; make the repo private
   before pushing.

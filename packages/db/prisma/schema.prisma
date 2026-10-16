@@ -86,11 +86,29 @@ model Track {
   inSearch    Boolean         @default(false)
   hidden      Boolean         @default(false)
   cohort      Int             @default(0)
-  // Cross-app bundling: if set, this track requires purchasing the linked
-  // video Course (checked against the shared UserPurchases table). Null = free.
+  // Deprecated (superseded by `courses`/TrackCourse, a many-to-many combo-bundle
+  // link) — kept, unused by app code, rather than dropped, since a production row
+  // could still have this set. A later cleanup migration can remove it.
   courseId    String?         @unique
   course      Course?         @relation(fields: [courseId], references: [id])
+  // Combo bundling: the courses this track unlocks on purchase, and what the
+  // bundle itself costs. Null price (or no linked courses) means the track is
+  // free — see hasTrackAccess() in lib/track-actions.ts.
+  courses     TrackCourse[]
+  bundlePrice Float?
+  paymentOrders PaymentOrder[]
   createdAt   DateTime        @default(now())
+}
+
+// Many-to-many: a track can bundle several courses, and a course can appear in
+// more than one bundle. Paying a track's bundlePrice grants every course here.
+model TrackCourse {
+  track     Track   @relation(fields: [trackId], references: [id])
+  trackId   String
+  course    Course  @relation(fields: [courseId], references: [id])
+  courseId  String
+
+  @@id([trackId, courseId])
 }
 
 model Categories {
@@ -170,7 +188,9 @@ model Course {
   purchases     UserPurchases[]
   certificate   Certificate[]
   paymentOrders PaymentOrder[]
-  linkedTrack   Track?          // notes-app track bundled with this course purchase (Phase 3)
+  // Deprecated 1:1 reverse side — see Track.courseId. Superseded by trackBundles.
+  linkedTrack   Track?
+  trackBundles  TrackCourse[] // combo bundles (Tracks) this course is included in
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
@@ -189,15 +209,19 @@ model UserPurchases {
 // Razorpay payment audit trail — separate from UserPurchases (the access-check
 // table) so every attempt (including failed/abandoned ones) is recorded for
 // the client's records, without affecting access logic.
+// Exactly one of courseId/trackId is set — app-enforced (see /api/razorpay/order),
+// matching this schema's existing style of app-level invariants over DB constraints.
 model PaymentOrder {
   id                String        @id @default(uuid())
   razorpayOrderId   String        @unique
   razorpayPaymentId String?
   user              User          @relation(fields: [userId], references: [id])
   userId            String
-  course            Course        @relation(fields: [courseId], references: [id])
-  courseId          String
-  amount            Float // in INR (rupees), matches Course.price at order-creation time
+  course            Course?       @relation(fields: [courseId], references: [id])
+  courseId          String?
+  track             Track?        @relation(fields: [trackId], references: [id])
+  trackId           String?
+  amount            Float // in INR (rupees), matches Course.price or Track.bundlePrice at order-creation time
   status            PaymentStatus @default(CREATED)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt

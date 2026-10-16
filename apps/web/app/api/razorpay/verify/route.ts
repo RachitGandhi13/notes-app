@@ -1,8 +1,7 @@
 import { AuthError, requireAuth } from "@repo/auth";
 import { prisma } from "@repo/db/client";
-import { cacheDel } from "@repo/cache";
 import { NextResponse } from "next/server";
-import { RazorpayConfigError, verifyPaymentSignature } from "@/lib/razorpay";
+import { grantOrderAccess, RazorpayConfigError, verifyPaymentSignature } from "@/lib/razorpay";
 
 // Called by the browser after Checkout reports success. The signature is what
 // proves the payment happened; the success callback in the browser is not trusted.
@@ -39,12 +38,7 @@ export async function POST(request: Request) {
         where: { id: order.id },
         data: { status: "PAID", razorpayPaymentId: paymentId },
       });
-      await prisma.userPurchases.upsert({
-        where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
-        update: {},
-        create: { userId: order.userId, courseId: order.courseId },
-      });
-      await cacheDel(`purchases:${order.userId}`, "courses:all");
+      await grantOrderAccess(order);
     }
 
     return NextResponse.json({ success: true });

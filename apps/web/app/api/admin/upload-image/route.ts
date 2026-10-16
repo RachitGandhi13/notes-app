@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Checked before storeFile() runs so an unauthenticated request can't
     // write a file to storage before being rejected.
     await requireAdmin();
-    if (isBlobConfigured()) {
+    if (await isBlobConfigured()) {
       return NextResponse.json(
         { error: "Images upload directly to storage. Reload the page and try again." },
         { status: 410 }

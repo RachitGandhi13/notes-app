@@ -25,7 +25,9 @@ function _fetchTracks() {
     include: {
       categories: { include: { category: true } },
       problems: { select: { problemId: true } },
-      course: { select: { id: true, slug: true, price: true, title: true } },
+      courses: {
+        include: { course: { select: { id: true, slug: true, price: true, title: true } } },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -42,7 +44,9 @@ export async function getTrack(trackId: string) {
         },
         orderBy: { sortingOrder: "asc" },
       },
-      course: { select: { id: true, slug: true, price: true, title: true } },
+      courses: {
+        include: { course: { select: { id: true, slug: true, price: true, title: true } } },
+      },
     },
   });
   if (!track) return null;
@@ -60,20 +64,26 @@ export async function getTrack(trackId: string) {
   };
 }
 
-// ── Track entitlement (Phase 3) ─────────────────────────────────────────────────
-// A track with no linked course is free/open. A bundled track requires the
-// signed-in user to have a matching row in the shared UserPurchases table —
-// the same database the course purchase flow writes to, so this is a direct
-// query.
+// ── Track entitlement (combo bundles) ───────────────────────────────────────────
+// A track with no linked courses is free/open. A combo track requires the
+// signed-in user to own (via the shared UserPurchases table) at least one of
+// the courses it bundles — whichever course they bought it through, whether
+// that was the combo itself or one of the courses individually.
 
-export async function hasTrackAccess(track: { courseId: string | null }): Promise<boolean> {
-  if (!track.courseId) return true;
+export async function hasTrackAccess(track: { id: string }): Promise<boolean> {
+  const links = await prisma.trackCourse.findMany({
+    where: { trackId: track.id },
+    select: { courseId: true },
+  });
+  if (links.length === 0) return true;
+
   const session = await getSession();
   if (!session?.user) return false;
-  const purchase = await prisma.userPurchases.findUnique({
-    where: { userId_courseId: { userId: session.user.id, courseId: track.courseId } },
+
+  const owned = await prisma.userPurchases.findFirst({
+    where: { userId: session.user.id, courseId: { in: links.map((l) => l.courseId) } },
   });
-  return !!purchase;
+  return !!owned;
 }
 
 // ── Problems ───────────────────────────────────────────────────────────────────
@@ -145,6 +155,49 @@ export async function createTrack(data: {
   revalidatePath("/notes");
 
   return track;
+}
+
+// ── Admin: combo bundles ─────────────────────────────────────────────────────
+
+/** Every course, for the bundle checkbox list. */
+export async function getCoursesForBundling() {
+  await requireAdmin();
+  return prisma.course.findMany({
+    where: { hidden: false },
+    select: { id: true, title: true, price: true, slug: true },
+    orderBy: { title: "asc" },
+  });
+}
+
+// Replaces a track's whole set of bundled courses and its bundle price in one
+// transaction, rather than adding/removing incrementally — simpler to reason
+// about from a checkbox-list UI, and the set is small enough that a full
+// replace is cheap. An empty courseIds list (or omitting bundlePrice) turns
+// the track back into a free track.
+export async function setTrackBundle(
+  trackId: string,
+  data: { courseIds: string[]; bundlePrice: number | null }
+) {
+  await requireAdmin();
+
+  const courseIds = [...new Set(data.courseIds)];
+  if (courseIds.length > 0 && (!data.bundlePrice || data.bundlePrice <= 0)) {
+    throw new Error("Set a bundle price to link courses to this track.");
+  }
+
+  await prisma.$transaction([
+    prisma.trackCourse.deleteMany({ where: { trackId } }),
+    ...courseIds.map((courseId) => prisma.trackCourse.create({ data: { trackId, courseId } })),
+    prisma.track.update({
+      where: { id: trackId },
+      data: { bundlePrice: courseIds.length > 0 ? data.bundlePrice : null },
+    }),
+  ]);
+
+  await cacheDel("tracks:all");
+  revalidatePath("/notes");
+  revalidatePath(`/tracks/${trackId}`);
+  revalidatePath("/admin");
 }
 
 export async function toggleTrackHidden(trackId: string) {

@@ -1,4 +1,4 @@
-// import Image from "next/image"; // Re-enable with the instructor photo below.
+import Image from "next/image";
 import {
   Award,
   Cloud,
@@ -70,7 +70,8 @@ export function HeroArt() {
       <div className="border-primary/30 animate-spin-slow absolute inset-[6%] rounded-full border-2 border-dashed motion-reduce:animate-none" />
       <div className="border-primary/20 absolute inset-[16%] rounded-full border" />
       <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 motion-reduce:animate-none" />
-      <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 [animation-delay:-1.4s] motion-reduce:animate-none" />
+      <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 [animation-delay:-0.95s] motion-reduce:animate-none" />
+      <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 [animation-delay:-1.9s] motion-reduce:animate-none" />
 
       {/* animated links from the centre out to each node */}
       <svg viewBox="0 0 520 520" className="absolute inset-0 h-full w-full">
@@ -105,26 +106,32 @@ export function HeroArt() {
         </div>
       ))}
 
-      {/* Instructor photo and name, hidden for now. To restore, delete the comment markers below
-      and re-enable the `Image` import at the top of this file.
-      <div className="absolute left-1/2 top-[45%] h-[64%] w-[54%] -translate-x-1/2 -translate-y-1/2">
-        <div className="from-primary absolute -inset-1 rounded-[2rem] bg-gradient-to-br via-cyan-400 to-violet-500 opacity-90 blur-[2px]" />
-        <div className="bg-card relative h-full w-full overflow-hidden rounded-[1.8rem]">
-          <Image
-            src={instructor.photo}
-            alt=""
-            fill
-            priority
-            sizes="300px"
-            className="object-cover object-top"
-          />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-4 pt-10">
-            <p className="text-sm font-bold text-white">{instructor.name}</p>
-            <p className="text-xs text-white/80">Founder, CloudVidya Academy</p>
+      {/* Brand medallion — the source the orbit rings and pulsing "waves" radiate from.
+          Sized and positioned as a true circle so it sits concentrically inside them. */}
+      <div className="absolute left-1/2 top-1/2 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2">
+        <div className="animate-breathe relative h-full w-full motion-reduce:animate-none">
+          {/* ambient glow the rings seem to ripple out of */}
+          <div className="bg-primary/35 animate-blob absolute inset-[-55%] rounded-full blur-3xl motion-reduce:animate-none" />
+          <div className="animate-blob absolute inset-[-55%] rounded-full bg-violet-500/25 blur-3xl [animation-delay:-9s] motion-reduce:animate-none" />
+
+          {/* gradient ring + logo */}
+          <div
+            className="from-primary animate-gradient-shift relative h-full w-full rounded-full bg-gradient-to-br via-cyan-400 to-violet-500 bg-[length:200%_200%] p-[3px] motion-reduce:animate-none"
+            style={{ boxShadow: "0 0 60px -8px hsl(var(--primary) / 0.65)" }}
+          >
+            <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
+              <Image
+                src="/cloudvidya.png"
+                alt=""
+                fill
+                priority
+                sizes="220px"
+                className="object-cover"
+              />
+            </div>
           </div>
         </div>
       </div>
-      */}
 
       {/* floating glass cards */}
       {CARDS.map(({ Icon, title, text, className, delay }) => (

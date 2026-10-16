@@ -10,12 +10,19 @@ const PUBLIC_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 const CHECKOUT_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 const BUSINESS_NAME = "Cloud Vidya Academy";
 
-interface PurchaseButtonProps {
-  courseId: string;
-  price: number;
-  courseSlug: string;
+// A course is purchased on its own; a combo bundle (a Track with linked
+// courses) is purchased as one charge for the whole bundle. Both post to the
+// same /api/razorpay/order — just courseId vs trackId — and both land here,
+// which is why this button takes either target rather than being duplicated.
+type PurchaseTarget =
+  | { kind: "course"; id: string; price: number; redirectSlug: string }
+  | { kind: "track"; id: string; price: number };
+
+type PurchaseButtonProps = PurchaseTarget & {
   prefill?: { name?: string | null; email?: string | null };
-}
+  /** Overrides the default "Purchase for ₹X" label, e.g. "Buy combo for ₹X". */
+  label?: string;
+};
 
 interface RazorpaySuccess {
   razorpay_order_id: string;
@@ -70,7 +77,8 @@ const STAGE_LABEL: Record<Exclude<Stage, "idle">, string> = {
   confirming: "Confirming payment…",
 };
 
-export function PurchaseButton({ courseId, price, courseSlug, prefill }: PurchaseButtonProps) {
+export function PurchaseButton(props: PurchaseButtonProps) {
+  const { prefill, label } = props;
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState("");
@@ -94,15 +102,24 @@ export function PurchaseButton({ courseId, price, courseSlug, prefill }: Purchas
     setStage("idle");
   }
 
+  // Combo bundles always have a price (they only exist with bundlePrice set),
+  // so free enrollment only ever applies to a course.
   async function enrollFree() {
+    if (props.kind !== "course") return;
     begin("creating");
     try {
-      await purchaseCourse(courseId);
+      await purchaseCourse(props.id);
       router.refresh();
     } catch {
       // Production builds hide the server's message, so use our own wording.
       fail("Could not enroll in this course. Please try again.");
     }
+  }
+
+  function successRedirect() {
+    return props.kind === "course"
+      ? `/courses/${props.redirectSlug}?payment=success`
+      : `/tracks/${props.id}?payment=success`;
   }
 
   async function confirmPayment(response: RazorpaySuccess) {
@@ -123,11 +140,11 @@ export function PurchaseButton({ courseId, price, courseSlug, prefill }: Purchas
         return;
       }
       inFlight.current = false;
-      router.replace(`/courses/${courseSlug}?payment=success`);
+      router.replace(successRedirect());
       router.refresh();
     } catch {
       fail(
-        `Network error while confirming your payment. Refresh the page; if the course does not ` +
+        `Network error while confirming your payment. Refresh the page; if access does not ` +
           `appear, contact support with payment ID ${response.razorpay_payment_id}.`
       );
     }
@@ -158,7 +175,9 @@ export function PurchaseButton({ courseId, price, courseSlug, prefill }: Purchas
       const res = await fetch("/api/razorpay/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId }),
+        body: JSON.stringify(
+          props.kind === "course" ? { courseId: props.id } : { trackId: props.id }
+        ),
       });
       order = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -216,11 +235,12 @@ export function PurchaseButton({ courseId, price, courseSlug, prefill }: Purchas
 
   function handleClick() {
     if (inFlight.current) return;
-    if (price === 0) void enrollFree();
+    if (props.kind === "course" && props.price === 0) void enrollFree();
     else void startCheckout();
   }
 
   const loading = stage !== "idle";
+  const defaultLabel = props.price === 0 ? "Enroll for Free" : `Purchase for ₹${props.price}`;
 
   return (
     <div className="space-y-2">
@@ -231,7 +251,7 @@ export function PurchaseButton({ courseId, price, courseSlug, prefill }: Purchas
         aria-busy={loading}
         className="bg-primary text-primary-foreground w-full rounded-lg px-6 py-3 font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? STAGE_LABEL[stage] : price === 0 ? "Enroll for Free" : `Purchase for ₹${price}`}
+        {loading ? STAGE_LABEL[stage] : (label ?? defaultLabel)}
       </button>
       {error && (
         <p role="alert" className="text-destructive text-sm">

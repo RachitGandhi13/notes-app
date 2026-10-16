@@ -5,6 +5,7 @@ import { CheckSquare, ChevronLeft, ChevronRight, Presentation } from "lucide-rea
 import Link from "next/link";
 import { useState } from "react";
 import { AddSectionForm } from "@/components/admin/AddSectionForm";
+import { TrackBundlePanel } from "@/components/admin/TrackBundlePanel";
 
 interface Problem {
   problemId: string;
@@ -23,8 +24,14 @@ interface ProblemSidebarProps {
   trackTitle: string;
   problems: Problem[];
   activeProblemId: string;
-  /** Shows the "Add section" form for admins. */
+  /** Shows the "Add section" form and the combo-bundle panel for admins. */
   isAdmin?: boolean;
+  /** Only needed (and only fetched by the page) when isAdmin is true. */
+  bundleAdmin?: {
+    allCourses: { id: string; title: string; price: number; slug: string }[];
+    linkedCourseIds: string[];
+    bundlePrice: number | null;
+  };
 }
 
 export function ProblemSidebar({
@@ -33,6 +40,7 @@ export function ProblemSidebar({
   problems,
   activeProblemId,
   isAdmin,
+  bundleAdmin,
 }: ProblemSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -112,8 +120,23 @@ export function ProblemSidebar({
           </nav>
 
           {isAdmin && (
-            <div className="border-t p-2">
+            <div className="space-y-2 border-t p-2">
               <AddSectionForm trackId={trackId} />
+              {bundleAdmin && (
+                <details className="text-sm">
+                  <summary className="text-muted-foreground hover:text-foreground min-h-9 cursor-pointer list-none px-1 py-1.5 text-xs font-medium">
+                    Combo bundle settings ▸
+                  </summary>
+                  <div className="pt-2">
+                    <TrackBundlePanel
+                      trackId={trackId}
+                      allCourses={bundleAdmin.allCourses}
+                      linkedCourseIds={bundleAdmin.linkedCourseIds}
+                      bundlePrice={bundleAdmin.bundlePrice}
+                    />
+                  </div>
+                </details>
+              )}
             </div>
           )}
         </>
