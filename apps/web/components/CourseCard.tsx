@@ -1,5 +1,5 @@
 import { Badge } from "@repo/ui";
-import { ArrowRight, CheckCircle2, PlayCircle, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
@@ -11,7 +11,6 @@ interface CourseCardProps {
   imageUrl?: string | null;
   price: number;
   purchased?: boolean;
-  enrolledCount?: number;
 }
 
 export function CourseCard({
@@ -21,7 +20,6 @@ export function CourseCard({
   imageUrl,
   price,
   purchased,
-  enrolledCount,
 }: CourseCardProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
@@ -76,12 +74,6 @@ export function CourseCard({
                 >
                   {price === 0 ? "Free" : `₹${price}`}
                 </Badge>
-              )}
-              {!!enrolledCount && enrolledCount > 0 && (
-                <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                  <Users className="h-3.5 w-3.5" />
-                  {enrolledCount.toLocaleString()} enrolled
-                </span>
               )}
             </div>
             <span className="text-primary flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">

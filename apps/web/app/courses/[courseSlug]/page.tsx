@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { getSession } from "@repo/auth";
-import { BadgeCheck, CheckCircle2, PlayCircle, Users, XCircle } from "lucide-react";
+import { BadgeCheck, CheckCircle2, PlayCircle, XCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -107,8 +107,6 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       : [{ ...cc.content, folderTitle: null as string | null }]
   );
 
-  const enrolledCount = course._count.purchases;
-
   // Group top-level content into chapters for the curriculum accordion —
   // FOLDER rows become a chapter of their children; any standalone
   // VIDEO/NOTION rows not inside a folder are bucketed into one trailing group.
@@ -200,12 +198,6 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   <PlayCircle className="h-4 w-4" />
                   {allContent.length} {allContent.length === 1 ? "lesson" : "lessons"}
                 </span>
-                {enrolledCount > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <Users className="h-4 w-4" />
-                    {enrolledCount.toLocaleString()} enrolled
-                  </span>
-                )}
                 <span className="flex items-center gap-1.5">
                   <BadgeCheck className="h-4 w-4" />
                   Lifetime access

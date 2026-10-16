@@ -16,7 +16,6 @@ export async function getCourses(query?: string) {
   if (search) {
     return prisma.course.findMany({
       where: { hidden: false, title: { contains: search, mode: "insensitive" } },
-      include: { _count: { select: { purchases: true } } },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -33,7 +32,6 @@ export async function getCourses(query?: string) {
 function _fetchCourses() {
   return prisma.course.findMany({
     where: { hidden: false },
-    include: { _count: { select: { purchases: true } } },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -62,7 +60,6 @@ function _fetchCourse(slug: string) {
   return prisma.course.findUnique({
     where: { slug },
     include: {
-      _count: { select: { purchases: true } },
       content: {
         where: { content: { hidden: false } },
         include: {

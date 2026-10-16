@@ -1,5 +1,5 @@
 import { Badge } from "@repo/ui";
-import { ArrowRight, BadgeCheck, CheckCircle2, PlayCircle, Users } from "lucide-react";
+import { ArrowRight, BadgeCheck, CheckCircle2, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
@@ -11,7 +11,6 @@ interface FeaturedCourseProps {
   imageUrl?: string | null;
   price: number;
   purchased?: boolean;
-  enrolledCount?: number;
 }
 
 // Used when there is only one course: a single card in a three-column grid
@@ -23,7 +22,6 @@ export function FeaturedCourse({
   imageUrl,
   price,
   purchased,
-  enrolledCount,
 }: FeaturedCourseProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
@@ -86,12 +84,6 @@ export function FeaturedCourse({
               >
                 {price === 0 ? "Free" : `₹${price}`}
               </Badge>
-            )}
-            {!!enrolledCount && enrolledCount > 0 && (
-              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                <Users className="h-4 w-4" />
-                {enrolledCount.toLocaleString()} enrolled
-              </span>
             )}
             <span className="bg-primary text-primary-foreground ml-auto flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold shadow-md transition-all group-hover:gap-3 group-hover:shadow-lg">
               {purchased ? "Continue learning" : "View course"}
