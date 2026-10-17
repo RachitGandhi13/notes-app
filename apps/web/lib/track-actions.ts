@@ -33,8 +33,13 @@ function _fetchTracks() {
   });
 }
 
-export async function getTrack(trackId: string) {
-  const track = await prisma.track.findUnique({
+// One place builds the key, same reasoning as courseCacheKey in lib/actions.ts.
+function trackCacheKey(trackId: string) {
+  return `track:v1:${trackId}`;
+}
+
+function _fetchTrackById(trackId: string) {
+  return prisma.track.findUnique({
     where: { id: trackId },
     include: {
       categories: { include: { category: true } },
@@ -49,6 +54,18 @@ export async function getTrack(trackId: string) {
       },
     },
   });
+}
+
+// The raw fetch is cached (it's the same for every caller), but the per-user
+// locking below is applied on every call regardless of cache hit, so a
+// cached entry never leaks a paid pptUrl to a user who hasn't bought it.
+export async function getTrack(trackId: string) {
+  const CACHE_KEY = trackCacheKey(trackId);
+  let track = await cacheGet<Awaited<ReturnType<typeof _fetchTrackById>>>(CACHE_KEY);
+  if (!track) {
+    track = await _fetchTrackById(trackId);
+    if (track) await cacheSet(CACHE_KEY, track);
+  }
   if (!track) return null;
 
   const session = await getSession();
@@ -194,7 +211,7 @@ export async function setTrackBundle(
     }),
   ]);
 
-  await cacheDel("tracks:all");
+  await cacheDel("tracks:all", trackCacheKey(trackId));
   revalidatePath("/notes");
   revalidatePath(`/tracks/${trackId}`);
   revalidatePath("/admin");
@@ -205,7 +222,7 @@ export async function toggleTrackHidden(trackId: string) {
   const track = await prisma.track.findUnique({ where: { id: trackId }, select: { hidden: true } });
   if (!track) throw new Error("Track not found.");
   await prisma.track.update({ where: { id: trackId }, data: { hidden: !track.hidden } });
-  await cacheDel("tracks:all");
+  await cacheDel("tracks:all", trackCacheKey(trackId));
   revalidatePath("/notes");
   revalidatePath("/admin");
 }
@@ -219,7 +236,7 @@ export async function toggleTrackHidden(trackId: string) {
 // body-size limit server actions have), which then calls these.
 
 async function refreshTrack(trackId: string) {
-  await cacheDel("tracks:all");
+  await cacheDel("tracks:all", trackCacheKey(trackId));
   revalidatePath(`/tracks/${trackId}`);
   revalidatePath("/notes");
 }

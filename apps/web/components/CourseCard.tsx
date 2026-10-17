@@ -11,6 +11,8 @@ interface CourseCardProps {
   imageUrl?: string | null;
   price: number;
   purchased?: boolean;
+  /** Set for cards in the first visible row — skips lazy-loading for above-the-fold images. */
+  priority?: boolean;
 }
 
 export function CourseCard({
@@ -20,6 +22,7 @@ export function CourseCard({
   imageUrl,
   price,
   purchased,
+  priority,
 }: CourseCardProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
@@ -31,6 +34,7 @@ export function CourseCard({
               unoptimized={needsUnoptimized(imageUrl)}
               alt={title}
               fill
+              priority={priority}
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />

@@ -33,10 +33,10 @@ function buildItems(courseContent: any[]): any[] {
 }
 
 export default async function ContentViewerPage({ params }: Props) {
-  const session = await getSession();
+  // Independent of each other — course data is public, so it doesn't need
+  // the session — so they run concurrently instead of two round trips.
+  const [session, course] = await Promise.all([getSession(), getCourse(params.courseSlug)]);
   if (!session?.user) redirect("/auth");
-
-  const course = await getCourse(params.courseSlug);
   if (!course) notFound();
 
   const purchases = await getUserPurchases();
