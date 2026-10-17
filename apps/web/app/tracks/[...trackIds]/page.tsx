@@ -68,10 +68,10 @@ export default async function TrackPage({ params }: Props) {
 
   if (!trackId) notFound();
 
-  const track = await loadTrack(trackId);
+  // Independent of each other, so they run concurrently.
+  const [track, session] = await Promise.all([loadTrack(trackId), getSession()]);
   if (!track) notFound();
 
-  const session = await getSession();
   const isAdmin = !!session?.user?.admin;
 
   // Admins can always open a track, even a bundled one they haven't "bought".

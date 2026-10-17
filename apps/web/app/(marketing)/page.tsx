@@ -154,7 +154,7 @@ export default async function HomePage({ searchParams }: Props) {
           <div
             className={`grid gap-6 sm:grid-cols-2 ${courses.length > 2 ? "lg:grid-cols-3" : ""}`}
           >
-            {courses.map((course) => (
+            {courses.map((course, i) => (
               <CourseCard
                 key={course.id}
                 slug={course.slug}
@@ -162,6 +162,7 @@ export default async function HomePage({ searchParams }: Props) {
                 description={course.description}
                 imageUrl={course.imageUrl}
                 price={course.price}
+                priority={i < 3}
                 purchased={purchasedIds.has(course.id)}
               />
             ))}

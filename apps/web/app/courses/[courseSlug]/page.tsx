@@ -83,10 +83,11 @@ function courseJsonLd(
 }
 
 export default async function CourseDetailPage({ params, searchParams }: Props) {
-  const course = await loadCourse(params.courseSlug);
+  // Independent of each other — loading the course doesn't need the session,
+  // and the session doesn't need the course — so they run concurrently
+  // instead of adding up two round trips.
+  const [course, session] = await Promise.all([loadCourse(params.courseSlug), getSession()]);
   if (!course) notFound();
-
-  const session = await getSession();
 
   let purchased = false;
   if (session?.user) {
@@ -181,6 +182,8 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   src={course.imageUrl}
                   alt={course.title}
                   fill
+                  priority
+                  sizes="(min-width: 1024px) 760px, 100vw"
                   unoptimized={needsUnoptimized(course.imageUrl)}
                   className="object-cover"
                 />
