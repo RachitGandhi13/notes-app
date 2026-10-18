@@ -273,6 +273,10 @@ model VideoMetadata {
   thumbnail1Url String?
   thumbnail2Url String?
   thumbnail3Url String?
+  // Optional notes/slides (PDF or PPT/PPTX) attached to this lesson, uploaded
+  // alongside or after the video from the same admin lesson form.
+  notesUrl      String?
+  notesTitle    String?
   content       Content @relation(fields: [contentId], references: [id])
   contentId     String  @unique
 }

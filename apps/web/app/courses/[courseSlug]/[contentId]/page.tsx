@@ -1,4 +1,5 @@
 import { getSession } from "@repo/auth";
+import { FileText } from "lucide-react";
 import { redirect, notFound } from "next/navigation";
 import {
   getCourse,
@@ -81,6 +82,20 @@ export default async function ContentViewerPage({ params }: Props) {
               subtitleUrl={content.videoMetadata.subtitleUrl}
               thumbnail={content.videoMetadata.thumbnail1Url}
             />
+          )}
+
+          {/* Notes/slides, if the admin attached any — only ever reached after the
+              hasPurchased check above, so this never renders for an unentitled user. */}
+          {content.type === "VIDEO" && content.videoMetadata?.notesUrl && (
+            <a
+              href={content.videoMetadata.notesUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-card hover:bg-accent flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              {content.videoMetadata.notesTitle || "Download notes"}
+            </a>
           )}
 
           {/* Notion placeholder */}
