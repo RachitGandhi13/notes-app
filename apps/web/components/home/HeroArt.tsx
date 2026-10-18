@@ -11,7 +11,6 @@ import {
   Terminal,
   type LucideIcon,
 } from "lucide-react";
-import { instructor } from "@/lib/instructor";
 
 // Infrastructure "nodes" around the photo, linked to it by animated dashed
 // lines. Coordinates are percentages of the 520×520 artboard.
@@ -32,7 +31,7 @@ const CARDS: {
 }[] = [
   {
     Icon: Award,
-    title: `${instructor.certifications.length} AWS certifications`,
+    title: "Get certified on AWS",
     text: "Taught by an AWS-certified expert",
     className: "left-[-6%] top-[16%]",
     delay: "0s",
@@ -41,7 +40,7 @@ const CARDS: {
     Icon: Terminal,
     title: "Project-based",
     text: "Learn by building, not just watching",
-    className: "right-[-7%] top-[30%]",
+    className: "right-[-7%] top-[16%]",
     delay: "-2s",
   },
   {

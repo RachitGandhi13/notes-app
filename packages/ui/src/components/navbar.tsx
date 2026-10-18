@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Shield, User, X } from "lucide-react";
+import { LogOut, Mail, Menu, Phone, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,12 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
+
+const CONTACT = {
+  phone: "+91 91135 92725",
+  phoneHref: "tel:+919113592725",
+  email: "veeranna@cloudvidyaacademy.com",
+};
 
 export interface NavLink {
   label: string;
@@ -132,9 +138,25 @@ export function Navbar({
               <Button asChild variant="outline" size="sm">
                 <Link href="/auth">Login</Link>
               </Button>
-              <Button asChild size="sm">
-                <Link href="/auth?tab=register">Join now</Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm">Contact us</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-auto">
+                  <DropdownMenuItem asChild>
+                    <a href={CONTACT.phoneHref} className="whitespace-nowrap">
+                      <Phone className="mr-2 h-4 w-4 shrink-0" />
+                      {CONTACT.phone}
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href={`mailto:${CONTACT.email}`} className="whitespace-nowrap">
+                      <Mail className="mr-2 h-4 w-4 shrink-0" />
+                      {CONTACT.email}
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 
@@ -206,13 +228,24 @@ export function Navbar({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 border-t pt-3">
+              <div className="grid gap-2 border-t pt-3">
                 <Button asChild variant="outline">
                   <Link href="/auth">Login</Link>
                 </Button>
-                <Button asChild>
-                  <Link href="/auth?tab=register">Join now</Link>
-                </Button>
+                <a
+                  href={CONTACT.phoneHref}
+                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                >
+                  <Phone className="h-4 w-4 shrink-0" />
+                  {CONTACT.phone}
+                </a>
+                <a
+                  href={`mailto:${CONTACT.email}`}
+                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                >
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span className="break-all">{CONTACT.email}</span>
+                </a>
               </div>
             )}
           </div>

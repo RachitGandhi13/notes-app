@@ -1,5 +1,5 @@
 import { getSession } from "@repo/auth";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, BadgeCheck, BookOpen, Users, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getCourses, getUserPurchases } from "@/lib/actions";
@@ -37,18 +37,16 @@ export default async function HomePage({ searchParams }: Props) {
   // as an Academy with many trainers, not a single person's résumé.
   // Enrollment/student counts are also deliberately not shown here —
   // admin-only metric, see /admin.
-  const stats: Array<
-    { type: "stat"; value: string; label: string } | { type: "feature"; text: string }
-  > = [
+  const stats: { Icon: LucideIcon; value?: string; text: string }[] = [
     courses.length > 0
       ? {
-          type: "stat" as const,
+          Icon: BookOpen,
           value: String(courses.length),
-          label: courses.length === 1 ? "Course" : "Courses",
+          text: courses.length === 1 ? "Course" : "Courses",
         }
       : null,
-    { type: "feature" as const, text: "Get certified on AWS with cloud experts" },
-    { type: "feature" as const, text: "Get trained with real-time industry experts" },
+    { Icon: BadgeCheck, text: "Get certified on AWS with cloud experts" },
+    { Icon: Users, text: "Get trained with real-time industry experts" },
   ].filter((s): s is NonNullable<typeof s> => s !== null);
 
   return (
@@ -103,20 +101,27 @@ export default async function HomePage({ searchParams }: Props) {
               <CourseSearchBar />
             </div>
 
-            <dl className="animate-fade-up grid max-w-xl grid-cols-2 gap-3 [animation-delay:400ms] sm:grid-cols-4">
-              {stats.map((stat, i) => (
+            <dl className="animate-fade-up grid max-w-xl grid-cols-1 gap-3 [animation-delay:400ms] sm:grid-cols-3">
+              {stats.map(({ Icon, value, text }, i) => (
                 <div
                   key={i}
-                  className="bg-card/80 flex flex-col justify-center rounded-xl border px-3 py-3 backdrop-blur"
+                  className="bg-card/80 flex h-full items-center gap-3 rounded-xl border p-4 backdrop-blur"
                 >
-                  {stat.type === "stat" ? (
-                    <>
-                      <dt className="text-muted-foreground order-2 text-xs">{stat.label}</dt>
-                      <dd className="text-2xl font-extrabold tracking-tight">{stat.value}</dd>
-                    </>
-                  ) : (
-                    <dd className="text-sm font-semibold leading-snug">{stat.text}</dd>
-                  )}
+                  <span className="bg-primary/15 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                    <Icon className="h-4.5 w-4.5" />
+                  </span>
+                  <div className="min-w-0">
+                    {value ? (
+                      <>
+                        <dd className="text-xl font-extrabold leading-tight tracking-tight">
+                          {value}
+                        </dd>
+                        <dt className="text-muted-foreground text-xs">{text}</dt>
+                      </>
+                    ) : (
+                      <dd className="text-sm font-semibold leading-snug">{text}</dd>
+                    )}
+                  </div>
                 </div>
               ))}
             </dl>
