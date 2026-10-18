@@ -3,7 +3,6 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getCourses, getUserPurchases } from "@/lib/actions";
-import { instructor } from "@/lib/instructor";
 import { CourseCard } from "@/components/CourseCard";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
 // import { InstructorSection, SupportSection } from "@/components/InstructorSection";
@@ -32,17 +31,25 @@ export default async function HomePage({ searchParams }: Props) {
     purchases.forEach((p) => purchasedIds.add(p.courseId));
   }
 
-  // Only real numbers: what's in the catalogue, plus facts from the
-  // instructor profile the client supplied. Enrollment/student counts are
-  // deliberately not shown here — admin-only metric, see /admin.
-  const stats = [
-    courses.length > 0 && {
-      value: String(courses.length),
-      label: courses.length === 1 ? "Course" : "Courses",
-    },
-    { value: String(instructor.certifications.length), label: "AWS certifications" },
-    { value: instructor.experienceYears, label: "Years of experience" },
-  ].filter(Boolean) as { value: string; label: string }[];
+  // The course count is a real, computed number. The other two are
+  // deliberately *not* personal stats (e.g. one instructor's certification
+  // count or years of experience) — the client wants the homepage to read
+  // as an Academy with many trainers, not a single person's résumé.
+  // Enrollment/student counts are also deliberately not shown here —
+  // admin-only metric, see /admin.
+  const stats: Array<
+    { type: "stat"; value: string; label: string } | { type: "feature"; text: string }
+  > = [
+    courses.length > 0
+      ? {
+          type: "stat" as const,
+          value: String(courses.length),
+          label: courses.length === 1 ? "Course" : "Courses",
+        }
+      : null,
+    { type: "feature" as const, text: "Get certified on AWS with cloud experts" },
+    { type: "feature" as const, text: "Get trained with real-time industry experts" },
+  ].filter((s): s is NonNullable<typeof s> => s !== null);
 
   return (
     <>
@@ -97,13 +104,19 @@ export default async function HomePage({ searchParams }: Props) {
             </div>
 
             <dl className="animate-fade-up grid max-w-xl grid-cols-2 gap-3 [animation-delay:400ms] sm:grid-cols-4">
-              {stats.map(({ value, label }) => (
+              {stats.map((stat, i) => (
                 <div
-                  key={label}
-                  className="bg-card/80 flex flex-col rounded-xl border px-3 py-3 backdrop-blur"
+                  key={i}
+                  className="bg-card/80 flex flex-col justify-center rounded-xl border px-3 py-3 backdrop-blur"
                 >
-                  <dt className="text-muted-foreground order-2 text-xs">{label}</dt>
-                  <dd className="text-2xl font-extrabold tracking-tight">{value}</dd>
+                  {stat.type === "stat" ? (
+                    <>
+                      <dt className="text-muted-foreground order-2 text-xs">{stat.label}</dt>
+                      <dd className="text-2xl font-extrabold tracking-tight">{stat.value}</dd>
+                    </>
+                  ) : (
+                    <dd className="text-sm font-semibold leading-snug">{stat.text}</dd>
+                  )}
                 </div>
               ))}
             </dl>
