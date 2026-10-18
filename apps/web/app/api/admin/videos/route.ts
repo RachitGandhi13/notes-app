@@ -31,10 +31,6 @@ export async function POST(request: Request) {
 
     const videoUrl = parseBlobUrl(body.videoUrl, "video");
     const thumbnail = body.thumbnail ? parseBlobUrl(body.thumbnail, "image") : undefined;
-    // Already a server-verified URL from /api/admin/upload-notes, not a raw client-supplied
-    // Blob URL, so it doesn't need the same parseBlobUrl check as videoUrl/thumbnail.
-    const notesUrl = body.notesUrl ? String(body.notesUrl) : undefined;
-    const notesTitle = body.notesTitle ? String(body.notesTitle) : undefined;
 
     const alreadySaved = await prisma.videoMetadata.findFirst({
       where: { videoUrl },
@@ -50,16 +46,7 @@ export async function POST(request: Request) {
     await verifyBlobUpload(videoUrl, "video");
     const verifiedMs = Date.now() - checkedAt;
 
-    await createUploadedVideo({
-      courseId,
-      parentId,
-      title,
-      description,
-      videoUrl,
-      thumbnail,
-      notesUrl,
-      notesTitle,
-    });
+    await createUploadedVideo({ courseId, parentId, title, description, videoUrl, thumbnail });
 
     console.info(`[admin/videos] saved in ${Date.now() - started}ms (byte check ${verifiedMs}ms)`);
     return NextResponse.json({ videoUrl });
