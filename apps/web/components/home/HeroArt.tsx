@@ -66,12 +66,12 @@ export function HeroArt() {
       aria-hidden="true"
       className="animate-fade-up relative mx-auto aspect-square w-full max-w-[520px] [animation-delay:250ms]"
     >
-      {/* rotating dashed orbit + pulsing rings */}
+      {/* rotating dashed orbit + pulsing rings, hugging the medallion below
+          so there's no dead space between the logo and the outer ring */}
       <div className="border-primary/30 animate-spin-slow absolute inset-[6%] rounded-full border-2 border-dashed motion-reduce:animate-none" />
-      <div className="border-primary/20 absolute inset-[16%] rounded-full border" />
-      <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 motion-reduce:animate-none" />
-      <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 [animation-delay:-0.95s] motion-reduce:animate-none" />
-      <div className="border-primary/40 animate-pulse-ring absolute inset-[24%] rounded-full border-2 [animation-delay:-1.9s] motion-reduce:animate-none" />
+      <div className="border-primary/40 animate-pulse-ring absolute inset-[14%] rounded-full border-2 motion-reduce:animate-none" />
+      <div className="border-primary/40 animate-pulse-ring absolute inset-[14%] rounded-full border-2 [animation-delay:-0.95s] motion-reduce:animate-none" />
+      <div className="border-primary/40 animate-pulse-ring absolute inset-[14%] rounded-full border-2 [animation-delay:-1.9s] motion-reduce:animate-none" />
 
       {/* animated links from the centre out to each node */}
       <svg viewBox="0 0 520 520" className="absolute inset-0 h-full w-full">
@@ -106,15 +106,16 @@ export function HeroArt() {
         </div>
       ))}
 
-      {/* Brand medallion — the source the orbit rings and pulsing "waves" radiate from.
-          Sized and positioned as a true circle so it sits concentrically inside them. */}
-      <div className="absolute left-1/2 top-1/2 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2">
+      {/* Brand medallion — sized to fill the outer ring (rather than floating
+          as a small circle with empty space around it), with the orbit rings
+          and pulsing "waves" radiating from its edge. */}
+      <div className="absolute left-1/2 top-1/2 h-[72%] w-[72%] -translate-x-1/2 -translate-y-1/2">
         <div className="animate-breathe relative h-full w-full motion-reduce:animate-none">
           {/* ambient glow the rings seem to ripple out of */}
-          <div className="bg-primary/35 animate-blob absolute inset-[-55%] rounded-full blur-3xl motion-reduce:animate-none" />
-          <div className="animate-blob absolute inset-[-55%] rounded-full bg-violet-500/25 blur-3xl [animation-delay:-9s] motion-reduce:animate-none" />
+          <div className="bg-primary/35 animate-blob absolute inset-[-30%] rounded-full blur-3xl motion-reduce:animate-none" />
+          <div className="animate-blob absolute inset-[-30%] rounded-full bg-violet-500/25 blur-3xl [animation-delay:-9s] motion-reduce:animate-none" />
 
-          {/* gradient ring + logo */}
+          {/* gradient ring + logo, filling the medallion */}
           <div
             className="from-primary animate-gradient-shift relative h-full w-full rounded-full bg-gradient-to-br via-cyan-400 to-violet-500 bg-[length:200%_200%] p-[3px] motion-reduce:animate-none"
             style={{ boxShadow: "0 0 60px -8px hsl(var(--primary) / 0.65)" }}
@@ -125,7 +126,7 @@ export function HeroArt() {
                 alt=""
                 fill
                 priority
-                sizes="220px"
+                sizes="380px"
                 className="object-cover"
               />
             </div>
