@@ -7,14 +7,12 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  FileText,
   Folder,
   ImageIcon,
   Pencil,
   PlayCircle,
   Plus,
   Trash2,
-  X,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@repo/ui";
 import {
@@ -27,7 +25,6 @@ import {
   deleteContent,
   moveContentOrder,
   setContentThumbnail,
-  setContentNotes,
 } from "@/lib/actions";
 import { ThumbnailPicker } from "@/components/admin/ThumbnailPicker";
 import {
@@ -37,7 +34,6 @@ import {
   postJson,
   uploadToBlob,
 } from "@/components/admin/upload";
-import { MAX_VIDEO_BYTES } from "@/lib/upload-types";
 
 interface ContentNode {
   id: string;
@@ -45,11 +41,7 @@ interface ContentNode {
   title: string;
   hidden: boolean;
   thumbnail: string | null;
-  videoMetadata: {
-    videoUrl: string;
-    notesUrl: string | null;
-    notesTitle: string | null;
-  } | null;
+  videoMetadata: { videoUrl: string } | null;
   children: ContentNode[];
 }
 
@@ -71,6 +63,8 @@ interface AdminCourse {
   _count: { purchases: number; paymentOrders: number; certificate: number };
 }
 
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB — soft client-side sanity cap
+
 function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -78,7 +72,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
   const [description, setDescription] = useState("");
   const [thumbnail, setThumbnail] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const notesInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [percent, setPercent] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -86,13 +79,12 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const file = fileInputRef.current?.files?.[0];
-    const notesFile = notesInputRef.current?.files?.[0];
     if (!file) {
       setError("Choose a video file to upload.");
       return;
     }
-    if (file.size > MAX_VIDEO_BYTES) {
-      setError(`File is too large (max ${Math.round(MAX_VIDEO_BYTES / (1024 * 1024))} MB).`);
+    if (file.size > MAX_VIDEO_SIZE) {
+      setError("File is too large (max 500MB).");
       return;
     }
     // Checked before a large upload starts. The server would reject a blank title only after
@@ -106,21 +98,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
     setPercent(0);
     setError("");
     try {
-      // Notes are small (max 100MB) and always server-buffered, so upload them first — if
-      // they fail validation, we haven't already spent minutes uploading the video.
-      let notesUrl: string | undefined;
-      let notesTitle: string | undefined;
-      if (notesFile) {
-        const notesData = new FormData();
-        notesData.set("file", notesFile);
-        const res = await postFormWithProgress<{ notesUrl: string; notesTitle: string }>(
-          "/api/admin/upload-notes",
-          notesData
-        );
-        notesUrl = res.notesUrl;
-        notesTitle = res.notesTitle;
-      }
-
       if (await isDirectUploadEnabled()) {
         // Production: the file goes straight to Vercel Blob. The server then checks it and
         // saves the record.
@@ -134,8 +111,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
             description,
             videoUrl,
             thumbnail: thumbnail || undefined,
-            notesUrl,
-            notesTitle,
           },
           2
         );
@@ -148,8 +123,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         formData.set("title", title);
         formData.set("description", description);
         if (thumbnail) formData.set("thumbnail", thumbnail);
-        if (notesUrl) formData.set("notesUrl", notesUrl);
-        if (notesTitle) formData.set("notesTitle", notesTitle);
 
         await postFormWithProgress("/api/admin/upload-video", formData, setPercent);
       }
@@ -158,7 +131,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
       setDescription("");
       setThumbnail("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (notesInputRef.current) notesInputRef.current.value = "";
       setOpen(false);
       router.refresh();
     } catch (err: any) {
@@ -204,15 +176,6 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         accept="video/*"
         className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs"
       />
-      <label className="text-muted-foreground block text-xs">
-        Notes / slides (optional — PDF or PPT)
-        <input
-          ref={notesInputRef}
-          type="file"
-          accept=".pdf,.ppt,.pptx"
-          className="border-input bg-background file:bg-primary file:text-primary-foreground mt-1 flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs"
-        />
-      </label>
       <ThumbnailPicker
         compact
         label="Video thumbnail (optional)"
@@ -332,9 +295,6 @@ function ContentNodeRow({
   const [expanded, setExpanded] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingThumb, setEditingThumb] = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [notesError, setNotesError] = useState("");
-  const notesInputRef = useRef<HTMLInputElement>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const isFolder = node.type === "FOLDER";
@@ -344,41 +304,6 @@ function ContentNodeRow({
     try {
       await setContentThumbnail(node.id, courseId, url || null);
       router.refresh();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleNotesFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBusy(true);
-    setNotesError("");
-    try {
-      const formData = new FormData();
-      formData.set("file", file);
-      formData.set("contentId", node.id);
-      formData.set("courseId", courseId);
-      const res = await fetch("/api/admin/upload-notes", { method: "POST", body: formData });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? "Failed to attach notes.");
-      router.refresh();
-    } catch (err: any) {
-      setNotesError(err?.message ?? "Failed to attach notes.");
-    } finally {
-      setBusy(false);
-      if (notesInputRef.current) notesInputRef.current.value = "";
-    }
-  }
-
-  async function handleRemoveNotes() {
-    setBusy(true);
-    setNotesError("");
-    try {
-      await setContentNotes(node.id, courseId, null, null);
-      router.refresh();
-    } catch (err: any) {
-      setNotesError(err?.message ?? "Failed to remove notes.");
     } finally {
       setBusy(false);
     }
@@ -475,16 +400,6 @@ function ContentNodeRow({
           >
             <ImageIcon className="h-3.5 w-3.5" />
           </button>
-          {!isFolder && (
-            <button
-              onClick={() => setEditingNotes((v) => !v)}
-              className="text-muted-foreground hover:bg-accent rounded p-1"
-              aria-label="Notes"
-              title={node.videoMetadata?.notesUrl ? "Change notes" : "Attach notes"}
-            >
-              <FileText className="h-3.5 w-3.5" />
-            </button>
-          )}
           <button
             onClick={handleToggleHidden}
             disabled={busy}
@@ -539,39 +454,6 @@ function ContentNodeRow({
             label={isFolder ? "Playlist thumbnail" : "Video thumbnail"}
             value={node.thumbnail ?? ""}
             onChange={handleThumbnailChange}
-          />
-        </div>
-      )}
-
-      {editingNotes && (
-        <div className="mt-3 space-y-2 border-t pt-3">
-          {notesError && <p className="text-destructive text-xs">{notesError}</p>}
-          {node.videoMetadata?.notesUrl && (
-            <div className="flex items-center gap-2 text-xs">
-              <a
-                href={node.videoMetadata.notesUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary truncate hover:underline"
-              >
-                {node.videoMetadata.notesTitle || "Current notes"}
-              </a>
-              <button
-                onClick={handleRemoveNotes}
-                disabled={busy}
-                className="text-destructive shrink-0 hover:underline disabled:opacity-50"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          <input
-            ref={notesInputRef}
-            type="file"
-            accept=".pdf,.ppt,.pptx"
-            disabled={busy}
-            onChange={handleNotesFileChange}
-            className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs disabled:opacity-50"
           />
         </div>
       )}
