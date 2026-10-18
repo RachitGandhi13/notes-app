@@ -1,12 +1,7 @@
 import { getSession } from "@repo/auth";
 import { redirect, notFound } from "next/navigation";
-import {
-  getCourse,
-  getContent,
-  getCourseProgress,
-  getUserPurchases,
-  getBookmarks,
-} from "@/lib/actions";
+import { getCourse, getContent, getCourseProgress, getBookmarks } from "@/lib/actions";
+import { userCanAccessCourse } from "@/lib/access";
 import { getComments, getQuestions } from "@/lib/community";
 import { ContentSidebar } from "@/components/ContentSidebar";
 import { VideoPlayer } from "@/components/VideoPlayer";
@@ -39,9 +34,8 @@ export default async function ContentViewerPage({ params }: Props) {
   if (!session?.user) redirect("/auth");
   if (!course) notFound();
 
-  const purchases = await getUserPurchases();
-  const hasPurchased = purchases.some((p) => p.courseId === course.id);
-  if (!hasPurchased) redirect("/invalidsession");
+  // Admins always pass — they need to be able to view lessons without buying the course.
+  if (!(await userCanAccessCourse(course.id))) redirect("/invalidsession");
 
   const content = await getContent(params.contentId);
   if (!content) notFound();

@@ -89,8 +89,11 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   const [course, session] = await Promise.all([loadCourse(params.courseSlug), getSession()]);
   if (!course) notFound();
 
+  // Admins see the course exactly as an enrolled student would — never the purchase panel.
   let purchased = false;
-  if (session?.user) {
+  if (session?.user?.admin) {
+    purchased = true;
+  } else if (session?.user) {
     const purchases = await getUserPurchases();
     purchased = purchases.some((p) => p.courseId === course.id);
   }
