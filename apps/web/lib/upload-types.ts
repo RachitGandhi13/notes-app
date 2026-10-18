@@ -39,10 +39,12 @@ export const VIDEO_TYPES: Record<string, AllowedType> = {
 
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // 4 MB
 export const MAX_DOCUMENT_BYTES = 100 * 1024 * 1024; // 100 MB
-// The admin form also stops at 500 MB (CourseManager.tsx). Through the app server, videos
-// are buffered in memory, so this cap is bounded by the container's memory. Direct uploads
-// bypass the server but use the same cap.
-export const MAX_VIDEO_BYTES = 500 * 1024 * 1024; // 500 MB
+// This is the cap for direct-to-blob video uploads (CourseManager.tsx imports this same
+// constant for its client-side check) — those bytes never pass through the app server, so
+// raising this doesn't add server memory pressure. The local-disk fallback route
+// (upload-video/route.ts, dev-only, used when no Blob token is configured) buffers the
+// whole file in memory first, so it keeps its own lower cap instead of using this one.
+export const MAX_VIDEO_BYTES = 2048 * 1024 * 1024; // 2 GB
 
 /** The file types and size limit for a direct upload of this kind. */
 export function directUploadRules(kind: MediaKind) {

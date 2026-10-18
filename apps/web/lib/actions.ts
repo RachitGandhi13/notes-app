@@ -321,6 +321,8 @@ export async function createUploadedVideo(data: {
   description?: string;
   videoUrl: string;
   thumbnail?: string;
+  notesUrl?: string;
+  notesTitle?: string;
 }) {
   await requireAdmin();
   if (!data.title.trim()) throw new Error("Video title is required.");
@@ -335,7 +337,12 @@ export async function createUploadedVideo(data: {
       thumbnail: data.thumbnail || null,
       parentId: data.parentId || null,
       videoMetadata: {
-        create: { videoUrl: data.videoUrl, thumbnail1Url: data.thumbnail || null },
+        create: {
+          videoUrl: data.videoUrl,
+          thumbnail1Url: data.thumbnail || null,
+          notesUrl: data.notesUrl || null,
+          notesTitle: data.notesTitle || null,
+        },
       },
     },
   });
@@ -380,6 +387,31 @@ export async function setContentThumbnail(
       data: { thumbnail1Url: thumbnail || null },
     });
   }
+
+  await invalidateCourseCache(courseId);
+  revalidatePath("/admin");
+}
+
+// Attach, replace, or clear a video lesson's notes (PDF/PPT) after creation —
+// the same action /api/admin/upload-notes calls once it has stored the file.
+export async function setContentNotes(
+  contentId: string,
+  courseId: string,
+  notesUrl: string | null,
+  notesTitle: string | null
+) {
+  await requireAdmin();
+
+  const content = await prisma.content.findUnique({
+    where: { id: contentId },
+    select: { type: true },
+  });
+  if (content?.type !== "VIDEO") throw new Error("Notes can only be attached to a video lesson.");
+
+  await prisma.videoMetadata.updateMany({
+    where: { contentId },
+    data: { notesUrl, notesTitle },
+  });
 
   await invalidateCourseCache(courseId);
   revalidatePath("/admin");
