@@ -2,7 +2,8 @@
 
 import { prisma } from "@repo/db/client";
 import { getSession, requireAdmin } from "@repo/auth";
-import type { InternshipApplication } from "@/lib/internships";
+import { cacheDel } from "@repo/cache";
+import { TRACK_COURSE_SLUGS, type InternshipApplication } from "@/lib/internships";
 
 /**
  * Persists a submitted internship application. This is this app's own copy of the
@@ -75,13 +76,35 @@ export async function getInternshipApplications() {
 
 /**
  * Issues (or re-fetches, if one already exists for this student+track) an internship
- * certificate. The @@unique([userId, trackName]) constraint makes this idempotent — a
- * second click for the same student/track returns the existing certificate rather than
- * erroring or creating a duplicate.
+ * certificate, and grants that track's mapped courses (TRACK_COURSE_SLUGS) in the same
+ * action — the client's "course enrollment + Certificate, customised per track" request.
+ * Both halves are idempotent: the course grant upserts UserPurchases (safe to repeat), and
+ * the @@unique([userId, trackName]) constraint means a second click for the same
+ * student/track returns the existing certificate rather than erroring or duplicating.
  */
 export async function issueCertificate(userId: string, trackName: string) {
   await requireAdmin();
   if (!trackName.trim()) throw new Error("Choose a track to issue a certificate for.");
+
+  const slugs = TRACK_COURSE_SLUGS[trackName] ?? [];
+  if (slugs.length > 0) {
+    const courses = await prisma.course.findMany({
+      where: { slug: { in: slugs } },
+      select: { id: true },
+    });
+    if (courses.length > 0) {
+      await prisma.$transaction(
+        courses.map((course) =>
+          prisma.userPurchases.upsert({
+            where: { userId_courseId: { userId, courseId: course.id } },
+            update: {},
+            create: { userId, courseId: course.id },
+          })
+        )
+      );
+      await cacheDel(`purchases:${userId}`, "courses:all");
+    }
+  }
 
   const existing = await prisma.internshipCertificate.findUnique({
     where: { userId_trackName: { userId, trackName } },

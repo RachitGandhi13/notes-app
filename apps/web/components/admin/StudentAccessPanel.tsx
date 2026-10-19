@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { findStudentByIdentifier, grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
 import { issueCertificate } from "@/lib/internship-actions";
-import { INTERNSHIP_TRACK_OPTIONS } from "@/lib/internships";
+import { INTERNSHIP_TRACK_OPTIONS, TRACK_COURSE_SLUGS } from "@/lib/internships";
 
 interface AdminCourseOption {
   id: string;
   title: string;
+  slug: string;
 }
 
 interface FoundStudentCertificate {
@@ -80,13 +81,12 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
     setIssuing(true);
     setCertError("");
     try {
-      const cert = await issueCertificate(student.id, certTrack);
-      setStudent({
-        ...student,
-        certificates: student.certificates.some((c) => c.trackName === cert.trackName)
-          ? student.certificates
-          : [...student.certificates, cert],
-      });
+      await issueCertificate(student.id, certTrack);
+      // Re-fetch full state rather than reconstructing it here: issuing can also grant
+      // this track's mapped courses, so this is what keeps the course checklist above
+      // accurate (showing "Revoke" instead of "Grant") without duplicating that logic.
+      const refreshed = student.email ? await findStudentByIdentifier(student.email) : null;
+      if (refreshed) setStudent(refreshed);
       setCertTrack("");
     } catch (err: any) {
       setCertError(err?.message ?? "Couldn't issue the certificate.");
@@ -180,6 +180,17 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
                   </li>
                 ))}
               </ul>
+            )}
+            {certTrack && (
+              <p className="text-muted-foreground text-xs">
+                {(() => {
+                  const slugs = TRACK_COURSE_SLUGS[certTrack] ?? [];
+                  const titles = courses.filter((c) => slugs.includes(c.slug)).map((c) => c.title);
+                  return titles.length > 0
+                    ? `Also grants: ${titles.join(", ")}`
+                    : "Grants no courses automatically for this track.";
+                })()}
+              </p>
             )}
             {certError && <p className="text-destructive text-xs">{certError}</p>}
             <div className="flex gap-2">
