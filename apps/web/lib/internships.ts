@@ -37,6 +37,17 @@ export const INTERNSHIP_TRACKS: InternshipTrack[] = [
 
 export const INTERNSHIP_TRACK_OPTIONS = INTERNSHIP_TRACKS.map((t) => t.title);
 
+// Which paid courses each internship track grants, by Course.slug. Applied when an admin
+// issues a certificate for that track (see issueCertificate in lib/internship-actions.ts) —
+// one action grants the matching course(s) and issues the certificate together, rather than
+// the admin separately checking boxes in the course list above. A track with no mapping
+// here, or one whose courses don't exist in this database, simply grants nothing extra.
+export const TRACK_COURSE_SLUGS: Record<string, string[]> = {
+  "AWS Cloud Engineering Internship": ["aws-solutions"],
+  "DevOps & Automation Internship": ["devops"],
+  "AI & Cloud Application Development Internship": ["dsa-python", "aws-solutions"],
+};
+
 export interface RoadmapWeek {
   week: string;
   title: string;

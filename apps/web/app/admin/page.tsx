@@ -71,7 +71,9 @@ export default async function AdminPage() {
         </TabsContent>
 
         <TabsContent value="internships" className="space-y-6 pt-4">
-          <StudentAccessPanel courses={courses.map((c) => ({ id: c.id, title: c.title }))} />
+          <StudentAccessPanel
+            courses={courses.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+          />
           <div className="space-y-3">
             <h2 className="font-semibold">Applications</h2>
             <InternshipApplicationsList applications={applications} />
