@@ -2,6 +2,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@repo/db/client";
 import { checkRateLimit, MAX_PASSWORD_LENGTH } from "./config";
 import { sendVerificationEmail } from "./verification";
+import { sendWelcomeEmail } from "./emails";
 import { AuthActionError } from "./action-error";
 
 /**
@@ -44,4 +45,10 @@ export async function registerUser(params: {
   await prisma.user.create({ data: { name, email, password: hashed } });
 
   await sendVerificationEmail({ email, name, appUrl });
+  try {
+    await sendWelcomeEmail({ email, name, appUrl });
+  } catch (err) {
+    // Non-critical: the account exists and is verifiable either way.
+    console.error("[email] Welcome email failed:", err instanceof Error ? err.message : err);
+  }
 }
