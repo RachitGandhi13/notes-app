@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
+import { cn } from "../lib/utils";
 
 const CONTACT = {
   phone: "+91 91135 92725",
@@ -24,7 +25,12 @@ const CONTACT = {
 export interface NavLink {
   label: string;
   href: string;
+  /** Subtle glow, for drawing attention to one link (e.g. a limited-time program). */
+  glow?: boolean;
 }
+
+const glowClass =
+  "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse";
 
 interface NavbarProps {
   /** Brand name shown on the left */
@@ -76,7 +82,13 @@ export function Navbar({
           {links.length > 0 && (
             <nav className="hidden items-center gap-1 lg:flex">
               {links.map((link) => (
-                <Button key={link.href} asChild variant="ghost" size="sm">
+                <Button
+                  key={link.href}
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className={cn(link.glow && `${glowClass} rounded-full`)}
+                >
                   <Link href={link.href}>{link.label}</Link>
                 </Button>
               ))}
@@ -107,6 +119,11 @@ export function Navbar({
                 <div className="px-2 py-1.5 text-sm">
                   <p className="font-medium">{session.user.name ?? "User"}</p>
                   <p className="text-muted-foreground truncate text-xs">{session.user.email}</p>
+                  {session.user.studentId && (
+                    <p className="text-muted-foreground truncate text-xs">
+                      ID: {session.user.studentId}
+                    </p>
+                  )}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -182,12 +199,15 @@ export function Navbar({
             {search && <div>{search}</div>}
 
             {links.length > 0 && (
-              <nav className="flex flex-col">
+              <nav className="flex flex-col gap-1">
                 {links.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium"
+                    className={cn(
+                      "hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium",
+                      link.glow && glowClass
+                    )}
                   >
                     {link.label}
                   </Link>

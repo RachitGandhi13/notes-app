@@ -606,3 +606,59 @@ export async function moveContentOrder(
   await invalidateCourseCache(courseId);
   revalidatePath("/admin");
 }
+
+// ── Admin: student access management ────────────────────────────────────────────
+// "Option B": access is never granted automatically (e.g. by an internship
+// application) — an admin looks a student up and grants/revokes each course
+// individually. Reuses UserPurchases, the same table Razorpay purchases write to, so a
+// manually granted course behaves identically to a bought one everywhere else in the app.
+
+/**
+ * Finds a user by exact email or studentId match, with their current course access —
+ * for the admin access-management tool. Returns null when nothing matches.
+ */
+export async function findStudentByIdentifier(identifier: string) {
+  await requireAdmin();
+  const value = identifier.trim();
+  if (!value) return null;
+
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ email: value }, { studentId: value }] },
+    select: { id: true, name: true, email: true, studentId: true },
+  });
+  if (!user) return null;
+
+  const [purchases, certificates] = await Promise.all([
+    prisma.userPurchases.findMany({
+      where: { userId: user.id },
+      select: { courseId: true },
+    }),
+    prisma.internshipCertificate.findMany({
+      where: { userId: user.id },
+      select: { trackName: true, certificateCode: true, issueDate: true },
+    }),
+  ]);
+  return {
+    ...user,
+    purchasedCourseIds: purchases.map((p) => p.courseId),
+    certificates,
+  };
+}
+
+export async function grantCourseAccess(userId: string, courseId: string) {
+  await requireAdmin();
+  await prisma.userPurchases.upsert({
+    where: { userId_courseId: { userId, courseId } },
+    update: {},
+    create: { userId, courseId },
+  });
+  await cacheDel(`purchases:${userId}`, "courses:all");
+  revalidatePath("/admin");
+}
+
+export async function revokeCourseAccess(userId: string, courseId: string) {
+  await requireAdmin();
+  await prisma.userPurchases.deleteMany({ where: { userId, courseId } });
+  await cacheDel(`purchases:${userId}`, "courses:all");
+  revalidatePath("/admin");
+}

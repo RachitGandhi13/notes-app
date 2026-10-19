@@ -13,6 +13,8 @@ interface CourseCardProps {
   purchased?: boolean;
   /** Set for cards in the first visible row — skips lazy-loading for above-the-fold images. */
   priority?: boolean;
+  /** Hides the price/Free badge (the "Enrolled" badge still shows) — used on the homepage grid. */
+  hidePrice?: boolean;
 }
 
 export function CourseCard({
@@ -23,6 +25,7 @@ export function CourseCard({
   price,
   purchased,
   priority,
+  hidePrice,
 }: CourseCardProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
@@ -60,7 +63,7 @@ export function CourseCard({
             </p>
           </div>
 
-          <div className="flex items-center justify-between border-t pt-3">
+          <div className="flex items-center border-t pt-3">
             <div className="flex items-center gap-3">
               {purchased ? (
                 // Students who own the course see this instead of the price.
@@ -72,15 +75,17 @@ export function CourseCard({
                   Enrolled
                 </Badge>
               ) : (
-                <Badge
-                  variant={price === 0 ? "secondary" : "default"}
-                  className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                >
-                  {price === 0 ? "Free" : `₹${price}`}
-                </Badge>
+                !hidePrice && (
+                  <Badge
+                    variant={price === 0 ? "secondary" : "default"}
+                    className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  >
+                    {price === 0 ? "Free" : `₹${price}`}
+                  </Badge>
+                )
               )}
             </div>
-            <span className="text-primary flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="text-primary ml-auto flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
               View course <ArrowRight className="h-3 w-3" />
             </span>
           </div>

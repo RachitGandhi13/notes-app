@@ -4,6 +4,8 @@ import Link from "next/link";
 import { PlayCircle, BookmarkCheck, ClipboardCheck } from "lucide-react";
 import { getUserPurchases, getBookmarks } from "@/lib/actions";
 import { getUserQuizScores } from "@/lib/track-actions";
+import { getMyCertificates } from "@/lib/internship-actions";
+import { MyCertificates } from "@/components/MyCertificates";
 
 export default async function ProfilePage() {
   let session;
@@ -13,10 +15,11 @@ export default async function ProfilePage() {
     redirect("/auth");
   }
 
-  const [purchases, bookmarks, scores] = await Promise.all([
+  const [purchases, bookmarks, scores, certificates] = await Promise.all([
     getUserPurchases(),
     getBookmarks(),
     getUserQuizScores(),
+    getMyCertificates(),
   ]);
 
   return (
@@ -111,6 +114,9 @@ export default async function ProfilePage() {
           </ul>
         )}
       </div>
+
+      {/* Certificates — only rendered once one has been issued */}
+      <MyCertificates studentName={session.user.name ?? "Student"} certificates={certificates} />
     </div>
   );
 }
