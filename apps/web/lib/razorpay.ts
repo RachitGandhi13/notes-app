@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { prisma } from "@repo/db/client";
 import type { PaymentOrder } from "@repo/db";
 import { cacheDel } from "@repo/cache";
+import { getAppUrl, sendEnrollmentEmail } from "@repo/auth";
 
 // Server-only. RAZORPAY_KEY_SECRET must never reach the browser: this module is
 // imported only from route handlers and server code, never from client components.
@@ -79,34 +80,78 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
  * real (signature + amount), so this itself does no verification — it only
  * decides what a confirmed order unlocks.
  *
- * A course order upserts one UserPurchases row (unchanged from before combo
- * bundles existed). A track (combo) order upserts one UserPurchases row per
- * course the track bundles, in a single transaction, so a student can never
- * end up with some of a bundle's courses granted and others not.
+ * A course order grants one course (unchanged from before combo bundles
+ * existed). A track (combo) order grants one course per course the track
+ * bundles. Every grant is an upsert, so a retried webhook or a race between
+ * /verify and the webhook can never end up with some courses granted and
+ * others not, or double-grant anything.
+ *
+ * Enrollment emails go out only for courses the student didn't already own
+ * before this call — otherwise that same retry/race would also double-email
+ * them. Course titles/slugs and the student's email are only fetched when
+ * there's actually something new to announce.
  */
 export async function grantOrderAccess(
   order: Pick<PaymentOrder, "userId" | "courseId" | "trackId">
 ): Promise<void> {
-  if (order.courseId) {
-    await prisma.userPurchases.upsert({
-      where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
-      update: {},
-      create: { userId: order.userId, courseId: order.courseId },
-    });
-  } else if (order.trackId) {
-    const links = await prisma.trackCourse.findMany({
-      where: { trackId: order.trackId },
-      select: { courseId: true },
-    });
-    await prisma.$transaction(
-      links.map((link) =>
-        prisma.userPurchases.upsert({
-          where: { userId_courseId: { userId: order.userId, courseId: link.courseId } },
-          update: {},
-          create: { userId: order.userId, courseId: link.courseId },
-        })
-      )
-    );
-  }
+  const courseIds = order.courseId
+    ? [order.courseId]
+    : order.trackId
+      ? (
+          await prisma.trackCourse.findMany({
+            where: { trackId: order.trackId },
+            select: { courseId: true },
+          })
+        ).map((link) => link.courseId)
+      : [];
+  if (courseIds.length === 0) return;
+
+  const alreadyOwned = await prisma.userPurchases.findMany({
+    where: { userId: order.userId, courseId: { in: courseIds } },
+    select: { courseId: true },
+  });
+  const alreadyOwnedIds = new Set(alreadyOwned.map((p) => p.courseId));
+  const newCourseIds = courseIds.filter((id) => !alreadyOwnedIds.has(id));
+
+  await prisma.$transaction(
+    courseIds.map((courseId) =>
+      prisma.userPurchases.upsert({
+        where: { userId_courseId: { userId: order.userId, courseId } },
+        update: {},
+        create: { userId: order.userId, courseId },
+      })
+    )
+  );
   await cacheDel(`purchases:${order.userId}`, "courses:all");
+
+  if (newCourseIds.length > 0) {
+    const [user, courses] = await Promise.all([
+      prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true } }),
+      prisma.course.findMany({
+        where: { id: { in: newCourseIds } },
+        select: { title: true, slug: true },
+      }),
+    ]);
+    if (user?.email) {
+      const appUrl = getAppUrl();
+      for (const course of courses) {
+        try {
+          await sendEnrollmentEmail({
+            email: user.email,
+            name: user.name ?? "there",
+            courseTitle: course.title,
+            courseSlug: course.slug,
+            appUrl,
+          });
+        } catch (err) {
+          // Access is already granted above — an email failure must never undo or
+          // appear to undo a real payment.
+          console.error(
+            "[email] Enrollment email failed:",
+            err instanceof Error ? err.message : err
+          );
+        }
+      }
+    }
+  }
 }

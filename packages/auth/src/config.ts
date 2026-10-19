@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@repo/db/client";
+import { sendWelcomeEmail } from "./emails";
 import { enabledOAuthProviders } from "./placeholder";
 
 // ── Simple in-memory rate limiter ──────────────────────────────────────────────
@@ -160,6 +161,25 @@ export const authOptions: NextAuthOptions = {
         session.user.studentId = token.studentId as string;
       }
       return session;
+    },
+  },
+
+  events: {
+    // Fires only for OAuth signups — the adapter creates the user row directly. Credentials
+    // signups never reach this (registerUser() creates the row itself, bypassing the
+    // adapter), so it sends its own welcome email instead — see register.ts. Together the
+    // two cover every signup path exactly once, with no double-send either way.
+    async createUser({ user }) {
+      if (!user.email) return;
+      try {
+        await sendWelcomeEmail({
+          email: user.email,
+          name: user.name ?? "there",
+          appUrl: getAppUrl(),
+        });
+      } catch (err) {
+        console.error("[email] Welcome email failed:", err instanceof Error ? err.message : err);
+      }
     },
   },
 };

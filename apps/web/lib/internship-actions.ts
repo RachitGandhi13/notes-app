@@ -1,7 +1,13 @@
 "use server";
 
 import { prisma } from "@repo/db/client";
-import { getSession, requireAdmin } from "@repo/auth";
+import {
+  getAppUrl,
+  getSession,
+  requireAdmin,
+  sendInternshipAccessGrantedEmail,
+  sendInternshipApplicationReceivedEmail,
+} from "@repo/auth";
 import { cacheDel } from "@repo/cache";
 import { TRACK_COURSE_SLUGS, type InternshipApplication } from "@/lib/internships";
 
@@ -52,6 +58,21 @@ export async function submitInternshipApplication(data: InternshipApplication): 
       resumeLink: data.resumeLink.trim(),
     },
   });
+
+  try {
+    await sendInternshipApplicationReceivedEmail({
+      email: data.email.trim(),
+      name: data.fullName.trim(),
+      trackName: data.internshipTrack,
+    });
+  } catch (err) {
+    // The application is already saved above — a confirmation-email failure must not
+    // make the student think their application didn't go through.
+    console.error(
+      "[email] Application-received email failed:",
+      err instanceof Error ? err.message : err
+    );
+  }
 }
 
 /** Recent applications, newest first — for the admin review list. */
@@ -81,16 +102,21 @@ export async function getInternshipApplications() {
  * Both halves are idempotent: the course grant upserts UserPurchases (safe to repeat), and
  * the @@unique([userId, trackName]) constraint means a second click for the same
  * student/track returns the existing certificate rather than erroring or duplicating.
+ *
+ * The "access granted" email only fires when a certificate is genuinely newly created —
+ * not on a repeat click for an already-issued track — so re-clicking Issue never
+ * re-sends it.
  */
 export async function issueCertificate(userId: string, trackName: string) {
   await requireAdmin();
   if (!trackName.trim()) throw new Error("Choose a track to issue a certificate for.");
 
   const slugs = TRACK_COURSE_SLUGS[trackName] ?? [];
+  let grantedCourseTitles: string[] = [];
   if (slugs.length > 0) {
     const courses = await prisma.course.findMany({
       where: { slug: { in: slugs } },
-      select: { id: true },
+      select: { id: true, title: true },
     });
     if (courses.length > 0) {
       await prisma.$transaction(
@@ -103,6 +129,7 @@ export async function issueCertificate(userId: string, trackName: string) {
         )
       );
       await cacheDel(`purchases:${userId}`, "courses:all");
+      grantedCourseTitles = courses.map((course) => course.title);
     }
   }
 
@@ -111,9 +138,35 @@ export async function issueCertificate(userId: string, trackName: string) {
   });
   if (existing) return existing;
 
-  return prisma.internshipCertificate.create({
+  const certificate = await prisma.internshipCertificate.create({
     data: { userId, trackName },
   });
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true, studentId: true },
+  });
+  if (user?.email) {
+    try {
+      await sendInternshipAccessGrantedEmail({
+        email: user.email,
+        name: user.name ?? "there",
+        trackName,
+        studentId: user.studentId,
+        grantedCourseTitles,
+        appUrl: getAppUrl(),
+      });
+    } catch (err) {
+      // The courses and certificate are already granted/created above — an email
+      // failure must not make it look like the admin's action didn't take effect.
+      console.error(
+        "[email] Access-granted email failed:",
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
+
+  return certificate;
 }
 
 /** The signed-in user's own certificates — for the "My Certificates" profile section. */
