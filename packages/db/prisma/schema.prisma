@@ -276,12 +276,21 @@ model CourseContent {
 
 model VideoMetadata {
   id            String  @id @default(uuid())
-  videoUrl      String
+  // Nullable: a lesson can be Bunny-only (bunnyVideoId set, no Vercel Blob upload at all).
+  // Existing lessons keep this set; the admin form still accepts a direct file upload too
+  // — Bunny is an added option, not a replacement of the existing pipeline.
+  videoUrl      String?
   drmProtected  Boolean @default(false)
   subtitleUrl   String?
   thumbnail1Url String?
   thumbnail2Url String?
   thumbnail3Url String?
+  // Bunny Stream video ID — when set, the lesson page embeds the Bunny iframe player
+  // instead of (or alongside) the plain <video> element above.
+  bunnyVideoId  String?
+  // Path of a PDF in Bunny Storage, served only through the authenticated/enrollment-
+  // checked proxy at /api/notes/[contentId] — never a direct Bunny Storage URL.
+  bunnyPdfPath  String?
   content       Content @relation(fields: [contentId], references: [id])
   contentId     String  @unique
 }
