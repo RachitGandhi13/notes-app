@@ -53,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               links={[
                 { label: "Courses", href: "/#browse" },
                 { label: "Notes", href: "/notes" },
+                { label: "Internships", href: "/internships", glow: true },
               ]}
               search={<CourseSearchBar compact />}
             />

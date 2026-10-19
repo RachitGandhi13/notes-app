@@ -43,6 +43,25 @@ export function getAppUrl(): string {
 
 const oauth = enabledOAuthProviders();
 
+// CVA-<year>-<4 digits>. Assigned lazily (see the jwt callback below) rather than at
+// registration, so one place covers Credentials signups, OAuth signups (which go through
+// the Prisma adapter, bypassing registerUser()) and every existing user from before this
+// field existed — no separate backfill script needed.
+async function generateUniqueStudentId(): Promise<string> {
+  const year = new Date().getFullYear();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    const candidate = `CVA-${year}-${suffix}`;
+    const exists = await prisma.user.findUnique({
+      where: { studentId: candidate },
+      select: { id: true },
+    });
+    if (!exists) return candidate;
+  }
+  // Extremely unlikely with 9000 values per year — a wider, still-unique fallback.
+  return `CVA-${year}-${Date.now().toString().slice(-6)}`;
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   debug: false,
@@ -117,11 +136,18 @@ export const authOptions: NextAuthOptions = {
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { id: true, admin: true },
+          select: { id: true, admin: true, studentId: true },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.admin = dbUser.admin;
+          token.studentId = dbUser.studentId ?? (await generateUniqueStudentId());
+          if (!dbUser.studentId) {
+            await prisma.user.update({
+              where: { id: dbUser.id },
+              data: { studentId: token.studentId },
+            });
+          }
         }
       }
       return token;
@@ -131,6 +157,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.admin = token.admin as boolean;
+        session.user.studentId = token.studentId as string;
       }
       return session;
     },

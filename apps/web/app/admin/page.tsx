@@ -5,9 +5,12 @@ import { Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { getPendingComments } from "@/lib/community";
 import { getAllCoursesForAdmin } from "@/lib/actions";
+import { getInternshipApplications } from "@/lib/internship-actions";
 import { ModerationPanel } from "./ModerationPanel";
 import { CourseManager } from "./CourseManager";
 import { AdminPanel } from "./AdminPanel";
+import { StudentAccessPanel } from "@/components/admin/StudentAccessPanel";
+import { InternshipApplicationsList } from "@/components/admin/InternshipApplicationsList";
 
 export default async function AdminPage() {
   try {
@@ -16,13 +19,14 @@ export default async function AdminPage() {
     redirect("/auth");
   }
 
-  const [pending, courses, notesTracks] = await Promise.all([
+  const [pending, courses, notesTracks, applications] = await Promise.all([
     getPendingComments(),
     getAllCoursesForAdmin(),
     prisma.track.findMany({
       select: { id: true, title: true, image: true, inSearch: true, hidden: true },
       orderBy: { createdAt: "desc" },
     }),
+    getInternshipApplications(),
   ]);
 
   return (
@@ -47,6 +51,9 @@ export default async function AdminPage() {
         <TabsList>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsTrigger value="internships">
+            Internships {applications.length > 0 && `(${applications.length})`}
+          </TabsTrigger>
           <TabsTrigger value="comments">
             Comments {pending.length > 0 && `(${pending.length})`}
           </TabsTrigger>
@@ -61,6 +68,14 @@ export default async function AdminPage() {
             Create a track, then upload PPT lessons and write MCQ quizzes for it directly.
           </p>
           <AdminPanel tracks={notesTracks} />
+        </TabsContent>
+
+        <TabsContent value="internships" className="space-y-6 pt-4">
+          <StudentAccessPanel courses={courses.map((c) => ({ id: c.id, title: c.title }))} />
+          <div className="space-y-3">
+            <h2 className="font-semibold">Applications</h2>
+            <InternshipApplicationsList applications={applications} />
+          </div>
         </TabsContent>
 
         <TabsContent value="comments" className="pt-4">

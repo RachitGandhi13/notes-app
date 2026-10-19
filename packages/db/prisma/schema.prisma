@@ -44,6 +44,10 @@ model User {
   image         String?
   password      String?   @db.Text // nullable: only set for Credentials users
   admin         Boolean   @default(false)
+  // Nullable: backfilled lazily (not at migration time) — assigned the first time a user
+  // without one is seen in the NextAuth jwt callback, so it covers existing users, new
+  // Credentials signups and OAuth signups from one place. Format: CVA-<year>-<4 digits>.
+  studentId     String?   @unique
   accounts      Account[]
   sessions      Session[]
 
@@ -61,6 +65,11 @@ model User {
   certificates      Certificate[]
   bountySubmissions BountySubmission[]
   paymentOrders     PaymentOrder[]
+  internshipApplications InternshipApplication[]
+  // Distinct from `certificates` (Certificate) above, which is a per-course completion
+  // certificate tied to a real Course row. An internship isn't a Course, so this is its
+  // own model — trackName is a plain string, not a foreign key.
+  internshipCertificates InternshipCertificate[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -393,6 +402,46 @@ model BountySubmission {
   approved    Boolean        @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+}
+
+// A record of a submitted internship application, kept so an admin can see who applied
+// before deciding whom to grant course access (see UserPurchases / grantCourseAccess) —
+// granting is a deliberate, separate admin action, not automatic on submission.
+// Still posted to the client's own Google Sheet from the browser (see lib/internships.ts);
+// this table is this app's own copy, independent of that external system.
+model InternshipApplication {
+  id                 String   @id @default(uuid())
+  user               User?    @relation(fields: [userId], references: [id])
+  userId             String?
+  fullName           String
+  email              String
+  phone              String
+  usn                String
+  college            String
+  branch             String
+  yearOfStudy        String
+  internshipTrack    String
+  preferredDuration  String
+  preferredStartDate String
+  linkedIn           String
+  resumeLink         String
+  createdAt          DateTime @default(now())
+}
+
+// An admin-issued internship completion certificate. certificateCode is the public,
+// unguessable identifier embedded in the certificate's QR code and used by the public
+// /verify/[certificateCode] route — never the row's own id, so verification works the
+// same way slug-based lookups already do elsewhere (see Certificate.slug).
+model InternshipCertificate {
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  trackName       String
+  issueDate       DateTime @default(now())
+  certificateCode String   @unique @default(uuid())
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, trackName])
 }
 
 enum ContentType {

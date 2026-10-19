@@ -11,6 +11,8 @@ interface FeaturedCourseProps {
   imageUrl?: string | null;
   price: number;
   purchased?: boolean;
+  /** Hides the price/Free badge (the "Enrolled" badge still shows) — used on the homepage grid. */
+  hidePrice?: boolean;
 }
 
 // Used when there is only one course: a single card in a three-column grid
@@ -22,6 +24,7 @@ export function FeaturedCourse({
   imageUrl,
   price,
   purchased,
+  hidePrice,
 }: FeaturedCourseProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
@@ -78,12 +81,14 @@ export function FeaturedCourse({
                 Enrolled
               </Badge>
             ) : (
-              <Badge
-                variant={price === 0 ? "secondary" : "default"}
-                className="rounded-full px-3 py-1 text-sm font-semibold"
-              >
-                {price === 0 ? "Free" : `₹${price}`}
-              </Badge>
+              !hidePrice && (
+                <Badge
+                  variant={price === 0 ? "secondary" : "default"}
+                  className="rounded-full px-3 py-1 text-sm font-semibold"
+                >
+                  {price === 0 ? "Free" : `₹${price}`}
+                </Badge>
+              )
             )}
             <span className="bg-primary text-primary-foreground ml-auto flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold shadow-md transition-all group-hover:gap-3 group-hover:shadow-lg">
               {purchased ? "Continue learning" : "View course"}
