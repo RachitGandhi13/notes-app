@@ -319,11 +319,16 @@ export async function createUploadedVideo(data: {
   parentId?: string;
   title: string;
   description?: string;
-  videoUrl: string;
+  videoUrl?: string;
   thumbnail?: string;
+  bunnyVideoId?: string;
+  bunnyPdfPath?: string;
 }) {
   await requireAdmin();
   if (!data.title.trim()) throw new Error("Video title is required.");
+  if (!data.videoUrl && !data.bunnyVideoId) {
+    throw new Error("Upload a video file or paste a Bunny video ID.");
+  }
 
   // The thumbnail is stored twice on purpose: Content.thumbnail feeds the
   // curriculum list, VideoMetadata.thumbnail1Url is the player's poster frame.
@@ -335,7 +340,12 @@ export async function createUploadedVideo(data: {
       thumbnail: data.thumbnail || null,
       parentId: data.parentId || null,
       videoMetadata: {
-        create: { videoUrl: data.videoUrl, thumbnail1Url: data.thumbnail || null },
+        create: {
+          videoUrl: data.videoUrl || null,
+          thumbnail1Url: data.thumbnail || null,
+          bunnyVideoId: data.bunnyVideoId || null,
+          bunnyPdfPath: data.bunnyPdfPath || null,
+        },
       },
     },
   });

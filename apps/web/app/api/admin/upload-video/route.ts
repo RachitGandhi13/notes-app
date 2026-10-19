@@ -33,6 +33,8 @@ export async function POST(request: Request) {
     const description = String(formData.get("description") ?? "");
     // URL of an already-uploaded thumbnail image (via /api/admin/upload-image)
     const thumbnail = String(formData.get("thumbnail") ?? "") || undefined;
+    const bunnyVideoId = String(formData.get("bunnyVideoId") ?? "") || undefined;
+    const bunnyPdfPath = String(formData.get("bunnyPdfPath") ?? "") || undefined;
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
@@ -56,7 +58,16 @@ export async function POST(request: Request) {
       contentType,
     });
 
-    await createUploadedVideo({ courseId, parentId, title, description, videoUrl, thumbnail });
+    await createUploadedVideo({
+      courseId,
+      parentId,
+      title,
+      description,
+      videoUrl,
+      thumbnail,
+      bunnyVideoId,
+      bunnyPdfPath,
+    });
 
     return NextResponse.json({ videoUrl });
   } catch (err) {

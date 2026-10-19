@@ -31,6 +31,8 @@ export async function POST(request: Request) {
 
     const videoUrl = parseBlobUrl(body.videoUrl, "video");
     const thumbnail = body.thumbnail ? parseBlobUrl(body.thumbnail, "image") : undefined;
+    const bunnyVideoId = body.bunnyVideoId ? String(body.bunnyVideoId) : undefined;
+    const bunnyPdfPath = body.bunnyPdfPath ? String(body.bunnyPdfPath) : undefined;
 
     const alreadySaved = await prisma.videoMetadata.findFirst({
       where: { videoUrl },
@@ -46,7 +48,16 @@ export async function POST(request: Request) {
     await verifyBlobUpload(videoUrl, "video");
     const verifiedMs = Date.now() - checkedAt;
 
-    await createUploadedVideo({ courseId, parentId, title, description, videoUrl, thumbnail });
+    await createUploadedVideo({
+      courseId,
+      parentId,
+      title,
+      description,
+      videoUrl,
+      thumbnail,
+      bunnyVideoId,
+      bunnyPdfPath,
+    });
 
     console.info(`[admin/videos] saved in ${Date.now() - started}ms (byte check ${verifiedMs}ms)`);
     return NextResponse.json({ videoUrl });

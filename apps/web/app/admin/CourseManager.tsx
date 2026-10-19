@@ -18,6 +18,7 @@ import { Dialog, DialogContent } from "@repo/ui";
 import {
   createCourse,
   createSection,
+  createUploadedVideo,
   updateCourse,
   toggleCourseHidden,
   deleteCourse,
@@ -41,7 +42,11 @@ interface ContentNode {
   title: string;
   hidden: boolean;
   thumbnail: string | null;
-  videoMetadata: { videoUrl: string } | null;
+  videoMetadata: {
+    videoUrl: string | null;
+    bunnyVideoId: string | null;
+    bunnyPdfPath: string | null;
+  } | null;
   children: ContentNode[];
 }
 
@@ -71,6 +76,8 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnail, setThumbnail] = useState("");
+  const [bunnyVideoId, setBunnyVideoId] = useState("");
+  const [bunnyPdfPath, setBunnyPdfPath] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [percent, setPercent] = useState<number | null>(null);
@@ -79,11 +86,11 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const file = fileInputRef.current?.files?.[0];
-    if (!file) {
-      setError("Choose a video file to upload.");
+    if (!file && !bunnyVideoId.trim()) {
+      setError("Choose a video file to upload, or paste a Bunny video ID.");
       return;
     }
-    if (file.size > MAX_VIDEO_SIZE) {
+    if (file && file.size > MAX_VIDEO_SIZE) {
       setError("File is too large (max 500MB).");
       return;
     }
@@ -95,10 +102,22 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
     }
 
     setSubmitting(true);
-    setPercent(0);
+    setPercent(file ? 0 : null);
     setError("");
     try {
-      if (await isDirectUploadEnabled()) {
+      if (!file) {
+        // Bunny-only: no file to upload, so this is a plain server-action call rather than
+        // going through either upload route (both of those exist only to handle a file).
+        await createUploadedVideo({
+          courseId,
+          parentId,
+          title,
+          description,
+          thumbnail: thumbnail || undefined,
+          bunnyVideoId: bunnyVideoId.trim(),
+          bunnyPdfPath: bunnyPdfPath.trim() || undefined,
+        });
+      } else if (await isDirectUploadEnabled()) {
         // Production: the file goes straight to Vercel Blob. The server then checks it and
         // saves the record.
         const videoUrl = await uploadToBlob("video", file, setPercent);
@@ -111,6 +130,8 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
             description,
             videoUrl,
             thumbnail: thumbnail || undefined,
+            bunnyVideoId: bunnyVideoId.trim() || undefined,
+            bunnyPdfPath: bunnyPdfPath.trim() || undefined,
           },
           2
         );
@@ -123,6 +144,8 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         formData.set("title", title);
         formData.set("description", description);
         if (thumbnail) formData.set("thumbnail", thumbnail);
+        if (bunnyVideoId.trim()) formData.set("bunnyVideoId", bunnyVideoId.trim());
+        if (bunnyPdfPath.trim()) formData.set("bunnyPdfPath", bunnyPdfPath.trim());
 
         await postFormWithProgress("/api/admin/upload-video", formData, setPercent);
       }
@@ -130,6 +153,8 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
       setTitle("");
       setDescription("");
       setThumbnail("");
+      setBunnyVideoId("");
+      setBunnyPdfPath("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       setOpen(false);
       router.refresh();
@@ -170,11 +195,23 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         className="border-input bg-background w-full resize-none rounded border px-2 py-1 text-xs"
       />
       <input
-        required
         ref={fileInputRef}
         type="file"
         accept="video/*"
         className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs"
+      />
+      <p className="text-muted-foreground text-center text-[10px]">— or, instead of a file —</p>
+      <input
+        placeholder="Bunny video ID (optional, skips the file above)"
+        value={bunnyVideoId}
+        onChange={(e) => setBunnyVideoId(e.target.value)}
+        className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
+      />
+      <input
+        placeholder="Bunny PDF path (optional)"
+        value={bunnyPdfPath}
+        onChange={(e) => setBunnyPdfPath(e.target.value)}
+        className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
       />
       <ThumbnailPicker
         compact

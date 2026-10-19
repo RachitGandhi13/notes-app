@@ -1,10 +1,12 @@
 import { getSession } from "@repo/auth";
+import { FileText } from "lucide-react";
 import { redirect, notFound } from "next/navigation";
 import { getCourse, getContent, getCourseProgress, getBookmarks } from "@/lib/actions";
 import { userCanAccessCourse } from "@/lib/access";
 import { getComments, getQuestions } from "@/lib/community";
 import { ContentSidebar } from "@/components/ContentSidebar";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { BunnyVideoPlayer } from "@/components/BunnyVideoPlayer";
 import { ProgressButton } from "@/components/ProgressButton";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { CommentSection } from "@/components/CommentSection";
@@ -67,14 +69,40 @@ export default async function ContentViewerPage({ params }: Props) {
         <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <h1 className="text-2xl font-bold">{content.title}</h1>
 
-          {/* Video */}
-          {content.type === "VIDEO" && content.videoMetadata && (
-            <VideoPlayer
-              videoUrl={content.videoMetadata.videoUrl}
-              title={content.title}
-              subtitleUrl={content.videoMetadata.subtitleUrl}
-              thumbnail={content.videoMetadata.thumbnail1Url}
-            />
+          {/* Video — Bunny Stream takes priority when set; otherwise the existing
+              Vercel-Blob-hosted <video> plays. A lesson only ever has one or the other
+              populated in practice, but if somehow both are set, Bunny wins. */}
+          {content.type === "VIDEO" &&
+            content.videoMetadata &&
+            (content.videoMetadata.bunnyVideoId ? (
+              <BunnyVideoPlayer
+                videoId={content.videoMetadata.bunnyVideoId}
+                title={content.title}
+              />
+            ) : (
+              content.videoMetadata.videoUrl && (
+                <VideoPlayer
+                  videoUrl={content.videoMetadata.videoUrl}
+                  title={content.title}
+                  subtitleUrl={content.videoMetadata.subtitleUrl}
+                  thumbnail={content.videoMetadata.thumbnail1Url}
+                />
+              )
+            ))}
+
+          {/* PDF notes, if the admin attached one — served through the authenticated
+              proxy, never a direct Bunny Storage URL. Only ever reached after the
+              hasAccess check above, so this never renders for an unentitled user. */}
+          {content.type === "VIDEO" && content.videoMetadata?.bunnyPdfPath && (
+            <a
+              href={`/api/notes/${content.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-card hover:bg-accent flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              View notes (PDF)
+            </a>
           )}
 
           {/* Notion placeholder */}
