@@ -12,7 +12,6 @@ import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
 import { HeroArt } from "@/components/home/HeroArt";
-import { InternshipCard } from "@/components/home/InternshipCard";
 import { JoinBanner } from "@/components/home/JoinBanner";
 import { NotesShowcase } from "@/components/home/NotesShowcase";
 import { TechMarquee } from "@/components/home/TechMarquee";
@@ -157,33 +156,19 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
 
         {courses.length === 0 ? (
-          <div className="space-y-10">
-            <div className="text-muted-foreground py-12 text-center sm:py-20">
-              {query ? <>No courses match &ldquo;{query}&rdquo;.</> : <>No courses yet.</>}
-            </div>
-            {!query && (
-              <div className="mx-auto max-w-sm">
-                <InternshipCard />
-              </div>
-            )}
+          <div className="text-muted-foreground py-12 text-center sm:py-20">
+            {query ? <>No courses match &ldquo;{query}&rdquo;.</> : <>No courses yet.</>}
           </div>
         ) : courses.length === 1 ? (
-          <div className="space-y-6">
-            <FeaturedCourse
-              slug={courses[0]!.slug}
-              title={courses[0]!.title}
-              description={courses[0]!.description}
-              imageUrl={courses[0]!.imageUrl}
-              price={courses[0]!.price}
-              purchased={purchasedIds.has(courses[0]!.id)}
-              hidePrice
-            />
-            {!query && (
-              <div className="max-w-sm">
-                <InternshipCard />
-              </div>
-            )}
-          </div>
+          <FeaturedCourse
+            slug={courses[0]!.slug}
+            title={courses[0]!.title}
+            description={courses[0]!.description}
+            imageUrl={courses[0]!.imageUrl}
+            price={courses[0]!.price}
+            purchased={purchasedIds.has(courses[0]!.id)}
+            hidePrice
+          />
         ) : (
           <div
             className={`grid gap-6 sm:grid-cols-2 ${courses.length > 2 ? "lg:grid-cols-3" : ""}`}
@@ -201,7 +186,6 @@ export default async function HomePage({ searchParams }: Props) {
                 hidePrice
               />
             ))}
-            {!query && <InternshipCard />}
           </div>
         )}
       </section>
