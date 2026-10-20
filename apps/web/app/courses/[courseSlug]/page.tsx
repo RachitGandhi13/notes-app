@@ -13,6 +13,11 @@ import { instructor } from "@/lib/instructor";
 import { absoluteUrl, DEFAULT_OG_IMAGE, jsonLd, truncate } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
 
+// Rendered per request (same reasoning as app/notes/page.tsx) — getSession() already
+// forces this dynamically, but this makes it explicit. The course itself is still
+// cached in Redis (see lib/actions.ts), invalidated on every admin mutation.
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: { courseSlug: string };
   searchParams: { payment?: string };
