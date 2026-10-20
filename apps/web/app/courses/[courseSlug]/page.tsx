@@ -98,10 +98,6 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
     purchased = purchases.some((p) => p.courseId === course.id);
   }
 
-  const firstContent = course.content.find(
-    (c) => c.content.type === "VIDEO" || c.content.type === "NOTION"
-  );
-
   const allContent = course.content.flatMap((cc) =>
     cc.content.type === "FOLDER"
       ? cc.content.children.map((child) => ({
@@ -110,6 +106,11 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
         }))
       : [{ ...cc.content, folderTitle: null as string | null }]
   );
+
+  // Searched across allContent, not just the top-level course.content entries — a course
+  // organized into folders has every top-level row as type FOLDER, so a find() against
+  // course.content directly never matches and "Continue Learning" silently links to "#".
+  const firstContent = allContent.find((c) => c.type === "VIDEO" || c.type === "NOTION");
 
   // Group top-level content into chapters for the curriculum accordion —
   // FOLDER rows become a chapter of their children; any standalone
@@ -250,9 +251,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
             {purchased ? (
               <Link
-                href={
-                  firstContent ? `/courses/${params.courseSlug}/${firstContent.content.id}` : "#"
-                }
+                href={firstContent ? `/courses/${params.courseSlug}/${firstContent.id}` : "#"}
                 className="bg-primary text-primary-foreground flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-semibold transition-opacity hover:opacity-90"
               >
                 <PlayCircle className="h-5 w-5" />
