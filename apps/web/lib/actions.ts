@@ -241,7 +241,7 @@ async function invalidateCourseCache(courseId: string, previousSlug?: string) {
 
 export async function getAllCoursesForAdmin() {
   await requireAdmin();
-  return prisma.course.findMany({
+  const courses = await prisma.course.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       linkedTrack: { select: { id: true, title: true } },
@@ -261,6 +261,39 @@ export async function getAllCoursesForAdmin() {
       },
     },
   });
+
+  // Self-healing: a course created before every-course-gets-a-track shipped has no
+  // linkedTrack yet. Rather than a one-off migration script, it's backfilled right
+  // here the first time an admin loads this list — after which it's identical to a
+  // course created going forward, so this only ever does real work once per course.
+  const missing = courses.filter((c) => !c.linkedTrack);
+  if (missing.length > 0) {
+    await prisma.$transaction(
+      missing.map((c) =>
+        prisma.track.create({
+          data: {
+            title: c.title,
+            description: c.description,
+            image: c.imageUrl ?? "",
+            courseId: c.id,
+          },
+          select: { id: true },
+        })
+      )
+    );
+    await cacheDel("tracks:all");
+    const createdTracks = await prisma.track.findMany({
+      where: { courseId: { in: missing.map((c) => c.id) } },
+      select: { id: true, title: true, courseId: true },
+    });
+    const trackByCourseId = new Map(createdTracks.map((t) => [t.courseId as string, t]));
+    for (const course of courses) {
+      const created = trackByCourseId.get(course.id);
+      if (created) course.linkedTrack = created;
+    }
+  }
+
+  return courses;
 }
 
 // Students enrolled in one course, for the admin's Students tab. Same "most recent
