@@ -276,12 +276,11 @@ export async function deleteNoteTrack(trackId: string) {
 }
 
 // ── Admin: sections ─────────────────────────────────────────────────────────────
-// A "section" is one Problem row in a track. It can carry an uploaded
-// presentation (pptUrl), practice MCQs, or both. `type` is kept in step with
-// whether a presentation exists — PPT when there is a file, MCQ otherwise — so
-// the sidebar icon and search keep working. Files themselves are uploaded
-// through app/api/admin/upload-ppt (a Route Handler, to avoid the smaller
-// body-size limit server actions have), which then calls these.
+// A "section" is one Problem row in a track. It can carry a slide/material (pptUrl —
+// a Bunny Storage file path, served through /api/notes/[id] the same way a course's
+// materials are), practice MCQs, or both. `type` is kept in step with whether a
+// material is set — PPT when it is, MCQ otherwise — so the sidebar icon and search
+// keep working.
 
 async function refreshTrack(trackId: string) {
   await cacheDel("tracks:all", trackCacheKey(trackId));
