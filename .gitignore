@@ -26,6 +26,12 @@ yarn-error.log*
 .env.*
 !.env.example
 
+# Keys and certs — never belong in git regardless of where they land
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
 # Hosting CLI state
 .vercel
 

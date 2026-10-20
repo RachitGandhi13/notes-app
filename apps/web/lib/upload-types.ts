@@ -65,3 +65,29 @@ export function allowedTypeFor(kind: MediaKind, ext: string): AllowedType | unde
   const table = kind === "image" ? IMAGE_TYPES : VIDEO_TYPES;
   return table[ext.toLowerCase()];
 }
+
+// The extensions /api/notes/[contentId] actually knows how to serve (its own
+// CONTENT_TYPES map) — kept separate from DOCUMENT_TYPES above, which also allows
+// .ppt/.pptx for the old upload flow this input replaced.
+const BUNNY_PATH_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg"]);
+
+/**
+ * Validates a Bunny Storage path an admin typed into a plain text field before it's
+ * stored and later concatenated into a fetch URL (see /api/notes/[contentId]). Rejects
+ * `..` segments, a leading slash, and backslashes — a path straight from an admin's
+ * keyboard should never need any of those — and restricts the extension to what that
+ * route can actually serve. Throws rather than silently truncating, matching this
+ * codebase's existing admin-form error-display pattern.
+ */
+export function sanitizeBunnyPath(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) throw new Error("A file path is required.");
+  if (trimmed.includes("..") || trimmed.startsWith("/") || trimmed.includes("\\")) {
+    throw new Error('The file path can\'t contain "..", a leading slash, or backslashes.');
+  }
+  const ext = trimmed.split(".").pop()?.toLowerCase();
+  if (!ext || !BUNNY_PATH_EXTENSIONS.has(ext)) {
+    throw new Error("Unsupported file type. Use .pdf, .png, .jpg or .jpeg.");
+  }
+  return trimmed;
+}

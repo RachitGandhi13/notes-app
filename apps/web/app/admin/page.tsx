@@ -12,6 +12,11 @@ import { EnrolledStudentsTable } from "./EnrolledStudentsTable";
 import { StudentAccessPanel } from "@/components/admin/StudentAccessPanel";
 import { InternshipApplicationsList } from "@/components/admin/InternshipApplicationsList";
 
+// Rendered per request (same reasoning as app/notes/page.tsx) — requireAdmin() already
+// forces this dynamically, but this makes it explicit. Admin needs to see every
+// mutation's effect immediately, with no cached page in between.
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   try {
     await requireAdmin();

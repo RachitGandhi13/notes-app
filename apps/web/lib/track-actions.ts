@@ -5,6 +5,7 @@ import { AuthError, getSession, requireAdmin, requireAuth } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
 import { validateQuestion, type QuestionInput } from "@/lib/question-validation";
+import { sanitizeBunnyPath } from "@/lib/upload-types";
 import { userCanAccessCourse, userCanAccessProblem } from "@/lib/access";
 
 // ── Tracks ─────────────────────────────────────────────────────────────────────
@@ -362,9 +363,10 @@ export async function updateSection(
 // null to remove the presentation from a section.
 export async function setSectionPPT(problemId: string, pptUrl: string | null) {
   await requireAdmin();
+  const clean = pptUrl ? sanitizeBunnyPath(pptUrl) : null;
   await prisma.problem.update({
     where: { id: problemId },
-    data: { pptUrl, type: pptUrl ? "PPT" : "MCQ" },
+    data: { pptUrl: clean, type: clean ? "PPT" : "MCQ" },
   });
   const trackId = await trackIdOfProblem(problemId);
   if (trackId) await refreshTrack(trackId);

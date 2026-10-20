@@ -16,6 +16,12 @@ import { JoinBanner } from "@/components/home/JoinBanner";
 import { NotesShowcase } from "@/components/home/NotesShowcase";
 import { TechMarquee } from "@/components/home/TechMarquee";
 
+// Rendered per request (same reasoning as app/notes/page.tsx) — getSession() already
+// forces this dynamically, but this makes it explicit so a later refactor can't
+// accidentally opt the course grid back into static rendering. The course list is
+// still cached in Redis (see lib/actions.ts), invalidated on every admin mutation.
+export const dynamic = "force-dynamic";
+
 interface Props {
   searchParams: { q?: string };
 }
