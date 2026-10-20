@@ -250,6 +250,12 @@ model Content {
   hidden         Boolean         @default(false)
   description    String?
   thumbnail      String?
+  // A Bunny Storage file path (PDF, JPG, JPEG or PNG) attached directly to this row —
+  // for section-level materials (a FOLDER's cheatsheet, not tied to one specific video).
+  // A VIDEO lesson's own material still lives on VideoMetadata.bunnyPdfPath; this field
+  // covers FOLDER rows, which have no VideoMetadata. Served the same secure way, through
+  // /api/notes/[contentId].
+  materialPath   String?
   parentId       String?
   parent         Content?        @relation("ContentTree", fields: [parentId], references: [id])
   children       Content[]       @relation("ContentTree")

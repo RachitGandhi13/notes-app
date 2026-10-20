@@ -430,6 +430,27 @@ export async function setContentThumbnail(
   revalidatePath("/admin");
 }
 
+// Attaches (or clears) a Bunny Storage file path directly to a section (FOLDER) —
+// a cheatsheet or reference doc for the whole section, not tied to one video. A video
+// lesson's own material is still set through VideoMetadata.bunnyPdfPath at upload time;
+// this covers the FOLDER case, which has no VideoMetadata row to hang it off of.
+export async function setContentMaterial(
+  contentId: string,
+  courseId: string,
+  materialPath: string | null
+) {
+  await requireAdmin();
+
+  await prisma.content.update({
+    where: { id: contentId },
+    data: { materialPath: materialPath?.trim() || null },
+  });
+
+  await invalidateCourseCache(courseId);
+  revalidatePath("/admin");
+  revalidatePath("/courses");
+}
+
 // Renames a section (playlist) or a video after creation — the title was previously
 // only ever set once, at creation, with no way to fix a typo short of deleting it.
 export async function renameContent(contentId: string, courseId: string, title: string) {

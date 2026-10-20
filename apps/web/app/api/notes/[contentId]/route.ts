@@ -7,14 +7,21 @@ interface Params {
   params: { contentId: string };
 }
 
-// Serves a lesson's PDF from Bunny Storage without ever exposing a direct Bunny URL to the
-// browser. Routed by contentId, not a raw Bunny file path — the path actually fetched always
-// comes from our own database, never from the request, so a signed-in-but-not-enrolled user
-// can't probe this route with a different path to reach another course's file.
+// Serves a lesson's attached file (PDF, or an image — jpg/jpeg/png) from Bunny Storage
+// without ever exposing a direct Bunny URL to the browser. Routed by contentId, not a raw
+// Bunny file path — the path actually fetched always comes from our own database, never
+// from the request, so a signed-in-but-not-enrolled user can't probe this route with a
+// different path to reach another course's file.
 //
 // 401 for signed-out requests; 404 for everything else that doesn't resolve to a servable
-// PDF (unknown content, no PDF attached, not enrolled) — the same "don't reveal whether it
+// file (unknown content, nothing attached, not enrolled) — the same "don't reveal whether it
 // exists" shape getContent() already uses for the rest of this app's paid content.
+const CONTENT_TYPES: Record<string, string> = {
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+};
 export async function GET(_request: Request, { params }: Params) {
   const session = await getSession();
   if (!session?.user) {
@@ -27,9 +34,11 @@ export async function GET(_request: Request, { params }: Params) {
 
   const content = await prisma.content.findUnique({
     where: { id: params.contentId },
-    select: { videoMetadata: { select: { bunnyPdfPath: true } } },
+    select: { materialPath: true, videoMetadata: { select: { bunnyPdfPath: true } } },
   });
-  const bunnyPdfPath = content?.videoMetadata?.bunnyPdfPath;
+  // A video lesson's material lives on VideoMetadata; a section (FOLDER) has no
+  // VideoMetadata row, so its material is on Content.materialPath instead.
+  const bunnyPdfPath = content?.videoMetadata?.bunnyPdfPath || content?.materialPath;
   if (!bunnyPdfPath) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
@@ -51,10 +60,13 @@ export async function GET(_request: Request, { params }: Params) {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
     }
 
+    const ext = bunnyPdfPath.split(".").pop()?.toLowerCase() ?? "";
+    const contentType = CONTENT_TYPES[ext] ?? "application/octet-stream";
+
     return new NextResponse(upstream.body, {
       status: 200,
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type": contentType,
         "Content-Disposition": "inline",
       },
     });
