@@ -249,7 +249,7 @@ export function PurchaseButton(props: PurchaseButtonProps) {
         onClick={handleClick}
         disabled={loading}
         aria-busy={loading}
-        className="bg-primary text-primary-foreground w-full rounded-lg px-6 py-3 font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="bg-primary text-primary-foreground w-full rounded-lg px-6 py-3 font-semibold transition-all duration-150 hover:scale-[1.01] hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
       >
         {loading ? STAGE_LABEL[stage] : (label ?? defaultLabel)}
       </button>
