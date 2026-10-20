@@ -27,7 +27,7 @@ export function CourseCard({
 }: CourseCardProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
-      <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-[0.99]">
         <div className="bg-muted relative aspect-video w-full overflow-hidden">
           {imageUrl ? (
             <Image

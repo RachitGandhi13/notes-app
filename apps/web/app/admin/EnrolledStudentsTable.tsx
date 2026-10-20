@@ -136,11 +136,28 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
           </thead>
           <tbody className="divide-y">
             {loading ? (
-              <tr>
-                <td colSpan={5} className="text-muted-foreground px-4 py-6 text-center">
-                  Loading…
-                </td>
-              </tr>
+              // Dimension-matched skeleton rows instead of a "Loading…" line, so the table
+              // doesn't collapse to one short row and then jump to full height once data
+              // arrives — same row height and column layout as a real row.
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-4 py-2.5">
+                    <div className="bg-muted h-4 w-28 animate-pulse rounded" />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="bg-muted h-4 w-40 animate-pulse rounded" />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="bg-muted h-5 w-24 animate-pulse rounded-full" />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="bg-muted h-6 w-32 animate-pulse rounded-md" />
+                  </td>
+                </tr>
+              ))
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-muted-foreground px-4 py-6 text-center">
@@ -176,7 +193,7 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
                         setConfirmText("");
                         setRemoveError("");
                       }}
-                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
+                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-medium transition-all duration-150 hover:scale-[1.01] active:scale-[0.99]"
                     >
                       <UserX className="h-3.5 w-3.5" />
                       Remove Student
@@ -247,7 +264,7 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
                   type="button"
                   onClick={handleConfirmRemove}
                   disabled={submitting || confirmText !== REMOVE_CONFIRM_WORD}
-                  className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+                  className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150 enabled:hover:scale-[1.01] enabled:active:scale-[0.99] disabled:opacity-50"
                 >
                   {submitting ? "Removing…" : "Permanently remove"}
                 </button>
