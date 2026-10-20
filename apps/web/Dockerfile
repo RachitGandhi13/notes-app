@@ -32,6 +32,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # passed as a build argument. It is not a secret.
 ARG NEXT_PUBLIC_RAZORPAY_KEY_ID
 ENV NEXT_PUBLIC_RAZORPAY_KEY_ID=$NEXT_PUBLIC_RAZORPAY_KEY_ID
+ARG NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID
+ENV NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID=$NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID
 RUN yarn workspace @repo/web build
 
 # ── runner ────────────────────────────────────────────────────────────────────
