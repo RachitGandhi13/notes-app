@@ -8,8 +8,9 @@ import {
   sendInternshipAccessGrantedEmail,
   sendInternshipApplicationReceivedEmail,
 } from "@repo/auth";
-import { cacheDel } from "@repo/cache";
-import { TRACK_COURSE_SLUGS, type InternshipApplication } from "@/lib/internships";
+import { cacheDel, cacheGet, cacheSet } from "@repo/cache";
+import { revalidatePath } from "next/cache";
+import { type InternshipApplication } from "@/lib/internships";
 
 /**
  * Persists a submitted internship application. This is this app's own copy of the
@@ -41,6 +42,15 @@ export async function submitInternshipApplication(data: InternshipApplication): 
 
   const session = await getSession();
 
+  // Best-effort: resolve the chosen track title to its catalog row so the admin
+  // panel can filter/scope by it. The text field above is always written
+  // regardless — a miss (e.g. a track renamed/deleted between page load and
+  // submit) just leaves this null, never a hard error.
+  const matchedTrack = await prisma.internshipTrack.findFirst({
+    where: { title: data.internshipTrack },
+    select: { id: true },
+  });
+
   await prisma.internshipApplication.create({
     data: {
       userId: session?.user?.id,
@@ -52,6 +62,7 @@ export async function submitInternshipApplication(data: InternshipApplication): 
       branch: data.branch.trim(),
       yearOfStudy: data.yearOfStudy,
       internshipTrack: data.internshipTrack,
+      internshipTrackId: matchedTrack?.id,
       preferredDuration: data.preferredDuration,
       preferredStartDate: data.preferredStartDate,
       linkedIn: data.linkedIn.trim(),
@@ -86,6 +97,7 @@ export async function getInternshipApplications() {
       email: true,
       usn: true,
       internshipTrack: true,
+      internshipTrackId: true,
       preferredDuration: true,
       preferredStartDate: true,
       createdAt: true,
@@ -134,7 +146,7 @@ export async function setInternshipDuration(
 
 /**
  * Issues (or re-fetches, if one already exists for this student+track) an internship
- * certificate, and grants that track's mapped courses (TRACK_COURSE_SLUGS) in the same
+ * certificate, and grants that track's linked courses (InternshipTrackCourse) in the same
  * action — the client's "course enrollment + Certificate, customised per track" request.
  * Both halves are idempotent: the course grant upserts UserPurchases (safe to repeat), and
  * the @@unique([userId, trackName]) constraint means a second click for the same
@@ -144,30 +156,29 @@ export async function setInternshipDuration(
  * not on a repeat click for an already-issued track — so re-clicking Issue never
  * re-sends it.
  */
-export async function issueCertificate(userId: string, trackName: string) {
+export async function issueCertificate(userId: string, internshipTrackId: string) {
   await requireAdmin();
-  if (!trackName.trim()) throw new Error("Choose a track to issue a certificate for.");
+  const track = await prisma.internshipTrack.findUnique({
+    where: { id: internshipTrackId },
+    include: { courses: { include: { course: { select: { id: true, title: true } } } } },
+  });
+  if (!track) throw new Error("Choose a track to issue a certificate for.");
+  const trackName = track.title;
 
-  const slugs = TRACK_COURSE_SLUGS[trackName] ?? [];
+  const courses = track.courses.map((tc) => tc.course);
   let grantedCourseTitles: string[] = [];
-  if (slugs.length > 0) {
-    const courses = await prisma.course.findMany({
-      where: { slug: { in: slugs } },
-      select: { id: true, title: true },
-    });
-    if (courses.length > 0) {
-      await prisma.$transaction(
-        courses.map((course) =>
-          prisma.userPurchases.upsert({
-            where: { userId_courseId: { userId, courseId: course.id } },
-            update: {},
-            create: { userId, courseId: course.id },
-          })
-        )
-      );
-      await cacheDel(`purchases:${userId}`, "courses:all");
-      grantedCourseTitles = courses.map((course) => course.title);
-    }
+  if (courses.length > 0) {
+    await prisma.$transaction(
+      courses.map((course) =>
+        prisma.userPurchases.upsert({
+          where: { userId_courseId: { userId, courseId: course.id } },
+          update: {},
+          create: { userId, courseId: course.id },
+        })
+      )
+    );
+    await cacheDel(`purchases:${userId}`, "courses:all");
+    grantedCourseTitles = courses.map((course) => course.title);
   }
 
   const existing = await prisma.internshipCertificate.findUnique({
@@ -176,7 +187,7 @@ export async function issueCertificate(userId: string, trackName: string) {
   if (existing) return existing;
 
   const certificate = await prisma.internshipCertificate.create({
-    data: { userId, trackName },
+    data: { userId, trackName, internshipTrackId: track.id },
   });
 
   const user = await prisma.user.findUnique({
@@ -238,4 +249,120 @@ export async function getCertificateByCode(certificateCode: string) {
     where: { certificateCode },
     include: { user: { select: { name: true } } },
   });
+}
+
+// ── Internship track catalog ─────────────────────────────────────────────────
+// Admin-managed tracks, superseding the old hardcoded INTERNSHIP_TRACKS array.
+
+const ACTIVE_TRACKS_KEY = "internship-tracks:active";
+
+/** Admin: every track, including hidden ones — for the CRUD panel and the
+ * cert-issue / manual-grant selects (an admin can still issue a cert for a
+ * track they've since hidden from the public application form). */
+export async function getInternshipTracks() {
+  await requireAdmin();
+  return prisma.internshipTrack.findMany({
+    include: {
+      courses: { include: { course: { select: { id: true, title: true, slug: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+function _fetchActiveInternshipTracks() {
+  return prisma.internshipTrack.findMany({
+    where: { hidden: false },
+    select: { id: true, title: true, duration: true, description: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/** Public: visible tracks only — for InternshipForm's dropdown and the
+ * internships page's "featured tracks" grid. */
+export async function getActiveInternshipTracks() {
+  const cached =
+    await cacheGet<Awaited<ReturnType<typeof _fetchActiveInternshipTracks>>>(ACTIVE_TRACKS_KEY);
+  if (cached) return cached;
+  const data = await _fetchActiveInternshipTracks();
+  await cacheSet(ACTIVE_TRACKS_KEY, data);
+  return data;
+}
+
+export async function createInternshipTrack(data: {
+  title: string;
+  duration: string;
+  description: string;
+}) {
+  await requireAdmin();
+  const title = data.title.trim();
+  if (!title) throw new Error("Track title is required.");
+  const track = await prisma.internshipTrack.create({
+    data: { title, duration: data.duration.trim(), description: data.description.trim() },
+  });
+  await cacheDel(ACTIVE_TRACKS_KEY);
+  revalidatePath("/internships");
+  revalidatePath("/admin");
+  return track;
+}
+
+export async function updateInternshipTrack(
+  id: string,
+  data: { title: string; duration: string; description: string }
+) {
+  await requireAdmin();
+  const title = data.title.trim();
+  if (!title) throw new Error("Track title is required.");
+  await prisma.internshipTrack.update({
+    where: { id },
+    data: { title, duration: data.duration.trim(), description: data.description.trim() },
+  });
+  await cacheDel(ACTIVE_TRACKS_KEY);
+  revalidatePath("/internships");
+  revalidatePath("/admin");
+}
+
+export async function toggleInternshipTrackHidden(id: string) {
+  await requireAdmin();
+  const track = await prisma.internshipTrack.findUnique({
+    where: { id },
+    select: { hidden: true },
+  });
+  if (!track) throw new Error("Track not found.");
+  await prisma.internshipTrack.update({ where: { id }, data: { hidden: !track.hidden } });
+  await cacheDel(ACTIVE_TRACKS_KEY);
+  revalidatePath("/internships");
+  revalidatePath("/admin");
+}
+
+// Replaces a track's whole linked-course set in one transaction — same
+// reasoning as setTrackBundle (track-actions.ts), minus a price, since these
+// grants ride on certificate issuance, not a purchase.
+export async function setInternshipTrackCourses(trackId: string, courseIds: string[]) {
+  await requireAdmin();
+  const ids = [...new Set(courseIds)];
+  await prisma.$transaction([
+    prisma.internshipTrackCourse.deleteMany({ where: { trackId } }),
+    ...ids.map((courseId) => prisma.internshipTrackCourse.create({ data: { trackId, courseId } })),
+  ]);
+  revalidatePath("/admin");
+}
+
+// Mirrors deleteNoteTrack's paid-order guard: blocked once certificates have
+// been issued against this track, so deleting it can't silently orphan the
+// record of what a student was actually granted courses for.
+export async function deleteInternshipTrack(id: string) {
+  await requireAdmin();
+  const certCount = await prisma.internshipCertificate.count({ where: { internshipTrackId: id } });
+  if (certCount > 0) {
+    throw new Error(
+      "This track has issued certificates and can't be deleted. Hide it instead to remove it from the application form."
+    );
+  }
+  await prisma.$transaction([
+    prisma.internshipTrackCourse.deleteMany({ where: { trackId: id } }),
+    prisma.internshipTrack.delete({ where: { id } }),
+  ]);
+  await cacheDel(ACTIVE_TRACKS_KEY);
+  revalidatePath("/internships");
+  revalidatePath("/admin");
 }

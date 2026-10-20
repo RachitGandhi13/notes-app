@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { validateQuestion, type QuestionInput } from "@/lib/question-validation";
 import { sanitizeBunnyPath } from "@/lib/upload-types";
 import { userCanAccessCourse, userCanAccessProblem } from "@/lib/access";
+import { grantOrderAccess } from "@/lib/razorpay";
 
 // ── Tracks ─────────────────────────────────────────────────────────────────────
 
@@ -205,6 +206,43 @@ export async function getCoursesForBundling() {
   });
 }
 
+// Combo bundles currently on sale — a "paid, active bundle" is fully defined by
+// bundlePrice being set (setTrackBundle only ever sets it alongside >=1 linked
+// course) plus not hidden. Shared by the homepage ComboBanner and the admin
+// Grant-Access modal's "grant a combo" list, rather than two near-identical
+// queries.
+export async function getActiveBundles() {
+  const CACHE_KEY = "bundles:active";
+  const cached = await cacheGet<Awaited<ReturnType<typeof _fetchActiveBundles>>>(CACHE_KEY);
+  if (cached) return cached;
+  const data = await _fetchActiveBundles();
+  await cacheSet(CACHE_KEY, data);
+  return data;
+}
+
+function _fetchActiveBundles() {
+  return prisma.track.findMany({
+    where: { hidden: false, bundlePrice: { not: null } },
+    include: {
+      courses: {
+        include: { course: { select: { id: true, slug: true, title: true, price: true } } },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Grants every course a combo bundle links in one click — reuses the exact
+// same grantOrderAccess() a real Razorpay combo purchase uses, so a manually
+// granted combo is indistinguishable from a bought one (including the
+// enrollment email per newly-granted course), same reasoning as
+// grantCourseAccess for a single course.
+export async function grantComboAccess(userId: string, trackId: string) {
+  await requireAdmin();
+  await grantOrderAccess({ userId, courseId: null, trackId });
+  revalidatePath("/admin");
+}
+
 // Replaces a track's whole set of bundled courses and its bundle price in one
 // transaction, rather than adding/removing incrementally — simpler to reason
 // about from a checkbox-list UI, and the set is small enough that a full
@@ -230,10 +268,11 @@ export async function setTrackBundle(
     }),
   ]);
 
-  await cacheDel("tracks:all", trackCacheKey(trackId));
+  await cacheDel("tracks:all", "bundles:active", trackCacheKey(trackId));
   revalidatePath("/notes");
   revalidatePath(`/tracks/${trackId}`);
   revalidatePath("/admin");
+  revalidatePath("/");
 }
 
 // Renames a track and/or updates its description — previously only settable at
@@ -257,9 +296,10 @@ export async function toggleTrackHidden(trackId: string) {
   const track = await prisma.track.findUnique({ where: { id: trackId }, select: { hidden: true } });
   if (!track) throw new Error("Track not found.");
   await prisma.track.update({ where: { id: trackId }, data: { hidden: !track.hidden } });
-  await cacheDel("tracks:all", trackCacheKey(trackId));
+  await cacheDel("tracks:all", "bundles:active", trackCacheKey(trackId));
   revalidatePath("/notes");
   revalidatePath("/admin");
+  revalidatePath("/");
 }
 
 // Permanently removes a track and its section/category links. Problem rows

@@ -198,10 +198,11 @@ model Course {
   certificate   Certificate[]
   paymentOrders PaymentOrder[]
   // Deprecated 1:1 reverse side — see Track.courseId. Superseded by trackBundles.
-  linkedTrack   Track?
-  trackBundles  TrackCourse[] // combo bundles (Tracks) this course is included in
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  linkedTrack       Track?
+  trackBundles      TrackCourse[] // combo bundles (Tracks) this course is included in
+  internshipBundles InternshipTrackCourse[] // internship tracks this course is granted by
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
 }
 
 model UserPurchases {
@@ -435,7 +436,14 @@ model InternshipApplication {
   college            String
   branch             String
   yearOfStudy        String
+  // Deprecated free-text track name — kept (not dropped) for historical rows,
+  // and because an admin may rename/delete the InternshipTrack catalog row
+  // later without invalidating the record of what the applicant actually
+  // picked at the time. New code should prefer internshipTrackId. Same
+  // precedent as Track.courseId.
   internshipTrack    String
+  internshipTrackId  String?
+  internshipTrackRef InternshipTrack? @relation(fields: [internshipTrackId], references: [id], onDelete: SetNull)
   preferredDuration  String
   preferredStartDate String
   linkedIn           String
@@ -459,15 +467,49 @@ model InternshipApplication {
 // /verify/[certificateCode] route — never the row's own id, so verification works the
 // same way slug-based lookups already do elsewhere (see Certificate.slug).
 model InternshipCertificate {
-  id              String   @id @default(uuid())
-  user            User     @relation(fields: [userId], references: [id])
-  userId          String
-  trackName       String
-  issueDate       DateTime @default(now())
-  certificateCode String   @unique @default(uuid())
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(uuid())
+  user               User     @relation(fields: [userId], references: [id])
+  userId             String
+  // Deprecated free-text track name — kept, see InternshipApplication's own
+  // comment for why. Still always written so @@unique([userId, trackName])
+  // keeps doing its existing duplicate-prevention job for old and new rows.
+  trackName          String
+  internshipTrackId  String?
+  internshipTrackRef InternshipTrack? @relation(fields: [internshipTrackId], references: [id], onDelete: SetNull)
+  issueDate          DateTime @default(now())
+  certificateCode    String   @unique @default(uuid())
+  createdAt          DateTime @default(now())
 
   @@unique([userId, trackName])
+}
+
+// Admin-managed internship track catalog — supersedes the former hardcoded
+// INTERNSHIP_TRACKS array in lib/internships.ts. `duration` is a free-text,
+// *advertised* duration only (e.g. "6-8 weeks") — distinct from each
+// InternshipApplication's own admin-tracked startDate/durationMonths, which
+// this does not touch.
+model InternshipTrack {
+  id           String                  @id @default(uuid())
+  title        String
+  duration     String
+  description  String
+  hidden       Boolean                 @default(false)
+  courses      InternshipTrackCourse[]
+  applications InternshipApplication[]
+  certificates InternshipCertificate[]
+  createdAt    DateTime                @default(now())
+}
+
+// Many-to-many: which paid courses an internship track grants when a
+// certificate is issued for it — same composite-PK pattern as TrackCourse
+// (combo bundles), just with no price (certificate grants are free, not sold).
+model InternshipTrackCourse {
+  track    InternshipTrack @relation(fields: [trackId], references: [id])
+  trackId  String
+  course   Course          @relation(fields: [courseId], references: [id])
+  courseId String
+
+  @@id([trackId, courseId])
 }
 
 enum ContentType {

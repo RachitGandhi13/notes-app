@@ -6,47 +6,11 @@
 export const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzuUM_xe_0PwJ3uAFafSABasc_84lvCmuoomi3-CRunlO-blEFq1AV9BlJRQl294gIP4A/exec";
 
-export interface InternshipTrack {
-  title: string;
-  duration: string;
-  description: string;
-}
-
-// The 3 official programs. INTERNSHIP_TRACK_OPTIONS (the form dropdown) is derived from
-// this list's titles, so the two can never drift out of sync.
-export const INTERNSHIP_TRACKS: InternshipTrack[] = [
-  {
-    title: "AWS Cloud Engineering Internship",
-    duration: "4 Weeks",
-    description:
-      "Learn cloud fundamentals, IAM, VPC, EC2, S3, Lambda, databases, monitoring, security, and deploying applications on AWS.",
-  },
-  {
-    title: "DevOps & Automation Internship",
-    duration: "4 Weeks",
-    description:
-      "Learn Git, CodeCommit/GitHub, Linux, Jenkins, Docker, Terraform, CI/CD pipelines, containers, and automated deployments.",
-  },
-  {
-    title: "AI & Cloud Application Development Internship",
-    duration: "4 Weeks",
-    description:
-      "Learn Python-based automation, generative AI fundamentals, API integration, AI-powered applications, and cloud deployment.",
-  },
-];
-
-export const INTERNSHIP_TRACK_OPTIONS = INTERNSHIP_TRACKS.map((t) => t.title);
-
-// Which paid courses each internship track grants, by Course.slug. Applied when an admin
-// issues a certificate for that track (see issueCertificate in lib/internship-actions.ts) —
-// one action grants the matching course(s) and issues the certificate together, rather than
-// the admin separately checking boxes in the course list above. A track with no mapping
-// here, or one whose courses don't exist in this database, simply grants nothing extra.
-export const TRACK_COURSE_SLUGS: Record<string, string[]> = {
-  "AWS Cloud Engineering Internship": ["aws-solutions"],
-  "DevOps & Automation Internship": ["devops"],
-  "AI & Cloud Application Development Internship": ["dsa-python", "aws-solutions"],
-};
+// Internship tracks themselves moved to the InternshipTrack Prisma model —
+// see getActiveInternshipTracks()/getInternshipTracks() in
+// lib/internship-actions.ts. The static INTERNSHIP_TRACKS/
+// INTERNSHIP_TRACK_OPTIONS/TRACK_COURSE_SLUGS that used to live here are gone;
+// everything below is still plain content, not admin-editable data.
 
 export interface RoadmapWeek {
   week: string;

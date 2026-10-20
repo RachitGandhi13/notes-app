@@ -3,12 +3,18 @@
 import { useState } from "react";
 import { findStudentByIdentifier, grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
 import { issueCertificate, revokeCertificate } from "@/lib/internship-actions";
-import { INTERNSHIP_TRACK_OPTIONS, TRACK_COURSE_SLUGS } from "@/lib/internships";
 
 interface AdminCourseOption {
   id: string;
   title: string;
   slug: string;
+}
+
+interface AdminInternshipTrack {
+  id: string;
+  title: string;
+  hidden: boolean;
+  courses: { course: { id: string; title: string } }[];
 }
 
 interface FoundStudentCertificate {
@@ -30,7 +36,13 @@ interface FoundStudent {
 // "Option B" access management: look a student up by email or Student ID, then grant or
 // revoke individual courses. Writes straight to UserPurchases — the same table Razorpay
 // purchases land in — so a manually granted course is indistinguishable from a bought one.
-export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }) {
+export function StudentAccessPanel({
+  courses,
+  internshipTracks,
+}: {
+  courses: AdminCourseOption[];
+  internshipTracks: AdminInternshipTrack[];
+}) {
   const [identifier, setIdentifier] = useState("");
   const [looking, setLooking] = useState(false);
   const [student, setStudent] = useState<FoundStudent | null>(null);
@@ -233,8 +245,10 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
             {certTrack && (
               <p className="text-muted-foreground text-xs">
                 {(() => {
-                  const slugs = TRACK_COURSE_SLUGS[certTrack] ?? [];
-                  const titles = courses.filter((c) => slugs.includes(c.slug)).map((c) => c.title);
+                  const titles =
+                    internshipTracks
+                      .find((t) => t.id === certTrack)
+                      ?.courses.map((tc) => tc.course.title) ?? [];
                   return titles.length > 0
                     ? `Also grants: ${titles.join(", ")}`
                     : "Grants no courses automatically for this track.";
@@ -249,13 +263,14 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
                 className="border-input bg-background flex h-9 w-full rounded-md border px-2 text-xs"
               >
                 <option value="">Choose a track…</option>
-                {INTERNSHIP_TRACK_OPTIONS.filter(
-                  (track) => !student.certificates.some((c) => c.trackName === track)
-                ).map((track) => (
-                  <option key={track} value={track}>
-                    {track}
-                  </option>
-                ))}
+                {internshipTracks
+                  .filter((track) => !student.certificates.some((c) => c.trackName === track.title))
+                  .map((track) => (
+                    <option key={track.id} value={track.id}>
+                      {track.title}
+                      {track.hidden ? " (hidden)" : ""}
+                    </option>
+                  ))}
               </select>
               <button
                 onClick={handleIssueCertificate}

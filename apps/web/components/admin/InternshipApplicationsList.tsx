@@ -179,6 +179,11 @@ function ApplicationRow({ app }: { app: Application }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <p className="font-medium">{app.fullName}</p>
+          {!app.startDate && (
+            <span className="rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+              Pending
+            </span>
+          )}
           {app.frozen && (
             <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
               Frozen
