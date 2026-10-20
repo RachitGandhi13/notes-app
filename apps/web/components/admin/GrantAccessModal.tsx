@@ -141,7 +141,7 @@ export function GrantAccessModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-primary text-primary-foreground flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-all duration-150 hover:scale-[1.01] active:scale-[0.99]"
+        className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-all duration-150 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
       >
         <UserPlus className="h-4 w-4" />
         Grant Manual Access
@@ -161,12 +161,12 @@ export function GrantAccessModal({
               placeholder="Email or Student ID (e.g. CVA-2026-1234)"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+              className="border-input bg-background focus:ring-ring flex h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2"
             />
             <button
               type="submit"
               disabled={looking}
-              className="bg-primary text-primary-foreground shrink-0 rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+              className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               {looking ? "Looking up…" : "Look up"}
             </button>
@@ -191,19 +191,19 @@ export function GrantAccessModal({
                 {courses.length === 0 ? (
                   <p className="text-muted-foreground text-xs">No courses exist yet.</p>
                 ) : (
-                  <ul className="divide-y rounded border text-sm">
+                  <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
                     {courses.map((course) => {
                       const hasAccess = student.purchasedCourseIds.includes(course.id);
                       return (
                         <li
                           key={course.id}
-                          className="flex items-center justify-between gap-3 px-3 py-2"
+                          className="hover:bg-muted/40 flex items-center justify-between gap-3 px-3 py-2 transition-colors"
                         >
                           <span className="truncate">{course.title}</span>
                           <button
                             onClick={() => handleToggleCourse(course.id, hasAccess)}
                             disabled={busyKey === `course:${course.id}`}
-                            className={`shrink-0 rounded-md px-3 py-1 text-xs font-medium disabled:opacity-50 ${
+                            className={`ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 ${
                               hasAccess
                                 ? "text-destructive hover:bg-destructive/10"
                                 : "bg-primary text-primary-foreground"
@@ -225,7 +225,7 @@ export function GrantAccessModal({
               {bundles.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold">Combo bundles</p>
-                  <ul className="divide-y rounded border text-sm">
+                  <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
                     {bundles.map((bundle) => {
                       const ownsAll = bundle.courses.every((c) =>
                         student.purchasedCourseIds.includes(c.id)
@@ -233,7 +233,7 @@ export function GrantAccessModal({
                       return (
                         <li
                           key={bundle.id}
-                          className="flex items-center justify-between gap-3 px-3 py-2"
+                          className="hover:bg-muted/40 flex items-center justify-between gap-3 px-3 py-2 transition-colors"
                         >
                           <span className="min-w-0 truncate">
                             {bundle.title}{" "}
@@ -242,7 +242,7 @@ export function GrantAccessModal({
                           <button
                             onClick={() => handleGrantCombo(bundle.id)}
                             disabled={busyKey === `combo:${bundle.id}` || ownsAll}
-                            className="bg-primary text-primary-foreground shrink-0 rounded-md px-3 py-1 text-xs font-medium disabled:opacity-50"
+                            className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                           >
                             {busyKey === `combo:${bundle.id}`
                               ? "…"
@@ -260,7 +260,7 @@ export function GrantAccessModal({
               {internshipTracks.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold">Internship certificates</p>
-                  <ul className="divide-y rounded border text-sm">
+                  <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
                     {internshipTracks.map((track) => {
                       const alreadyIssued = student.certificates.some(
                         (c) => c.trackName === track.title
@@ -268,13 +268,13 @@ export function GrantAccessModal({
                       return (
                         <li
                           key={track.id}
-                          className="flex items-center justify-between gap-3 px-3 py-2"
+                          className="hover:bg-muted/40 flex items-center justify-between gap-3 px-3 py-2 transition-colors"
                         >
                           <span className="min-w-0 truncate">{track.title}</span>
                           <button
                             onClick={() => handleIssueCertificate(track.id)}
                             disabled={busyKey === `internship:${track.id}` || alreadyIssued}
-                            className="bg-primary text-primary-foreground shrink-0 rounded-md px-3 py-1 text-xs font-medium disabled:opacity-50"
+                            className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                           >
                             {busyKey === `internship:${track.id}`
                               ? "…"

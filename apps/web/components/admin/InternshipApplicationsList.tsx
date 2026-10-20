@@ -97,7 +97,7 @@ function DurationEditor({ app }: { app: Application }) {
         )}
         <button
           onClick={() => setEditing(true)}
-          className="text-primary text-xs font-medium hover:underline"
+          className="text-primary ring-offset-background focus-visible:ring-ring rounded text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           Edit
         </button>
@@ -112,12 +112,12 @@ function DurationEditor({ app }: { app: Application }) {
         type="date"
         value={startDate}
         onChange={(e) => setStartDate(e.target.value)}
-        className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+        className="border-input bg-background focus:ring-ring h-8 rounded-md border px-2 text-xs focus:outline-none focus:ring-2"
       />
       <select
         value={durationMonths}
         onChange={(e) => setDurationMonths(Number(e.target.value))}
-        className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+        className="border-input bg-background focus:ring-ring h-8 rounded-md border px-2 text-xs focus:outline-none focus:ring-2"
       >
         {DURATION_OPTIONS.map((m) => (
           <option key={m} value={m}>
@@ -128,14 +128,14 @@ function DurationEditor({ app }: { app: Application }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="bg-primary text-primary-foreground rounded-md px-2.5 py-1 text-xs font-medium disabled:opacity-50"
+        className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-2.5 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
       >
         {saving ? "Saving…" : "Save"}
       </button>
       <button
         onClick={() => setEditing(false)}
         disabled={saving}
-        className="text-muted-foreground text-xs hover:underline disabled:opacity-50"
+        className="text-muted-foreground ring-offset-background focus-visible:ring-ring rounded text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
       >
         Cancel
       </button>
@@ -175,7 +175,7 @@ function ApplicationRow({ app }: { app: Application }) {
   }
 
   return (
-    <li className="space-y-2 px-4 py-3">
+    <li className="hover:bg-muted/40 space-y-2 px-4 py-3 transition-colors">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <p className="font-medium">{app.fullName}</p>
@@ -209,7 +209,7 @@ function ApplicationRow({ app }: { app: Application }) {
         <button
           onClick={handleToggleFrozen}
           disabled={busy}
-          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
+          className="text-muted-foreground hover:text-foreground ring-offset-background focus-visible:ring-ring flex items-center gap-1.5 rounded text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
         >
           {app.frozen ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
           {app.frozen ? "Unfreeze" : "Freeze"}
@@ -221,14 +221,14 @@ function ApplicationRow({ app }: { app: Application }) {
             <button
               onClick={handleDelete}
               disabled={busy}
-              className="text-destructive font-medium hover:underline disabled:opacity-50"
+              className="text-destructive ring-offset-background focus-visible:ring-ring rounded font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               Yes, delete
             </button>
             <button
               onClick={() => setConfirmingDelete(false)}
               disabled={busy}
-              className="hover:underline disabled:opacity-50"
+              className="ring-offset-background focus-visible:ring-ring rounded hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -237,7 +237,7 @@ function ApplicationRow({ app }: { app: Application }) {
           <button
             onClick={() => setConfirmingDelete(true)}
             disabled={busy}
-            className="text-destructive ml-auto flex items-center gap-1.5 text-xs font-medium hover:underline disabled:opacity-50"
+            className="text-destructive ring-offset-background focus-visible:ring-ring ml-auto flex items-center gap-1.5 rounded text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
@@ -254,7 +254,7 @@ export function InternshipApplicationsList({ applications }: { applications: App
   }
 
   return (
-    <ul className="divide-y rounded-lg border text-sm">
+    <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
       {applications.map((app) => (
         <ApplicationRow key={app.id} app={app} />
       ))}

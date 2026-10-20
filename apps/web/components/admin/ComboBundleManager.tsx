@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Package } from "lucide-react";
-import { createComboBundle, toggleTrackHidden } from "@/lib/track-actions";
+import { Eye, EyeOff, Package, Trash2 } from "lucide-react";
+import { Dialog, DialogContent } from "@repo/ui";
+import { createComboBundle, deleteNoteTrack, toggleTrackHidden } from "@/lib/track-actions";
 
 interface BundlableCourse {
   id: string;
@@ -47,6 +48,10 @@ export function ComboBundleManager({
   const [error, setError] = useState("");
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const [deletingBundle, setDeletingBundle] = useState<ExistingBundle | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   function toggleCourse(courseId: string) {
     setSelected((prev) => {
@@ -109,8 +114,30 @@ export function ComboBundleManager({
     }
   }
 
+  // Reuses the same deleteNoteTrack() a plain notes track's delete button
+  // already calls — a combo is just a Track under the hood, so this purges
+  // the Track + its TrackCourse links the same clean way, no separate code
+  // path. deleteNoteTrack itself refuses when the track has a paid order on
+  // it, which is what actually keeps a paying student's purchase record
+  // intact — the dialog below explains that rather than overpromising.
+  async function handleDelete() {
+    if (!deletingBundle) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteNoteTrack(deletingBundle.id);
+      setBundles((prev) => prev.filter((b) => b.id !== deletingBundle.id));
+      setDeletingBundle(null);
+      router.refresh();
+    } catch (err: any) {
+      setDeleteError(err?.message ?? "Failed to delete combo.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
-    <div className="space-y-4 rounded-lg border p-4">
+    <div className="bg-card border-border/60 space-y-4 rounded-xl border p-6">
       <h2 className="flex items-center gap-2 font-semibold">
         <Package className="h-4 w-4" /> Combo bundles
       </h2>
@@ -190,6 +217,10 @@ export function ComboBundleManager({
                 onChange={(e) => setPrice(e.target.value)}
                 className={inputClass}
               />
+              <p className="text-muted-foreground text-xs">
+                Total discounted price for all selected courses in INR — this is what the student
+                pays once for everything in the combo.
+              </p>
             </div>
             <p className="text-muted-foreground text-xs">
               Original total ₹{originalTotal}
@@ -209,7 +240,7 @@ export function ComboBundleManager({
         <button
           type="submit"
           disabled={creating || selected.size < 2}
-          className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+          className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           title={selected.size < 2 ? "Pick at least 2 courses" : undefined}
         >
           {creating ? "Creating…" : "Create combo"}
@@ -219,27 +250,37 @@ export function ComboBundleManager({
       {bundles.length === 0 ? (
         <p className="text-muted-foreground text-sm">No combos yet — create one above.</p>
       ) : (
-        <ul className="divide-y rounded border text-sm">
+        <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
           {bundles.map((bundle) => (
-            <li key={bundle.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
+            <li
+              key={bundle.id}
+              className="hover:bg-muted/40 flex items-center justify-between gap-4 px-4 py-3 transition-colors"
+            >
               <div className="min-w-0">
-                <p
-                  className={`truncate font-medium ${bundle.hidden ? "text-muted-foreground line-through" : ""}`}
-                >
-                  {bundle.title}
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`truncate font-medium ${bundle.hidden ? "text-muted-foreground line-through" : ""}`}
+                  >
+                    {bundle.title}
+                  </p>
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-600 dark:text-teal-400">
+                    Combo
+                  </span>
                   {bundle.hidden && (
-                    <span className="ml-2 text-xs font-normal no-underline">(hidden)</span>
+                    <span className="bg-muted text-muted-foreground shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium">
+                      Hidden
+                    </span>
                   )}
-                </p>
+                </div>
                 <p className="text-muted-foreground truncate text-xs">
                   ₹{bundle.bundlePrice} · {bundle.courses.map((c) => c.course.title).join(", ")}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1">
                 <button
                   onClick={() => handleToggleHidden(bundle)}
                   disabled={togglingId === bundle.id}
-                  className="text-muted-foreground hover:bg-accent rounded p-1.5 disabled:opacity-50"
+                  className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                   aria-label={bundle.hidden ? "Show combo" : "Hide combo"}
                   title={
                     bundle.hidden
@@ -249,9 +290,20 @@ export function ComboBundleManager({
                 >
                   {bundle.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
+                <button
+                  onClick={() => {
+                    setDeleteError("");
+                    setDeletingBundle(bundle);
+                  }}
+                  className="text-destructive hover:bg-destructive/10 ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
+                  aria-label="Delete combo"
+                  title="Delete combo"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
                 <a
                   href={`/tracks/${bundle.id}`}
-                  className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium"
+                  className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring ml-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                 >
                   Open &amp; edit
                 </a>
@@ -260,6 +312,39 @@ export function ComboBundleManager({
           ))}
         </ul>
       )}
+
+      <Dialog
+        open={!!deletingBundle}
+        onOpenChange={(open) => !deleting && !open && setDeletingBundle(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <h3 className="text-lg font-semibold">Delete &quot;{deletingBundle?.title}&quot;?</h3>
+          <p className="text-muted-foreground text-sm">
+            This will permanently remove this combo deal from the storefront. If a student has
+            already paid for it, deletion is blocked automatically to protect their purchase record
+            — hide it instead in that case.
+          </p>
+          {deleteError && <p className="text-destructive text-sm">{deleteError}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setDeletingBundle(null)}
+              disabled={deleting}
+              className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete Combo"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

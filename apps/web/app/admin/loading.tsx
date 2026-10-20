@@ -1,6 +1,9 @@
+// Mirrors admin/page.tsx's own wrapper (`container ... py-6 sm:py-8`) exactly —
+// this used to be the old, narrower max-w-3xl layout the real page moved off
+// of, so the page visibly jumped wider the moment it finished loading.
 export default function AdminLoading() {
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
+    <div className="container space-y-8 py-6 sm:py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
           <div className="bg-muted h-7 w-32 animate-pulse rounded-md" />

@@ -119,7 +119,7 @@ export function EnrolledStudentsTable({
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
           disabled={courses.length === 0 && bundles.length === 0}
-          className="border-input bg-background h-9 shrink-0 rounded-md border px-2 text-sm disabled:opacity-50"
+          className="border-input bg-background focus:ring-ring h-9 shrink-0 rounded-md border px-2 text-sm focus:outline-none focus:ring-2 disabled:opacity-50"
         >
           {courses.length === 0 && bundles.length === 0 && <option value="">No courses yet</option>}
           {courses.length > 0 && (
@@ -148,13 +148,13 @@ export function EnrolledStudentsTable({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email…"
-            className="border-input bg-background h-9 w-full rounded-md border pl-8 pr-3 text-sm"
+            className="border-input bg-background focus:ring-ring h-9 w-full rounded-md border pl-8 pr-3 text-sm focus:outline-none focus:ring-2"
           />
         </div>
 
         <a
           href="/api/admin/export-students"
-          className="hover:bg-accent flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors"
+          className="hover:bg-accent ring-offset-background focus-visible:ring-ring flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
         >
           <Download className="h-4 w-4" />
           Export Students (Excel)
@@ -210,7 +210,7 @@ export function EnrolledStudentsTable({
               </tr>
             ) : (
               filtered.map((s) => (
-                <tr key={s.userId}>
+                <tr key={s.userId} className="hover:bg-muted/40 transition-colors">
                   <td className="px-4 py-2.5 font-medium">{s.name}</td>
                   <td className="text-muted-foreground px-4 py-2.5">{s.email}</td>
                   <td className="text-muted-foreground whitespace-nowrap px-4 py-2.5">
@@ -235,7 +235,7 @@ export function EnrolledStudentsTable({
                         setConfirmText("");
                         setRemoveError("");
                       }}
-                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-medium transition-all duration-150 hover:scale-[1.01] active:scale-[0.99]"
+                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground ring-offset-background focus-visible:ring-ring flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-medium transition-all duration-150 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
                     >
                       <UserX className="h-3.5 w-3.5" />
                       Remove Student
@@ -294,7 +294,7 @@ export function EnrolledStudentsTable({
                   setConfirmText("");
                   setRemoveError("");
                 }}
-                className="border-destructive text-destructive active:bg-destructive active:text-destructive-foreground flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium transition-colors"
+                className="border-destructive text-destructive active:bg-destructive active:text-destructive-foreground ring-offset-background focus-visible:ring-ring flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 <UserX className="h-4 w-4" />
                 Remove Student
@@ -321,14 +321,14 @@ export function EnrolledStudentsTable({
                 <button
                   type="button"
                   onClick={closeRemoveDialog}
-                  className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm"
+                  className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmStep(2)}
-                  className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium"
+                  className="bg-destructive text-destructive-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                 >
                   Yes, proceed
                 </button>
@@ -357,7 +357,7 @@ export function EnrolledStudentsTable({
                   type="button"
                   onClick={closeRemoveDialog}
                   disabled={submitting}
-                  className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm disabled:opacity-50"
+                  className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -365,7 +365,7 @@ export function EnrolledStudentsTable({
                   type="button"
                   onClick={handleConfirmRemove}
                   disabled={submitting || confirmText !== REMOVE_CONFIRM_WORD}
-                  className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150 enabled:hover:scale-[1.01] enabled:active:scale-[0.99] disabled:opacity-50"
+                  className="bg-destructive text-destructive-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 enabled:hover:scale-[1.01] enabled:active:scale-[0.99] disabled:opacity-50"
                 >
                   {submitting ? "Removing…" : "Permanently remove"}
                 </button>
