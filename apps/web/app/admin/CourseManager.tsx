@@ -26,6 +26,7 @@ import {
   deleteContent,
   moveContentOrder,
   setContentThumbnail,
+  renameContent,
 } from "@/lib/actions";
 import { ThumbnailPicker } from "@/components/admin/ThumbnailPicker";
 import {
@@ -332,6 +333,9 @@ function ContentNodeRow({
   const [expanded, setExpanded] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingThumb, setEditingThumb] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState(node.title);
+  const [renameError, setRenameError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const isFolder = node.type === "FOLDER";
@@ -341,6 +345,20 @@ function ContentNodeRow({
     try {
       await setContentThumbnail(node.id, courseId, url || null);
       router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRename() {
+    setBusy(true);
+    setRenameError("");
+    try {
+      await renameContent(node.id, courseId, titleInput);
+      setEditingTitle(false);
+      router.refresh();
+    } catch (err: any) {
+      setRenameError(err?.message ?? "Couldn't rename this.");
     } finally {
       setBusy(false);
     }
@@ -399,11 +417,49 @@ function ContentNodeRow({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={node.thumbnail} alt="" className="h-7 w-12 shrink-0 rounded object-cover" />
         )}
-        <span
-          className={`text-sm font-medium ${node.hidden ? "text-muted-foreground line-through" : ""}`}
-        >
-          {node.title}
-        </span>
+        {editingTitle ? (
+          <span className="flex min-w-0 flex-1 items-center gap-1.5">
+            <input
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRename();
+                if (e.key === "Escape") {
+                  setTitleInput(node.title);
+                  setEditingTitle(false);
+                  setRenameError("");
+                }
+              }}
+              autoFocus
+              disabled={busy}
+              className="bg-background min-w-0 flex-1 rounded border px-2 py-1 text-sm"
+            />
+            <button
+              onClick={handleRename}
+              disabled={busy}
+              className="text-primary shrink-0 text-xs font-medium hover:underline disabled:opacity-50"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setTitleInput(node.title);
+                setEditingTitle(false);
+                setRenameError("");
+              }}
+              disabled={busy}
+              className="text-muted-foreground shrink-0 text-xs hover:underline disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </span>
+        ) : (
+          <span
+            className={`text-sm font-medium ${node.hidden ? "text-muted-foreground line-through" : ""}`}
+          >
+            {node.title}
+          </span>
+        )}
         {!isFolder && !node.videoMetadata && (
           <span className="text-destructive text-xs">(no video attached)</span>
         )}
@@ -429,6 +485,19 @@ function ContentNodeRow({
               </button>
             </>
           )}
+          <button
+            onClick={() => {
+              setTitleInput(node.title);
+              setRenameError("");
+              setEditingTitle((v) => !v);
+            }}
+            disabled={busy}
+            className="text-muted-foreground hover:bg-accent rounded p-1 disabled:opacity-50"
+            aria-label={isFolder ? "Rename playlist" : "Rename video"}
+            title={isFolder ? "Rename playlist" : "Rename video"}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
           <button
             onClick={() => setEditingThumb((v) => !v)}
             className="text-muted-foreground hover:bg-accent rounded p-1"
@@ -482,6 +551,7 @@ function ContentNodeRow({
         </div>
       </div>
 
+      {renameError && <p className="text-destructive mt-2 text-xs">{renameError}</p>}
       {deleteError && <p className="text-destructive mt-2 text-xs">{deleteError}</p>}
 
       {editingThumb && (
