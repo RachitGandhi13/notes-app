@@ -774,7 +774,7 @@ export async function findStudentByIdentifier(identifier: string) {
     }),
     prisma.internshipCertificate.findMany({
       where: { userId: user.id },
-      select: { trackName: true, certificateCode: true, issueDate: true },
+      select: { id: true, trackName: true, certificateCode: true, issueDate: true },
     }),
   ]);
   return {

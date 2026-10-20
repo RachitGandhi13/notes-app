@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { findStudentByIdentifier, grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
-import { issueCertificate } from "@/lib/internship-actions";
+import { issueCertificate, revokeCertificate } from "@/lib/internship-actions";
 import { INTERNSHIP_TRACK_OPTIONS, TRACK_COURSE_SLUGS } from "@/lib/internships";
 
 interface AdminCourseOption {
@@ -12,6 +12,7 @@ interface AdminCourseOption {
 }
 
 interface FoundStudentCertificate {
+  id: string;
   trackName: string;
   certificateCode: string;
   issueDate: Date;
@@ -39,6 +40,8 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
   const [certTrack, setCertTrack] = useState("");
   const [issuing, setIssuing] = useState(false);
   const [certError, setCertError] = useState("");
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null);
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
@@ -92,6 +95,24 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
       setCertError(err?.message ?? "Couldn't issue the certificate.");
     } finally {
       setIssuing(false);
+    }
+  }
+
+  async function handleRevokeCertificate(certificateId: string) {
+    if (!student) return;
+    setRevokingId(certificateId);
+    setCertError("");
+    try {
+      await revokeCertificate(certificateId);
+      setStudent({
+        ...student,
+        certificates: student.certificates.filter((c) => c.id !== certificateId),
+      });
+      setConfirmingRevokeId(null);
+    } catch (err: any) {
+      setCertError(err?.message ?? "Couldn't revoke the certificate.");
+    } finally {
+      setRevokingId(null);
     }
   }
 
@@ -165,18 +186,46 @@ export function StudentAccessPanel({ courses }: { courses: AdminCourseOption[] }
           <div className="space-y-2 border-t pt-3">
             <p className="text-xs font-semibold">Internship certificates</p>
             {student.certificates.length > 0 && (
-              <ul className="space-y-1 text-xs">
+              <ul className="space-y-1.5 text-xs">
                 {student.certificates.map((cert) => (
-                  <li key={cert.trackName} className="text-muted-foreground">
-                    {cert.trackName} —{" "}
-                    <a
-                      href={`/verify/${cert.certificateCode}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      view
-                    </a>
+                  <li key={cert.id} className="text-muted-foreground flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate">
+                      {cert.trackName} —{" "}
+                      <a
+                        href={`/verify/${cert.certificateCode}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        view
+                      </a>
+                    </span>
+                    {confirmingRevokeId === cert.id ? (
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <span>Revoke?</span>
+                        <button
+                          onClick={() => handleRevokeCertificate(cert.id)}
+                          disabled={revokingId === cert.id}
+                          className="text-destructive font-medium hover:underline disabled:opacity-50"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setConfirmingRevokeId(null)}
+                          disabled={revokingId === cert.id}
+                          className="hover:underline disabled:opacity-50"
+                        >
+                          No
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingRevokeId(cert.id)}
+                        className="text-destructive shrink-0 hover:underline"
+                      >
+                        Revoke
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
