@@ -259,6 +259,41 @@ export async function getAllCoursesForAdmin() {
   });
 }
 
+// Students enrolled in one course, for the admin's Students tab. Same "most recent
+// PAID order per user" pattern as the Excel export route, just scoped to one
+// course instead of every purchase, since the UI only ever shows one at a time.
+export async function getEnrolledStudents(courseId: string) {
+  await requireAdmin();
+
+  const [purchases, paidOrders] = await Promise.all([
+    prisma.userPurchases.findMany({
+      where: { courseId },
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.paymentOrder.findMany({
+      where: { courseId, status: "PAID" },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
+
+  const orderByUser = new Map<string, (typeof paidOrders)[number]>();
+  for (const order of paidOrders) {
+    if (!orderByUser.has(order.userId)) orderByUser.set(order.userId, order);
+  }
+
+  return purchases.map((p) => {
+    const order = orderByUser.get(p.userId);
+    return {
+      userId: p.userId,
+      name: p.user.name ?? "N/A",
+      email: p.user.email ?? "N/A",
+      enrolledAt: p.createdAt,
+      status: order ? `Paid (₹${order.amount})` : "Free enrollment",
+    };
+  });
+}
+
 // Linking a course into a combo bundle now happens from the track side
 // (lib/track-actions.ts's setTrackBundle) rather than here, so a new course
 // doesn't need a track at creation time — it can be added to any bundle

@@ -1,7 +1,6 @@
 import { requireAdmin } from "@repo/auth";
 import { prisma } from "@repo/db/client";
 import { redirect } from "next/navigation";
-import { Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { getPendingComments } from "@/lib/community";
 import { getAllCoursesForAdmin } from "@/lib/actions";
@@ -9,6 +8,7 @@ import { getInternshipApplications } from "@/lib/internship-actions";
 import { ModerationPanel } from "./ModerationPanel";
 import { CourseManager } from "./CourseManager";
 import { AdminPanel } from "./AdminPanel";
+import { EnrolledStudentsTable } from "./EnrolledStudentsTable";
 import { StudentAccessPanel } from "@/components/admin/StudentAccessPanel";
 import { InternshipApplicationsList } from "@/components/admin/InternshipApplicationsList";
 
@@ -31,25 +31,17 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Admin</h1>
-          <p className="text-muted-foreground">
-            Manage courses and notes, moderate comments, export student records.
-          </p>
-        </div>
-        <a
-          href="/api/admin/export-students"
-          className="hover:bg-accent flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors lg:min-h-0"
-        >
-          <Download className="h-4 w-4" />
-          Export Students (Excel)
-        </a>
+      <div>
+        <h1 className="text-2xl font-bold">Admin</h1>
+        <p className="text-muted-foreground">
+          Manage courses and notes, moderate comments, review enrolled students.
+        </p>
       </div>
 
       <Tabs defaultValue="courses">
         <TabsList>
           <TabsTrigger value="courses">Courses</TabsTrigger>
+          <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="internships">
             Internships {applications.length > 0 && `(${applications.length})`}
@@ -61,6 +53,10 @@ export default async function AdminPage() {
 
         <TabsContent value="courses" className="pt-4">
           <CourseManager courses={courses as any} />
+        </TabsContent>
+
+        <TabsContent value="students" className="pt-4">
+          <EnrolledStudentsTable courses={courses.map((c) => ({ id: c.id, title: c.title }))} />
         </TabsContent>
 
         <TabsContent value="notes" className="pt-4">
