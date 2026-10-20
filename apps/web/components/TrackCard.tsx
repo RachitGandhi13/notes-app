@@ -29,7 +29,10 @@ export function TrackCard({
   isAdmin,
 }: TrackCardProps) {
   return (
-    <Link href={`/tracks/${id}`} className="group block">
+    <Link
+      href={`/tracks/${id}`}
+      className="ring-offset-background focus-visible:ring-ring group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+    >
       <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-[0.99]">
         <div className="bg-muted relative aspect-video w-full overflow-hidden">
           {image ? (

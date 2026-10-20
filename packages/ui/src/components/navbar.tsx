@@ -65,7 +65,10 @@ export function Navbar({
     <header className="bg-background/95 safe-top sticky top-0 z-40 w-full border-b backdrop-blur">
       <div className="container flex h-16 items-center gap-3 sm:gap-4">
         {/* Brand */}
-        <Link href={brandHref} className="flex min-h-11 min-w-0 items-center gap-2">
+        <Link
+          href={brandHref}
+          className="ring-offset-background focus-visible:ring-ring flex min-h-11 min-w-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        >
           {brandLogo && (
             // eslint-disable-next-line
             <img src={brandLogo} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />

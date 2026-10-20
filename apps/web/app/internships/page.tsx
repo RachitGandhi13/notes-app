@@ -34,7 +34,7 @@ export default async function InternshipsPage() {
         </p>
         <a
           href="#apply"
-          className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:gap-3"
+          className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           Apply Now
           <ArrowRight className="h-4 w-4" />

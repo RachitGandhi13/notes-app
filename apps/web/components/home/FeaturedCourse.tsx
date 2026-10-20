@@ -25,7 +25,10 @@ export function FeaturedCourse({
   isAdmin,
 }: FeaturedCourseProps) {
   return (
-    <Link href={`/courses/${slug}`} className="group block">
+    <Link
+      href={`/courses/${slug}`}
+      className="ring-offset-background focus-visible:ring-ring group block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+    >
       <div className="bg-card hover:border-primary/40 grid overflow-hidden rounded-3xl border shadow-sm transition-all duration-300 hover:shadow-2xl active:scale-[0.99] lg:grid-cols-5">
         <div className="bg-muted relative aspect-video overflow-hidden lg:col-span-3">
           {imageUrl ? (
