@@ -146,7 +146,6 @@ export default async function NotesPage() {
                         title={course.title}
                         description={course.description}
                         image={course.imageUrl}
-                        price={course.price}
                         owned={purchasedCourseIds.has(course.id)}
                       />
                     ))}
