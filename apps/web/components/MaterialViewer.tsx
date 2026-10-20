@@ -45,7 +45,10 @@ export function MaterialViewer({ contentId, kind, label, locked }: MaterialViewe
         <FileText className="h-3.5 w-3.5" />
         {label}
       </p>
-      <div className="relative min-h-[420px] w-full overflow-hidden rounded-lg border">
+      {/* Mobile gets a shorter viewport-relative height so the viewer doesn't push
+          the rest of the page off-screen on a phone; laptop/desktop gets a taller
+          one since there's room to actually read a PDF without scrolling it. */}
+      <div className="relative h-[60vh] max-h-[520px] min-h-[320px] w-full overflow-hidden rounded-lg border sm:h-[75vh] sm:max-h-[850px]">
         {!loaded && !failed && <div className="bg-muted absolute inset-0 animate-pulse" />}
         {failed ? (
           <div className="bg-muted/30 absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
@@ -59,7 +62,7 @@ export function MaterialViewer({ contentId, kind, label, locked }: MaterialViewe
             src={`${src}#toolbar=0`}
             title={label}
             onLoad={() => setLoaded(true)}
-            className="relative h-[70vh] min-h-[420px] w-full"
+            className="relative h-full w-full"
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -68,7 +71,7 @@ export function MaterialViewer({ contentId, kind, label, locked }: MaterialViewe
             alt={label}
             onLoad={() => setLoaded(true)}
             onError={() => setFailed(true)}
-            className={`relative w-full transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+            className={`relative h-full w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
           />
         )}
       </div>

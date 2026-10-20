@@ -45,7 +45,11 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
+    // `container` matches every other page's widening (caps at 1400px, same
+    // breakpoint padding) — the old flat max-w-3xl kept this dense,
+    // table-heavy workspace squeezed into a ~768px column even on a 4K
+    // monitor, which is the opposite of what a data-dense admin view wants.
+    <div className="container space-y-8 py-6 sm:py-8">
       <div>
         <h1 className="text-2xl font-bold">Admin</h1>
         <p className="text-muted-foreground">
@@ -54,7 +58,7 @@ export default async function AdminPage() {
       </div>
 
       <Tabs defaultValue="courses">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>

@@ -123,7 +123,11 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
         </a>
       </div>
 
-      <div className="bg-card overflow-x-auto rounded-xl border">
+      {/* Desktop/laptop: the dense table. The overflow wrapper lets a table that's
+          still too wide for a tablet-ish viewport scroll horizontally without
+          taking the whole page with it (the -mx-4 px-4 bleeds the scroll area to
+          the card's edge so the scrollbar doesn't sit indented). */}
+      <div className="bg-card hidden overflow-x-auto rounded-xl border sm:block">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground text-left text-xs uppercase">
             <tr>
@@ -204,6 +208,62 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Phone: the same data as stacked cards instead of a table squeezed into
+          a horizontal scroll — each card's remove button is a full 44px touch
+          target instead of the table's small mouse-oriented one. */}
+      <div className="space-y-3 sm:hidden">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-card space-y-2 rounded-xl border p-4">
+              <div className="bg-muted h-4 w-32 animate-pulse rounded" />
+              <div className="bg-muted h-3.5 w-40 animate-pulse rounded" />
+              <div className="bg-muted h-5 w-24 animate-pulse rounded-full" />
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
+          <p className="text-muted-foreground rounded-xl border px-4 py-6 text-center text-sm">
+            {students.length === 0
+              ? "No students enrolled in this course yet."
+              : "No students match that search."}
+          </p>
+        ) : (
+          filtered.map((s) => (
+            <div key={s.userId} className="bg-card space-y-3 rounded-xl border p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{s.name}</p>
+                  <p className="text-muted-foreground truncate text-sm">{s.email}</p>
+                </div>
+                <span
+                  className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
+                    s.status.startsWith("Paid")
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {s.status}
+                </span>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Enrolled {new Date(s.enrolledAt).toLocaleDateString()}
+              </p>
+              <button
+                onClick={() => {
+                  setRemoving(s);
+                  setConfirmStep(1);
+                  setConfirmText("");
+                  setRemoveError("");
+                }}
+                className="border-destructive text-destructive active:bg-destructive active:text-destructive-foreground flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium transition-colors"
+              >
+                <UserX className="h-4 w-4" />
+                Remove Student
+              </button>
+            </div>
+          ))
+        )}
       </div>
 
       <Dialog open={!!removing} onOpenChange={(open) => !open && closeRemoveDialog()}>

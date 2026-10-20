@@ -62,7 +62,7 @@ export function Navbar({
   }, [pathname]);
 
   return (
-    <header className="bg-background/95 sticky top-0 z-40 w-full border-b backdrop-blur">
+    <header className="bg-background/95 safe-top sticky top-0 z-40 w-full border-b backdrop-blur">
       <div className="container flex h-16 items-center gap-3 sm:gap-4">
         {/* Brand */}
         <Link href={brandHref} className="flex min-h-11 min-w-0 items-center gap-2">
