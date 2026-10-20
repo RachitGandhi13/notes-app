@@ -4,8 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Search, UserX } from "lucide-react";
 import { Dialog, DialogContent } from "@repo/ui";
 import { getEnrolledStudents, revokeCourseAccess } from "@/lib/actions";
+import { getEnrolledStudentsForBundle, revokeComboAccess } from "@/lib/track-actions";
 
 interface CourseOption {
+  id: string;
+  title: string;
+}
+
+interface BundleOption {
   id: string;
   title: string;
 }
@@ -19,9 +25,24 @@ interface EnrolledStudent {
 }
 
 const REMOVE_CONFIRM_WORD = "REMOVE";
+// The <select> lists courses and combo bundles together — this prefix on a
+// combo's option value is how the rest of the component tells which kind of
+// id it's looking at, since a plain course id and a track id are otherwise
+// indistinguishable strings.
+const COMBO_PREFIX = "combo:";
 
-export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) {
-  const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
+export function EnrolledStudentsTable({
+  courses,
+  bundles = [],
+}: {
+  courses: CourseOption[];
+  bundles?: BundleOption[];
+}) {
+  const [selected, setSelected] = useState(
+    courses[0]?.id ?? (bundles[0] ? `${COMBO_PREFIX}${bundles[0].id}` : "")
+  );
+  const isCombo = selected.startsWith(COMBO_PREFIX);
+  const comboTrackId = isCombo ? selected.slice(COMBO_PREFIX.length) : null;
   const [students, setStudents] = useState<EnrolledStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -49,7 +70,8 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
     setSubmitting(true);
     setRemoveError("");
     try {
-      await revokeCourseAccess(removing.userId, courseId);
+      if (comboTrackId) await revokeComboAccess(removing.userId, comboTrackId);
+      else await revokeCourseAccess(removing.userId, selected);
       setStudents((prev) => prev.filter((s) => s.userId !== removing.userId));
       closeRemoveDialog();
     } catch (err: any) {
@@ -59,13 +81,16 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
   }
 
   useEffect(() => {
-    if (!courseId) {
+    if (!selected) {
       setStudents([]);
       return;
     }
     let cancelled = false;
     setLoading(true);
-    getEnrolledStudents(courseId)
+    const fetch = comboTrackId
+      ? getEnrolledStudentsForBundle(comboTrackId)
+      : getEnrolledStudents(selected);
+    fetch
       .then((data) => {
         if (!cancelled) setStudents(data);
       })
@@ -75,7 +100,7 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
     return () => {
       cancelled = true;
     };
-  }, [courseId]);
+  }, [selected, comboTrackId]);
 
   // Client-side only — the list for one course is small enough that a round trip
   // per keystroke would just be slower than filtering what's already in memory.
@@ -91,17 +116,30 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <select
-          value={courseId}
-          onChange={(e) => setCourseId(e.target.value)}
-          disabled={courses.length === 0}
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          disabled={courses.length === 0 && bundles.length === 0}
           className="border-input bg-background h-9 shrink-0 rounded-md border px-2 text-sm disabled:opacity-50"
         >
-          {courses.length === 0 && <option value="">No courses yet</option>}
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.title}
-            </option>
-          ))}
+          {courses.length === 0 && bundles.length === 0 && <option value="">No courses yet</option>}
+          {courses.length > 0 && (
+            <optgroup label="Courses">
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {bundles.length > 0 && (
+            <optgroup label="Combo bundles">
+              {bundles.map((b) => (
+                <option key={b.id} value={`${COMBO_PREFIX}${b.id}`}>
+                  {b.title}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         <div className="relative min-w-[180px] flex-1">
@@ -166,7 +204,7 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
               <tr>
                 <td colSpan={5} className="text-muted-foreground px-4 py-6 text-center">
                   {students.length === 0
-                    ? "No students enrolled in this course yet."
+                    ? `No students enrolled in this ${isCombo ? "combo" : "course"} yet.`
                     : "No students match that search."}
                 </td>
               </tr>
@@ -225,7 +263,7 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground rounded-xl border px-4 py-6 text-center text-sm">
             {students.length === 0
-              ? "No students enrolled in this course yet."
+              ? `No students enrolled in this ${isCombo ? "combo" : "course"} yet.`
               : "No students match that search."}
           </p>
         ) : (
@@ -272,8 +310,11 @@ export function EnrolledStudentsTable({ courses }: { courses: CourseOption[] }) 
             <>
               <h3 className="text-lg font-semibold">Remove {removing?.name}?</h3>
               <p className="text-muted-foreground text-sm">
-                Are you sure you want to remove {removing?.name} from this course? This will revoke
-                their access immediately.
+                Are you sure you want to remove {removing?.name} from this{" "}
+                {isCombo
+                  ? "combo? This will revoke every course it includes"
+                  : "course? This will revoke their access"}{" "}
+                immediately.
               </p>
               {removeError && <p className="text-destructive text-sm">{removeError}</p>}
               <div className="flex justify-end gap-2 pt-2">

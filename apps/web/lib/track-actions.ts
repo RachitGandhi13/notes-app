@@ -243,6 +243,128 @@ export async function grantComboAccess(userId: string, trackId: string) {
   revalidatePath("/admin");
 }
 
+// Revokes every course a combo bundle links, for one student — the inverse of
+// grantComboAccess, used when "Remove Student" is clicked while a combo
+// (rather than a single course) is selected in the Students tab.
+export async function revokeComboAccess(userId: string, trackId: string) {
+  await requireAdmin();
+  const links = await prisma.trackCourse.findMany({
+    where: { trackId },
+    select: { courseId: true },
+  });
+  await prisma.userPurchases.deleteMany({
+    where: { userId, courseId: { in: links.map((l) => l.courseId) } },
+  });
+  await cacheDel(`purchases:${userId}`, "courses:all");
+  revalidatePath("/admin");
+}
+
+// One-step combo creation for the Admin -> Courses shortcut: creates the
+// underlying Track and its TrackCourse links/bundlePrice together, instead of
+// making the admin create a track from Notes first and then open it to bundle
+// courses. No category is attached — this track exists to be sold as a combo,
+// not browsed by topic, so skipping it avoids asking for an input that
+// wouldn't mean anything here (the Notes -> "Create a track" flow still asks
+// for one, unchanged).
+export async function createComboBundle(data: {
+  title: string;
+  description: string;
+  courseIds: string[];
+  bundlePrice: number;
+}) {
+  await requireAdmin();
+  const title = data.title.trim();
+  if (!title) throw new Error("Give the combo a name.");
+  const courseIds = [...new Set(data.courseIds)];
+  if (courseIds.length < 2) throw new Error("Pick at least 2 courses to combine.");
+  if (!data.bundlePrice || data.bundlePrice <= 0) throw new Error("Set a combo price.");
+
+  const track = await prisma.$transaction(async (tx) => {
+    const track = await tx.track.create({
+      data: {
+        title,
+        description: data.description.trim(),
+        image: "",
+        bundlePrice: data.bundlePrice,
+      },
+    });
+    await tx.trackCourse.createMany({
+      data: courseIds.map((courseId) => ({ trackId: track.id, courseId })),
+    });
+    return track;
+  });
+
+  await cacheDel("tracks:all", "bundles:active");
+  revalidatePath("/notes");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return track;
+}
+
+/** Every combo bundle, including hidden ones — for the Admin -> Courses list
+ * (an admin should see everything they've created, not just what's publicly
+ * on sale; getActiveBundles() stays the public-facing, hidden-filtered one
+ * the homepage banner uses). */
+export async function getAllBundlesForAdmin() {
+  await requireAdmin();
+  return prisma.track.findMany({
+    where: { bundlePrice: { not: null } },
+    include: {
+      courses: {
+        include: { course: { select: { id: true, slug: true, title: true, price: true } } },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Every student who owns at least one of a combo's linked courses — the same
+// "owns any" semantics hasTrackAccess() already uses, so this list matches
+// exactly who the public site currently treats as having the combo. Status is
+// "Paid (combo)" only when they have an actual PAID order for this trackId;
+// otherwise they reached this list via a free/manual/individual grant on one
+// of the linked courses, same distinction getEnrolledStudents() draws for a
+// single course.
+export async function getEnrolledStudentsForBundle(trackId: string) {
+  await requireAdmin();
+
+  const links = await prisma.trackCourse.findMany({
+    where: { trackId },
+    select: { courseId: true },
+  });
+  const courseIds = links.map((l) => l.courseId);
+  if (courseIds.length === 0) return [];
+
+  const [purchases, paidOrders] = await Promise.all([
+    prisma.userPurchases.findMany({
+      where: { courseId: { in: courseIds } },
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.paymentOrder.findMany({ where: { trackId, status: "PAID" } }),
+  ]);
+
+  const paidUserIds = new Set(paidOrders.map((o) => o.userId));
+  const amountByUser = new Map(paidOrders.map((o) => [o.userId, o.amount]));
+
+  // One row per student — the earliest of their linked-course purchases is
+  // the enrollment date, since that's when they first got combo-equivalent access.
+  const earliestByUser = new Map<string, (typeof purchases)[number]>();
+  for (const p of purchases) {
+    if (!earliestByUser.has(p.userId)) earliestByUser.set(p.userId, p);
+  }
+
+  return [...earliestByUser.values()].map((p) => ({
+    userId: p.userId,
+    name: p.user.name ?? "N/A",
+    email: p.user.email ?? "N/A",
+    enrolledAt: p.createdAt,
+    status: paidUserIds.has(p.userId)
+      ? `Paid (₹${amountByUser.get(p.userId)} combo)`
+      : "Free enrollment",
+  }));
+}
+
 // Replaces a track's whole set of bundled courses and its bundle price in one
 // transaction, rather than adding/removing incrementally — simpler to reason
 // about from a checkbox-list UI, and the set is small enough that a full

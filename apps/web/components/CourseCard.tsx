@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Lock, PlayCircle } from "lucide-react";
+import { ArrowRight, Lock, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
@@ -62,25 +62,12 @@ export function CourseCard({
           </div>
 
           <div className="flex items-center border-t pt-3">
-            {!isAdmin && (
-              <span
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  purchased
-                    ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                }`}
-              >
-                {purchased ? (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Enrolled
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-3.5 w-3.5" />
-                    Enroll Now!
-                  </>
-                )}
+            {/* Purchased already has its own badge on the thumbnail above — repeating
+                "Enrolled" down here was redundant. Only the unpurchased prompt lives here. */}
+            {!isAdmin && !purchased && (
+              <span className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                <Lock className="h-3.5 w-3.5" />
+                Enroll Now!
               </span>
             )}
             <span className="text-primary ml-auto flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
