@@ -9,12 +9,22 @@ interface CourseNoteCardProps {
   description: string;
   image: string | null;
   owned: boolean;
+  /** Admins bypass purchase checks everywhere, so an Enrolled/Enroll Now badge would be
+   * meaningless noise on their own view — neither one renders when this is true. */
+  isAdmin?: boolean;
 }
 
 // Mirrors TrackCard's layout so a course card and a track card sit together
 // consistently on /notes — links into the course's own dedicated notes track
 // (sidebar, slides/image viewer, quizzes), not the course's video page.
-export function CourseNoteCard({ trackId, title, description, image, owned }: CourseNoteCardProps) {
+export function CourseNoteCard({
+  trackId,
+  title,
+  description,
+  image,
+  owned,
+  isAdmin,
+}: CourseNoteCardProps) {
   return (
     <Link href={`/tracks/${trackId}`} className="group block">
       <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -46,26 +56,28 @@ export function CourseNoteCard({ trackId, title, description, image, owned }: Co
           </div>
 
           <div className="flex items-center justify-between border-t pt-3">
-            <span
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                owned
-                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              }`}
-            >
-              {owned ? (
-                <>
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Enrolled
-                </>
-              ) : (
-                <>
-                  <Lock className="h-3.5 w-3.5" />
-                  Enroll Now!
-                </>
-              )}
-            </span>
-            <span className="text-primary flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+            {!isAdmin && (
+              <span
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  owned
+                    ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                }`}
+              >
+                {owned ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Enrolled
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-3.5 w-3.5" />
+                    Enroll Now!
+                  </>
+                )}
+              </span>
+            )}
+            <span className="text-primary ml-auto flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
               View notes <ArrowRight className="h-3 w-3" />
             </span>
           </div>

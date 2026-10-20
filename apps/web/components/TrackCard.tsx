@@ -13,6 +13,9 @@ interface TrackCardProps {
   problemCount: number;
   /** Combo bundle price and whether the viewer already owns any of its linked courses. */
   bundle?: { price: number; owned?: boolean } | null;
+  /** Admins bypass purchase checks everywhere, so a Locked/Included badge would be
+   * meaningless noise on their own view — the bundle badge is skipped entirely. */
+  isAdmin?: boolean;
 }
 
 export function TrackCard({
@@ -23,6 +26,7 @@ export function TrackCard({
   categories,
   problemCount,
   bundle,
+  isAdmin,
 }: TrackCardProps) {
   return (
     <Link href={`/tracks/${id}`} className="group block">
@@ -75,7 +79,7 @@ export function TrackCard({
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Included in your course
                 </>
-              ) : bundle ? (
+              ) : bundle && !isAdmin ? (
                 <>
                   <Lock className="h-3.5 w-3.5" />
                   {bundle.price > 0 ? `₹${bundle.price} combo` : "Requires enrollment"}

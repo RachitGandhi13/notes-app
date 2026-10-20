@@ -1,5 +1,4 @@
-import { Badge } from "@repo/ui";
-import { ArrowRight, BadgeCheck, CheckCircle2, PlayCircle } from "lucide-react";
+import { ArrowRight, BadgeCheck, CheckCircle2, Lock, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
@@ -9,10 +8,10 @@ interface FeaturedCourseProps {
   title: string;
   description: string;
   imageUrl?: string | null;
-  price: number;
   purchased?: boolean;
-  /** Hides the price/Free badge (the "Enrolled" badge still shows) — used on the homepage grid. */
-  hidePrice?: boolean;
+  /** Admins bypass purchase checks everywhere, so an Enrolled/Enroll Now badge would be
+   * meaningless noise on their own view — neither one renders when this is true. */
+  isAdmin?: boolean;
 }
 
 // Used when there is only one course: a single card in a three-column grid
@@ -22,9 +21,8 @@ export function FeaturedCourse({
   title,
   description,
   imageUrl,
-  price,
   purchased,
-  hidePrice,
+  isAdmin,
 }: FeaturedCourseProps) {
   return (
     <Link href={`/courses/${slug}`} className="group block">
@@ -47,7 +45,7 @@ export function FeaturedCourse({
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <span className="bg-primary text-primary-foreground absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold shadow-lg">
-            {purchased ? "Enrolled" : "Featured course"}
+            {!isAdmin && purchased ? "Enrolled" : "Featured course"}
           </span>
         </div>
 
@@ -71,24 +69,26 @@ export function FeaturedCourse({
           </ul>
 
           <div className="flex flex-wrap items-center gap-4 border-t pt-5">
-            {purchased ? (
-              // Students who own the course see this instead of the price.
-              <Badge
-                variant="secondary"
-                className="gap-1.5 rounded-full px-3 py-1 text-sm font-semibold"
+            {!isAdmin && (
+              <span
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
+                  purchased
+                    ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                }`}
               >
-                <CheckCircle2 className="h-4 w-4" />
-                Enrolled
-              </Badge>
-            ) : (
-              !hidePrice && (
-                <Badge
-                  variant={price === 0 ? "secondary" : "default"}
-                  className="rounded-full px-3 py-1 text-sm font-semibold"
-                >
-                  {price === 0 ? "Free" : `₹${price}`}
-                </Badge>
-              )
+                {purchased ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Enrolled
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-4 w-4" />
+                    Enroll Now!
+                  </>
+                )}
+              </span>
             )}
             <span className="bg-primary text-primary-foreground ml-auto flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold shadow-md transition-all group-hover:gap-3 group-hover:shadow-lg">
               {purchased ? "Continue learning" : "View course"}

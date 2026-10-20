@@ -1,5 +1,6 @@
 import { BookOpen, ClipboardCheck, Presentation } from "lucide-react";
 import Image from "next/image";
+import { getSession } from "@repo/auth";
 import { getTracks } from "@/lib/track-actions";
 import { getCourses, getUserPurchases } from "@/lib/actions";
 import { TrackCard } from "@/components/TrackCard";
@@ -26,7 +27,8 @@ const STEPS = [
 ];
 
 export default async function NotesPage() {
-  const [tracks, courses] = await Promise.all([getTracks(), getCourses()]);
+  const [tracks, courses, session] = await Promise.all([getTracks(), getCourses(), getSession()]);
+  const isAdmin = !!session?.user?.admin;
   const purchasedCourseIds = new Set((await getUserPurchases()).map((p) => p.courseId));
   const sectionCount = tracks.reduce((sum, t) => sum + t.problems.length, 0);
 
@@ -147,6 +149,7 @@ export default async function NotesPage() {
                         description={course.description}
                         image={course.imageUrl}
                         owned={purchasedCourseIds.has(course.id)}
+                        isAdmin={isAdmin}
                       />
                     ))}
                 </div>
@@ -189,6 +192,7 @@ export default async function NotesPage() {
                             }
                           : null
                       }
+                      isAdmin={isAdmin}
                     />
                   ))}
                 </div>
