@@ -38,6 +38,7 @@ jobs:
       - name: Build the x86-64 image
         env:
           NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+          NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID: ${{ secrets.NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID }}
         run: |
           set -euo pipefail
           # NEXT_PUBLIC_* values are compiled into the browser bundle. An empty value here
@@ -46,9 +47,15 @@ jobs:
             echo "::error::The NEXT_PUBLIC_RAZORPAY_KEY_ID repository secret is empty. Add it under Settings, Secrets and variables, Actions."
             exit 1
           fi
+          # Missing this one only degrades a single feature — BunnyVideoPlayer already
+          # falls back to a "Video unavailable" placeholder — so warn, don't block the deploy.
+          if [ -z "$NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID" ]; then
+            echo "::warning::The NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID repository secret is empty. Bunny-hosted videos will show as unavailable until it's added under Settings, Secrets and variables, Actions."
+          fi
           docker buildx build \
             --platform linux/amd64 \
             --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$NEXT_PUBLIC_RAZORPAY_KEY_ID" \
+            --build-arg NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID="$NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID" \
             -f apps/web/Dockerfile \
             -t cloudvidya-web:latest \
             --load .
