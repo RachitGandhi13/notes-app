@@ -1,8 +1,4 @@
-"use client";
-
-import { useState } from "react";
 import { FileText, Lock } from "lucide-react";
-import { Dialog, DialogContent } from "@repo/ui";
 
 interface MaterialViewerProps {
   contentId: string;
@@ -11,45 +7,39 @@ interface MaterialViewerProps {
   locked?: boolean;
 }
 
-// View-only by design: opens inside a modal on this page rather than navigating to the
-// raw file, and for PDFs appends #toolbar=0 — the standard way to hide the browser's
-// built-in PDF viewer toolbar (and the download button in it) when rendering inline.
+// Renders the attached material directly on the page — no button-behind-a-modal step —
+// since by the time this renders, the surrounding page has already decided whether the
+// viewer is allowed to see it. For PDFs, #toolbar=0 hides the browser's own PDF viewer
+// toolbar (and the download button in it); images are a plain <img>. Served through
+// /api/notes/[id] with Content-Disposition: inline — never a direct Bunny Storage URL.
 export function MaterialViewer({ contentId, kind, label, locked }: MaterialViewerProps) {
-  const [open, setOpen] = useState(false);
-
   if (locked) {
     return (
-      <span
-        className="text-muted-foreground flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium"
-        title="Purchase this course to unlock"
-      >
-        <Lock className="h-3.5 w-3.5" />
-        Locked
-      </span>
+      <div className="bg-muted/30 flex flex-col items-center justify-center gap-2 rounded-lg border px-6 py-12 text-center">
+        <Lock className="text-muted-foreground h-8 w-8" />
+        <p className="text-muted-foreground text-sm">{label} is locked.</p>
+      </div>
     );
   }
 
   const src = `/api/notes/${contentId}`;
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="bg-card hover:bg-accent flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
-      >
+    <div className="space-y-2">
+      <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
         <FileText className="h-3.5 w-3.5" />
         {label}
-      </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] max-w-3xl overflow-auto p-0">
-          {kind === "pdf" ? (
-            <iframe src={`${src}#toolbar=0`} title={label} className="h-[80vh] w-full border-0" />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={label} className="h-auto w-full" />
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+      </p>
+      {kind === "pdf" ? (
+        <iframe
+          src={`${src}#toolbar=0`}
+          title={label}
+          className="h-[70vh] min-h-[420px] w-full rounded-lg border"
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={label} className="w-full rounded-lg border" />
+      )}
+    </div>
   );
 }

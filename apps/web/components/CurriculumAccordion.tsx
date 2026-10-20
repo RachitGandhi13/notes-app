@@ -98,14 +98,6 @@ function ChapterPanel({
           <span className="text-muted-foreground text-xs">
             {chapter.lessons.length} {chapter.lessons.length === 1 ? "lesson" : "lessons"}
           </span>
-          {chapter.materialKind && (
-            <MaterialViewer
-              contentId={chapter.id}
-              kind={chapter.materialKind}
-              label="View material"
-              locked={!purchased}
-            />
-          )}
           <button onClick={() => setOpen((o) => !o)} aria-label={open ? "Collapse" : "Expand"}>
             <ChevronDown
               className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
@@ -114,11 +106,23 @@ function ChapterPanel({
         </div>
       </div>
       {open && (
-        <ul className="divide-y border-t">
-          {chapter.lessons.map((lesson, i) => (
-            <LessonRow key={lesson.id} lesson={lesson} index={i} />
-          ))}
-        </ul>
+        <div className="border-t">
+          {chapter.materialKind && (
+            <div className="p-5 pb-0">
+              <MaterialViewer
+                contentId={chapter.id}
+                kind={chapter.materialKind}
+                label="Section material"
+                locked={!purchased}
+              />
+            </div>
+          )}
+          <ul className="divide-y">
+            {chapter.lessons.map((lesson, i) => (
+              <LessonRow key={lesson.id} lesson={lesson} index={i} />
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
