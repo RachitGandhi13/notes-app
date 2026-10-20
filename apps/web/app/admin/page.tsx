@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { getPendingComments } from "@/lib/community";
 import { getAllCoursesForAdmin } from "@/lib/actions";
 import { getInternshipApplications, getInternshipTracks } from "@/lib/internship-actions";
-import { getActiveBundles } from "@/lib/track-actions";
+import { getAllBundlesForAdmin } from "@/lib/track-actions";
 import { ModerationPanel } from "./ModerationPanel";
 import { CourseManager } from "./CourseManager";
 import { AdminPanel } from "./AdminPanel";
@@ -14,6 +14,7 @@ import { StudentAccessPanel } from "@/components/admin/StudentAccessPanel";
 import { InternshipApplicationsList } from "@/components/admin/InternshipApplicationsList";
 import { InternshipTrackManager } from "@/components/admin/InternshipTrackManager";
 import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
+import { ComboBundleManager } from "@/components/admin/ComboBundleManager";
 
 // Rendered per request (same reasoning as app/notes/page.tsx) — requireAdmin() already
 // forces this dynamically, but this makes it explicit. Admin needs to see every
@@ -27,7 +28,7 @@ export default async function AdminPage() {
     redirect("/auth");
   }
 
-  const [pending, courses, notesTracks, applications, internshipTracks, activeBundles] =
+  const [pending, courses, notesTracks, applications, internshipTracks, bundles] =
     await Promise.all([
       getPendingComments(),
       getAllCoursesForAdmin(),
@@ -47,7 +48,7 @@ export default async function AdminPage() {
       }),
       getInternshipApplications(),
       getInternshipTracks(),
-      getActiveBundles(),
+      getAllBundlesForAdmin(),
     ]);
 
   return (
@@ -76,14 +77,31 @@ export default async function AdminPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="courses" className="pt-4">
+        <TabsContent value="courses" className="space-y-6 pt-4">
           <CourseManager courses={courses as any} />
+          <ComboBundleManager
+            allCourses={courses.map((c) => ({
+              id: c.id,
+              title: c.title,
+              price: c.price,
+              slug: c.slug,
+            }))}
+            bundles={bundles.map((b) => ({
+              id: b.id,
+              title: b.title,
+              bundlePrice: b.bundlePrice,
+              hidden: b.hidden,
+              courses: b.courses.map((tc) => ({
+                course: { id: tc.course.id, title: tc.course.title },
+              })),
+            }))}
+          />
         </TabsContent>
 
         <TabsContent value="students" className="space-y-4 pt-4">
           <GrantAccessModal
             courses={courses.map((c) => ({ id: c.id, title: c.title }))}
-            bundles={activeBundles.map((b) => ({
+            bundles={bundles.map((b) => ({
               id: b.id,
               title: b.title,
               bundlePrice: b.bundlePrice ?? 0,
@@ -95,7 +113,10 @@ export default async function AdminPage() {
               courses: t.courses.map((tc) => ({ id: tc.course.id, title: tc.course.title })),
             }))}
           />
-          <EnrolledStudentsTable courses={courses.map((c) => ({ id: c.id, title: c.title }))} />
+          <EnrolledStudentsTable
+            courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+            bundles={bundles.map((b) => ({ id: b.id, title: b.title }))}
+          />
         </TabsContent>
 
         <TabsContent value="notes" className="pt-4">
