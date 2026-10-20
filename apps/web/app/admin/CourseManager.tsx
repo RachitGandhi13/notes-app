@@ -715,14 +715,14 @@ function EditCourseForm({ course, onDone }: { course: AdminCourse; onDone: () =>
         <button
           type="submit"
           disabled={submitting}
-          className="bg-primary text-primary-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+          className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
         >
           {submitting ? "Saving…" : "Save changes"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm"
+          className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
         >
           Cancel
         </button>
@@ -770,7 +770,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
   }
 
   return (
-    <li className="bg-card rounded-xl border">
+    <li className="bg-card border-border/60 rounded-xl border">
       <div className="flex w-full items-center justify-between gap-3 p-4">
         <button onClick={() => setExpanded((e) => !e)} className="flex-1 text-left">
           <p
@@ -793,7 +793,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
               setEditing((v) => !v);
               setExpanded(true);
             }}
-            className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded lg:h-auto lg:w-auto lg:p-1.5"
+            className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring flex h-11 w-11 items-center justify-center rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 lg:h-auto lg:w-auto lg:p-1.5"
             aria-label="Edit course"
           >
             <Pencil className="h-4 w-4" />
@@ -801,7 +801,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
           <button
             onClick={handleToggleHidden}
             disabled={busy}
-            className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded disabled:opacity-50 lg:h-auto lg:w-auto lg:p-1.5"
+            className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring flex h-11 w-11 items-center justify-center rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 lg:h-auto lg:w-auto lg:p-1.5"
             aria-label={course.hidden ? "Unhide course" : "Hide course"}
             title={course.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
           >
@@ -814,7 +814,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
               setConfirmingDelete(true);
             }}
             disabled={!canDelete}
-            className="text-destructive hover:bg-destructive/10 disabled:text-muted-foreground flex h-11 w-11 items-center justify-center rounded disabled:cursor-not-allowed disabled:opacity-50 lg:h-auto lg:w-auto lg:p-1.5"
+            className="text-destructive hover:bg-destructive/10 disabled:text-muted-foreground ring-offset-background focus-visible:ring-ring flex h-11 w-11 items-center justify-center rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 lg:h-auto lg:w-auto lg:p-1.5"
             aria-label="Delete course"
             title={
               canDelete
@@ -826,7 +826,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
           </button>
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="text-muted-foreground hover:bg-accent flex h-11 w-11 items-center justify-center rounded lg:h-auto lg:w-auto lg:p-1.5"
+            className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring flex h-11 w-11 items-center justify-center rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 lg:h-auto lg:w-auto lg:p-1.5"
           >
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
@@ -851,7 +851,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
               type="button"
               onClick={() => setConfirmingDelete(false)}
               disabled={deleting}
-              className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm disabled:opacity-50"
+              className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -859,7 +859,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+              className="bg-destructive text-destructive-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               {deleting ? "Deleting…" : "Delete course"}
             </button>
@@ -934,7 +934,10 @@ function CreateCourseForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border p-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-card border-border/60 space-y-4 rounded-xl border p-6"
+    >
       <h2 className="font-semibold">Create a course</h2>
       {error && <p className="text-destructive text-sm">{error}</p>}
       {success && (
@@ -982,8 +985,11 @@ function CreateCourseForm() {
           step="1"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+          className="border-input bg-background focus:ring-ring flex h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2"
         />
+        <p className="text-muted-foreground text-xs">
+          What a student pays via Razorpay checkout to enroll. Enter 0 for a free course.
+        </p>
       </div>
 
       <ThumbnailPicker
@@ -995,7 +1001,7 @@ function CreateCourseForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+        className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring min-h-11 w-full rounded-md px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
       >
         {submitting ? "Creating…" : "Create Course"}
       </button>

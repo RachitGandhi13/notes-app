@@ -181,8 +181,8 @@ export function InternshipTrackManager({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-3 rounded-lg border p-4">
+    <div className="space-y-6">
+      <div className="bg-card border-border/60 space-y-3 rounded-xl border p-6">
         <h3 className="font-semibold">Create an internship track</h3>
         <form onSubmit={handleCreate} className="space-y-3">
           {createError && <p className="text-destructive text-sm">{createError}</p>}
@@ -210,6 +210,10 @@ export function InternshipTrackManager({
                 onChange={(e) => setDuration(e.target.value)}
                 className={inputClass}
               />
+              <p className="text-muted-foreground text-xs">
+                Shown to applicants as plain text only — it doesn&apos;t schedule anything or affect
+                an individual application&apos;s dates.
+              </p>
             </div>
           </div>
           <div className="space-y-1">
@@ -228,23 +232,26 @@ export function InternshipTrackManager({
           <button
             type="submit"
             disabled={creating}
-            className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           >
             {creating ? "Creating…" : "Create track"}
           </button>
         </form>
       </div>
 
-      <div className="space-y-3 rounded-lg border p-4">
+      <div className="bg-card border-border/60 space-y-3 rounded-xl border p-6">
         <h3 className="font-semibold">Internship tracks</h3>
         {tracks.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             No internship tracks yet. Create one above.
           </p>
         ) : (
-          <ul className="divide-y rounded border text-sm">
+          <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
             {tracks.map((track) => (
-              <li key={track.id} className="space-y-2 px-3 py-2.5">
+              <li
+                key={track.id}
+                className="hover:bg-muted/40 space-y-2 px-4 py-3 transition-colors"
+              >
                 {editingId === track.id ? (
                   <div className="space-y-2">
                     {editError && <p className="text-destructive text-xs">{editError}</p>}
@@ -271,14 +278,14 @@ export function InternshipTrackManager({
                       <button
                         onClick={() => handleSaveEdit(track.id)}
                         disabled={editSaving}
-                        className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                        className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                       >
                         {editSaving ? "Saving…" : "Save"}
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
                         disabled={editSaving}
-                        className="hover:bg-accent rounded-md border px-3 py-1.5 text-xs disabled:opacity-50"
+                        className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -287,25 +294,29 @@ export function InternshipTrackManager({
                 ) : (
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <p
-                        className={`truncate font-medium ${track.hidden ? "text-muted-foreground line-through" : ""}`}
-                      >
-                        {track.title}
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`truncate font-medium ${track.hidden ? "text-muted-foreground line-through" : ""}`}
+                        >
+                          {track.title}
+                        </p>
                         {track.hidden && (
-                          <span className="ml-2 text-xs font-normal no-underline">(hidden)</span>
+                          <span className="bg-muted text-muted-foreground shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium">
+                            Hidden
+                          </span>
                         )}
-                      </p>
+                      </div>
                       <p className="text-muted-foreground truncate text-xs">
                         {track.duration} · {track.courses.length}{" "}
                         {track.courses.length === 1 ? "course" : "courses"} linked
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-1">
                       <button
                         onClick={() =>
                           linkingId === track.id ? setLinkingId(null) : openLinker(track)
                         }
-                        className="text-muted-foreground hover:bg-accent flex items-center gap-1 rounded p-1.5 text-xs"
+                        className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring flex items-center gap-1 rounded-md p-2 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                         aria-label="Link courses"
                         title="Link courses granted by this track's certificate"
                       >
@@ -324,7 +335,7 @@ export function InternshipTrackManager({
                           setEditError("");
                           setEditingId(track.id);
                         }}
-                        className="text-muted-foreground hover:bg-accent rounded p-1.5"
+                        className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                         aria-label="Edit track"
                         title="Edit track"
                       >
@@ -332,7 +343,7 @@ export function InternshipTrackManager({
                       </button>
                       <button
                         onClick={() => handleToggleHidden(track)}
-                        className="text-muted-foreground hover:bg-accent rounded p-1.5"
+                        className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                         aria-label={track.hidden ? "Show track" : "Hide track"}
                         title={
                           track.hidden
@@ -351,7 +362,7 @@ export function InternshipTrackManager({
                           setDeleteError("");
                           setDeletingTrack(track);
                         }}
-                        className="text-muted-foreground hover:text-destructive hover:bg-accent rounded p-1.5"
+                        className="text-destructive hover:bg-destructive/10 ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                         aria-label="Delete track"
                         title="Delete track"
                       >
@@ -390,14 +401,14 @@ export function InternshipTrackManager({
                       <button
                         onClick={() => handleSaveLinks(track.id)}
                         disabled={linkSaving}
-                        className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                        className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                       >
                         {linkSaving ? "Saving…" : "Save linked courses"}
                       </button>
                       <button
                         onClick={() => setLinkingId(null)}
                         disabled={linkSaving}
-                        className="hover:bg-accent rounded-md border px-3 py-1.5 text-xs disabled:opacity-50"
+                        className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -426,7 +437,7 @@ export function InternshipTrackManager({
               type="button"
               onClick={() => setDeletingTrack(null)}
               disabled={deleting}
-              className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm disabled:opacity-50"
+              className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -434,7 +445,7 @@ export function InternshipTrackManager({
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+              className="bg-destructive text-destructive-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               {deleting ? "Deleting…" : "Delete track"}
             </button>

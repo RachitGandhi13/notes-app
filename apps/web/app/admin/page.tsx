@@ -77,7 +77,7 @@ export default async function AdminPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="courses" className="space-y-6 pt-4">
+        <TabsContent value="courses" className="space-y-6 pt-6">
           <CourseManager courses={courses as any} />
           <ComboBundleManager
             allCourses={courses.map((c) => ({
@@ -98,7 +98,7 @@ export default async function AdminPage() {
           />
         </TabsContent>
 
-        <TabsContent value="students" className="space-y-4 pt-4">
+        <TabsContent value="students" className="space-y-4 pt-6">
           <GrantAccessModal
             courses={courses.map((c) => ({ id: c.id, title: c.title }))}
             bundles={bundles.map((b) => ({
@@ -119,7 +119,7 @@ export default async function AdminPage() {
           />
         </TabsContent>
 
-        <TabsContent value="notes" className="pt-4">
+        <TabsContent value="notes" className="pt-6">
           <p className="text-muted-foreground mb-4 text-sm">
             Create a track, then upload PPT lessons and write MCQ quizzes for it directly.
           </p>
@@ -133,7 +133,7 @@ export default async function AdminPage() {
           />
         </TabsContent>
 
-        <TabsContent value="internships" className="space-y-6 pt-4">
+        <TabsContent value="internships" className="space-y-6 pt-6">
           <InternshipTrackManager
             tracks={internshipTracks}
             allCourses={courses.map((c) => ({
@@ -160,7 +160,7 @@ export default async function AdminPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="comments" className="pt-4">
+        <TabsContent value="comments" className="pt-6">
           <ModerationPanel initialComments={pending} />
         </TabsContent>
       </Tabs>

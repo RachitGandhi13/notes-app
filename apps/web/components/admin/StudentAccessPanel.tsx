@@ -129,7 +129,7 @@ export function StudentAccessPanel({
   }
 
   return (
-    <div className="space-y-4 rounded-lg border p-4">
+    <div className="bg-card border-border/60 space-y-4 rounded-xl border p-6">
       <h2 className="font-semibold">Student access</h2>
       <p className="text-muted-foreground text-sm">
         Look a student up by email or Student ID, then grant or revoke access to any course.
@@ -141,12 +141,12 @@ export function StudentAccessPanel({
           placeholder="Email or Student ID (e.g. CVA-2026-1234)"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+          className="border-input bg-background focus:ring-ring flex h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2"
         />
         <button
           type="submit"
           disabled={looking}
-          className="bg-primary text-primary-foreground shrink-0 rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+          className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
         >
           {looking ? "Looking up…" : "Look up"}
         </button>
@@ -160,7 +160,7 @@ export function StudentAccessPanel({
       )}
 
       {student && (
-        <div className="space-y-3 rounded-md border p-3">
+        <div className="border-border/60 space-y-3 rounded-lg border p-4">
           <div className="text-sm">
             <p className="font-medium">{student.name ?? "Unnamed"}</p>
             <p className="text-muted-foreground text-xs">{student.email}</p>
@@ -172,16 +172,19 @@ export function StudentAccessPanel({
           {courses.length === 0 ? (
             <p className="text-muted-foreground text-xs">No courses exist yet.</p>
           ) : (
-            <ul className="divide-y rounded border text-sm">
+            <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
               {courses.map((course) => {
                 const hasAccess = student.purchasedCourseIds.includes(course.id);
                 return (
-                  <li key={course.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                  <li
+                    key={course.id}
+                    className="hover:bg-muted/40 flex items-center justify-between gap-3 px-3 py-2 transition-colors"
+                  >
                     <span className="truncate">{course.title}</span>
                     <button
                       onClick={() => handleToggle(course.id, hasAccess)}
                       disabled={busyCourseId === course.id}
-                      className={`shrink-0 rounded-md px-3 py-1 text-xs font-medium disabled:opacity-50 ${
+                      className={`ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 ${
                         hasAccess
                           ? "text-destructive hover:bg-destructive/10"
                           : "bg-primary text-primary-foreground"
@@ -218,14 +221,14 @@ export function StudentAccessPanel({
                         <button
                           onClick={() => handleRevokeCertificate(cert.id)}
                           disabled={revokingId === cert.id}
-                          className="text-destructive font-medium hover:underline disabled:opacity-50"
+                          className="text-destructive ring-offset-background focus-visible:ring-ring rounded font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
                         >
                           Yes
                         </button>
                         <button
                           onClick={() => setConfirmingRevokeId(null)}
                           disabled={revokingId === cert.id}
-                          className="hover:underline disabled:opacity-50"
+                          className="ring-offset-background focus-visible:ring-ring rounded hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
                         >
                           No
                         </button>
@@ -233,7 +236,7 @@ export function StudentAccessPanel({
                     ) : (
                       <button
                         onClick={() => setConfirmingRevokeId(cert.id)}
-                        className="text-destructive shrink-0 hover:underline"
+                        className="text-destructive ring-offset-background focus-visible:ring-ring shrink-0 rounded hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                       >
                         Revoke
                       </button>
@@ -275,7 +278,7 @@ export function StudentAccessPanel({
               <button
                 onClick={handleIssueCertificate}
                 disabled={!certTrack || issuing}
-                className="bg-primary text-primary-foreground shrink-0 rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
               >
                 {issuing ? "Issuing…" : "Issue"}
               </button>
