@@ -7,7 +7,7 @@ import { getSession } from "@repo/auth";
 import { getTrack, getProblem, hasTrackAccess, getCoursesForBundling } from "@/lib/track-actions";
 import { absoluteUrl, DEFAULT_OG_IMAGE, truncate } from "@/lib/seo";
 import { ProblemSidebar } from "@/components/ProblemSidebar";
-import { PPTViewer } from "@/components/PPTViewer";
+import { MaterialViewer } from "@/components/MaterialViewer";
 import { MCQQuiz } from "@/components/MCQQuiz";
 import { TrackPaywall } from "@/components/TrackPaywall";
 import { CourseNotesLocked } from "@/components/CourseNotesLocked";
@@ -19,6 +19,16 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: { trackIds: string[] };
+}
+
+// Only the kind is needed client-side to pick <iframe> vs <img> — not the raw Bunny
+// path (or, for a handful of legacy entries, a full external URL).
+function materialKind(path: string | null | undefined): "pdf" | "image" | null {
+  if (!path) return null;
+  const ext = path.split("?")[0]?.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "pdf";
+  if (ext === "jpg" || ext === "jpeg" || ext === "png") return "image";
+  return null;
 }
 
 // Shared by generateMetadata and the page, so one request reads the track only once.
@@ -155,7 +165,13 @@ export default async function TrackPage({ params }: Props) {
           )}
 
           <div className="mt-6 space-y-10">
-            {problem.pptUrl && <PPTViewer pptUrl={problem.pptUrl} title={problem.title} />}
+            {materialKind(problem.pptUrl) && (
+              <MaterialViewer
+                contentId={problem.id}
+                kind={materialKind(problem.pptUrl)!}
+                label="View material"
+              />
+            )}
 
             {problem.mcqQuestions.length > 0 && (
               // key: a fresh quiz (no carried-over answers) for every section

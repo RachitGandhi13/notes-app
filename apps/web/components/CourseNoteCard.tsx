@@ -8,21 +8,13 @@ interface CourseNoteCardProps {
   title: string;
   description: string;
   image: string | null;
-  price: number;
   owned: boolean;
 }
 
 // Mirrors TrackCard's layout so a course card and a track card sit together
 // consistently on /notes — links into the course's own dedicated notes track
 // (sidebar, slides/image viewer, quizzes), not the course's video page.
-export function CourseNoteCard({
-  trackId,
-  title,
-  description,
-  image,
-  price,
-  owned,
-}: CourseNoteCardProps) {
+export function CourseNoteCard({ trackId, title, description, image, owned }: CourseNoteCardProps) {
   return (
     <Link href={`/tracks/${trackId}`} className="group block">
       <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -54,7 +46,13 @@ export function CourseNoteCard({
           </div>
 
           <div className="flex items-center justify-between border-t pt-3">
-            <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <span
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                owned
+                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              }`}
+            >
               {owned ? (
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -63,7 +61,7 @@ export function CourseNoteCard({
               ) : (
                 <>
                   <Lock className="h-3.5 w-3.5" />
-                  {price > 0 ? `₹${price} course` : "Free course"}
+                  Enroll Now!
                 </>
               )}
             </span>

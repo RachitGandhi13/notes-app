@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Check, Pencil, Plus, Settings, Trash2 } from "lucide-react";
 import {
@@ -13,7 +13,6 @@ import {
   updateSection,
 } from "@/lib/track-actions";
 import { QuestionForm, draftFromQuestion, type QuestionValue } from "./QuestionForm";
-import { UploadBar, postFormWithProgress } from "./upload";
 
 interface SectionProblem {
   id: string;
@@ -94,87 +93,48 @@ function DetailsEditor({ problem }: { problem: SectionProblem }) {
 
 function PresentationEditor({ problem }: { problem: SectionProblem }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [percent, setPercent] = useState<number | null>(null);
+  const [path, setPath] = useState(problem.pptUrl ?? "");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Stored as "<uuid>-<original name>" — show just the original name.
-  const fileName = problem.pptUrl
-    ? decodeURIComponent(problem.pptUrl.split("?")[0]?.split("/").pop() ?? "").replace(
-        /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}-/i,
-        ""
-      )
-    : null;
-
-  async function handleUpload() {
-    const file = fileRef.current?.files?.[0];
-    if (!file) return;
+  async function handleSave() {
     setError("");
-    setPercent(0);
+    setSaving(true);
     try {
-      const formData = new FormData();
-      formData.set("file", file);
-      formData.set("problemId", problem.id);
-      await postFormWithProgress("/api/admin/upload-ppt", formData, setPercent);
+      await setSectionPPT(problem.id, path.trim() || null);
       router.refresh();
     } catch (err: any) {
-      setError(err?.message ?? "Upload failed.");
+      setError(err?.message ?? "Couldn't save this.");
     } finally {
-      setPercent(null);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  async function handleRemove() {
-    setError("");
-    try {
-      await setSectionPPT(problem.id, null);
-      router.refresh();
-    } catch (err: any) {
-      setError(err?.message ?? "Couldn't remove the file.");
+      setSaving(false);
     }
   }
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold">Slides (PPT, PPTX, PDF or image)</h3>
+      <h3 className="text-sm font-semibold">Slide / material — Bunny Storage file path</h3>
       <p className="text-muted-foreground text-sm">
-        {fileName ? (
-          <>
-            Current file: <span className="text-foreground break-all font-medium">{fileName}</span>
-          </>
-        ) : (
-          "No slides uploaded yet."
-        )}
+        PDF, JPG, JPEG or PNG from the <code>cloudvidya-notes</code> storage zone (e.g.{" "}
+        <code>devops-notes.pdf</code>). Leave blank to remove it.
       </p>
       {error && <p className="text-destructive text-sm">{error}</p>}
-      {percent !== null ? (
-        <UploadBar percent={percent} />
-      ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png,image/jpeg"
-            aria-label="Choose a slides file"
-            onChange={handleUpload}
-            className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-9 max-w-xs items-center rounded-md border px-2 text-sm file:mr-3 file:rounded file:border-0 file:px-2 file:py-1 file:text-xs"
-          />
-          {fileName && (
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="text-destructive text-sm hover:underline"
-            >
-              Remove slides
-            </button>
-          )}
-        </div>
-      )}
-      <p className="text-muted-foreground text-xs">
-        Choosing a file uploads it straight away{fileName ? " and replaces the current one" : ""}. A
-        PDF or image shows inside the page for every student; PPT/PPTX needs the site to be live.
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          placeholder="devops-notes.pdf"
+          aria-label="Bunny Storage file path"
+          className="border-input bg-background flex h-9 w-full max-w-xs rounded-md border px-2 text-sm"
+        />
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
     </div>
   );
 }
