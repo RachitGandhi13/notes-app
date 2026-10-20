@@ -1,3 +1,14 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Pause, Play, Trash2 } from "lucide-react";
+import {
+  deleteInternshipApplication,
+  setInternshipDuration,
+  setInternshipFrozen,
+} from "@/lib/internship-actions";
+
 interface Application {
   id: string;
   fullName: string;
@@ -7,6 +18,229 @@ interface Application {
   preferredDuration: string;
   preferredStartDate: string;
   createdAt: Date;
+  startDate: Date | null;
+  durationMonths: number | null;
+  frozen: boolean;
+}
+
+const DURATION_OPTIONS = [1, 2, 6];
+
+function endDateOf(startDate: Date, durationMonths: number): Date {
+  const d = new Date(startDate);
+  d.setMonth(d.getMonth() + durationMonths);
+  return d;
+}
+
+// Green while there's comfortably more than two weeks left, yellow inside that
+// window, red once the end date has passed.
+function DurationBadge({ startDate, durationMonths }: { startDate: Date; durationMonths: number }) {
+  const end = endDateOf(startDate, durationMonths);
+  const daysLeft = Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const expired = daysLeft <= 0;
+  const soon = !expired && daysLeft <= 14;
+
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+        expired
+          ? "bg-red-500/10 text-red-600 dark:text-red-400"
+          : soon
+            ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+            : "bg-green-500/10 text-green-600 dark:text-green-400"
+      }`}
+    >
+      {expired ? "Expired" : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`}
+    </span>
+  );
+}
+
+function DurationEditor({ app }: { app: Application }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [startDate, setStartDate] = useState(
+    app.startDate ? new Date(app.startDate).toISOString().slice(0, 10) : ""
+  );
+  const [durationMonths, setDurationMonths] = useState(app.durationMonths ?? 1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      await setInternshipDuration(app.id, {
+        startDate: startDate ? new Date(startDate) : null,
+        durationMonths: startDate ? durationMonths : null,
+      });
+      setEditing(false);
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message ?? "Couldn't save this.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {app.startDate && app.durationMonths ? (
+          <>
+            <span className="text-muted-foreground text-xs">
+              {new Date(app.startDate).toLocaleDateString()} – {app.durationMonths}mo →{" "}
+              {endDateOf(app.startDate, app.durationMonths).toLocaleDateString()}
+            </span>
+            <DurationBadge startDate={app.startDate} durationMonths={app.durationMonths} />
+          </>
+        ) : (
+          <span className="text-muted-foreground text-xs">Not scheduled</span>
+        )}
+        <button
+          onClick={() => setEditing(true)}
+          className="text-primary text-xs font-medium hover:underline"
+        >
+          Edit
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {error && <p className="text-destructive w-full text-xs">{error}</p>}
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+      />
+      <select
+        value={durationMonths}
+        onChange={(e) => setDurationMonths(Number(e.target.value))}
+        className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+      >
+        {DURATION_OPTIONS.map((m) => (
+          <option key={m} value={m}>
+            {m} {m === 1 ? "month" : "months"}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="bg-primary text-primary-foreground rounded-md px-2.5 py-1 text-xs font-medium disabled:opacity-50"
+      >
+        {saving ? "Saving…" : "Save"}
+      </button>
+      <button
+        onClick={() => setEditing(false)}
+        disabled={saving}
+        className="text-muted-foreground text-xs hover:underline disabled:opacity-50"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function ApplicationRow({ app }: { app: Application }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleToggleFrozen() {
+    setBusy(true);
+    setError("");
+    try {
+      await setInternshipFrozen(app.id, !app.frozen);
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message ?? "Couldn't update this.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    setBusy(true);
+    setError("");
+    try {
+      await deleteInternshipApplication(app.id);
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message ?? "Couldn't delete this.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li className="space-y-2 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <p className="font-medium">{app.fullName}</p>
+          {app.frozen && (
+            <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+              Frozen
+            </span>
+          )}
+        </div>
+        <span className="text-muted-foreground text-xs">
+          Applied {new Date(app.createdAt).toLocaleDateString()}
+        </span>
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {app.email} · {app.usn}
+      </p>
+      <p className="text-xs">
+        {app.internshipTrack} · requested {app.preferredDuration}, starting {app.preferredStartDate}
+      </p>
+
+      <DurationEditor app={app} />
+
+      {error && <p className="text-destructive text-xs">{error}</p>}
+
+      <div className="flex items-center gap-3 border-t pt-2">
+        <button
+          onClick={handleToggleFrozen}
+          disabled={busy}
+          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
+        >
+          {app.frozen ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+          {app.frozen ? "Unfreeze" : "Freeze"}
+        </button>
+
+        {confirmingDelete ? (
+          <span className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground">Delete this application?</span>
+            <button
+              onClick={handleDelete}
+              disabled={busy}
+              className="text-destructive font-medium hover:underline disabled:opacity-50"
+            >
+              Yes, delete
+            </button>
+            <button
+              onClick={() => setConfirmingDelete(false)}
+              disabled={busy}
+              className="hover:underline disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            disabled={busy}
+            className="text-destructive ml-auto flex items-center gap-1.5 text-xs font-medium hover:underline disabled:opacity-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+        )}
+      </div>
+    </li>
+  );
 }
 
 export function InternshipApplicationsList({ applications }: { applications: Application[] }) {
@@ -17,20 +251,7 @@ export function InternshipApplicationsList({ applications }: { applications: App
   return (
     <ul className="divide-y rounded-lg border text-sm">
       {applications.map((app) => (
-        <li key={app.id} className="space-y-1 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-medium">{app.fullName}</p>
-            <span className="text-muted-foreground text-xs">
-              {new Date(app.createdAt).toLocaleDateString()}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-xs">
-            {app.email} · {app.usn}
-          </p>
-          <p className="text-xs">
-            {app.internshipTrack} · {app.preferredDuration} · starts {app.preferredStartDate}
-          </p>
-        </li>
+        <ApplicationRow key={app.id} app={app} />
       ))}
     </ul>
   );

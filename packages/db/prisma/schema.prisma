@@ -441,6 +441,17 @@ model InternshipApplication {
   linkedIn           String
   resumeLink         String
   createdAt          DateTime @default(now())
+  // Admin-managed tracking, separate from the student's own preferredDuration/
+  // preferredStartDate above (what they asked for at application time, left
+  // untouched as a historical record). endDate isn't stored — it's always
+  // startDate + durationMonths, computed where it's needed, so the two values
+  // powering it can never drift apart in the database.
+  startDate          DateTime?
+  durationMonths     Int?
+  // Temporarily suspends the internship without deleting the application or
+  // touching any course access already granted via an issued certificate —
+  // see revokeCertificate's own comment for why those are kept separate.
+  frozen             Boolean  @default(false)
 }
 
 // An admin-issued internship completion certificate. certificateCode is the public,

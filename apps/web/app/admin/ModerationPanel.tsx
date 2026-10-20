@@ -15,6 +15,7 @@ interface PendingComment {
 export function ModerationPanel({ initialComments }: { initialComments: PendingComment[] }) {
   const [comments, setComments] = useState(initialComments);
   const [loading, setLoading] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   async function handleApprove(id: string) {
     setLoading(id);
@@ -27,6 +28,7 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
     setLoading(id);
     await deleteComment(id);
     setComments((prev) => prev.filter((c) => c.id !== id));
+    setConfirmingId(null);
     setLoading(null);
   }
 
@@ -66,14 +68,34 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
               <CheckCircle2 className="h-4 w-4" />
               Approve
             </button>
-            <button
-              onClick={() => handleDelete(c.id)}
-              disabled={loading === c.id}
-              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
+            {confirmingId === c.id ? (
+              <span className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Delete this comment?</span>
+                <button
+                  onClick={() => handleDelete(c.id)}
+                  disabled={loading === c.id}
+                  className="text-destructive font-medium hover:underline disabled:opacity-50"
+                >
+                  Yes, delete
+                </button>
+                <button
+                  onClick={() => setConfirmingId(null)}
+                  disabled={loading === c.id}
+                  className="hover:underline disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmingId(c.id)}
+                disabled={loading === c.id}
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            )}
           </div>
         </li>
       ))}

@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Dialog, DialogContent } from "@repo/ui";
-import { indexTrack, toggleTrackHidden, deleteNoteTrack } from "@/lib/track-actions";
+import { indexTrack, toggleTrackHidden, deleteNoteTrack, updateTrack } from "@/lib/track-actions";
 import { CreateTrackForm } from "@/components/admin/CreateTrackForm";
 
 interface Track {
   id: string;
   title: string;
+  description: string;
   image: string;
   inSearch: boolean;
   hidden: boolean;
@@ -37,11 +38,37 @@ export function AdminPanel({
   const [deletingTrack, setDeletingTrack] = useState<Track | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   async function handleToggleHidden(track: Track) {
     await toggleTrackHidden(track.id);
     setTracks((prev) => prev.map((t) => (t.id === track.id ? { ...t, hidden: !t.hidden } : t)));
     router.refresh();
+  }
+
+  async function handleSaveTrackEdit(trackId: string) {
+    setEditSaving(true);
+    setEditError("");
+    try {
+      await updateTrack(trackId, { title: editTitle, description: editDescription });
+      setTracks((prev) =>
+        prev.map((t) =>
+          t.id === trackId
+            ? { ...t, title: editTitle.trim(), description: editDescription.trim() }
+            : t
+        )
+      );
+      setEditingTrackId(null);
+      router.refresh();
+    } catch (err: any) {
+      setEditError(err?.message ?? "Couldn't save this.");
+    } finally {
+      setEditSaving(false);
+    }
   }
 
   async function handleDelete() {
@@ -130,45 +157,93 @@ export function AdminPanel({
           <p className="text-muted-foreground text-sm">No tracks yet. Create one above.</p>
         ) : (
           <ul className="divide-y rounded border text-sm">
-            {tracks.map((track) => (
-              <li key={track.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
-                <p
-                  className={`min-w-0 truncate font-medium ${track.hidden ? "text-muted-foreground line-through" : ""}`}
-                >
-                  {track.title}
-                  {track.hidden && (
-                    <span className="ml-2 text-xs font-normal no-underline">(hidden)</span>
-                  )}
-                </p>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    onClick={() => handleToggleHidden(track)}
-                    className="text-muted-foreground hover:bg-accent rounded p-1.5"
-                    aria-label={track.hidden ? "Show track" : "Hide track"}
-                    title={track.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
+            {tracks.map((track) =>
+              editingTrackId === track.id ? (
+                <li key={track.id} className="space-y-2 px-3 py-2.5">
+                  {editError && <p className="text-destructive text-xs">{editError}</p>}
+                  <input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    aria-label="Track title"
+                    className="border-input bg-background flex h-8 w-full rounded border px-2 text-sm"
+                  />
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    aria-label="Track description"
+                    rows={2}
+                    className="border-input bg-background w-full resize-none rounded border px-2 py-1.5 text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSaveTrackEdit(track.id)}
+                      disabled={editSaving}
+                      className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                    >
+                      {editSaving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditingTrackId(null)}
+                      disabled={editSaving}
+                      className="hover:bg-accent rounded-md border px-3 py-1.5 text-xs disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </li>
+              ) : (
+                <li key={track.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
+                  <p
+                    className={`min-w-0 truncate font-medium ${track.hidden ? "text-muted-foreground line-through" : ""}`}
                   >
-                    {track.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                  <a
-                    href={`/tracks/${track.id}`}
-                    className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium"
-                  >
-                    Open &amp; edit
-                  </a>
-                  <button
-                    onClick={() => {
-                      setDeleteError("");
-                      setDeletingTrack(track);
-                    }}
-                    className="text-muted-foreground hover:text-destructive hover:bg-accent rounded p-1.5"
-                    aria-label="Delete track"
-                    title="Delete track"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </li>
-            ))}
+                    {track.title}
+                    {track.hidden && (
+                      <span className="ml-2 text-xs font-normal no-underline">(hidden)</span>
+                    )}
+                  </p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditTitle(track.title);
+                        setEditDescription(track.description);
+                        setEditError("");
+                        setEditingTrackId(track.id);
+                      }}
+                      className="text-muted-foreground hover:bg-accent rounded p-1.5"
+                      aria-label="Rename track"
+                      title="Rename track"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleHidden(track)}
+                      className="text-muted-foreground hover:bg-accent rounded p-1.5"
+                      aria-label={track.hidden ? "Show track" : "Hide track"}
+                      title={track.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
+                    >
+                      {track.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    <a
+                      href={`/tracks/${track.id}`}
+                      className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium"
+                    >
+                      Open &amp; edit
+                    </a>
+                    <button
+                      onClick={() => {
+                        setDeleteError("");
+                        setDeletingTrack(track);
+                      }}
+                      className="text-muted-foreground hover:text-destructive hover:bg-accent rounded p-1.5"
+                      aria-label="Delete track"
+                      title="Delete track"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </li>
+              )
+            )}
           </ul>
         )}
       </div>

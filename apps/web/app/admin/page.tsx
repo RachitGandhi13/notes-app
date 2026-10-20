@@ -26,7 +26,14 @@ export default async function AdminPage() {
       // Excludes tracks auto-mirrored from a course — those are managed from
       // the Courses list above, not this standalone-track list.
       where: { courseId: null },
-      select: { id: true, title: true, image: true, inSearch: true, hidden: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        image: true,
+        inSearch: true,
+        hidden: true,
+      },
       orderBy: { createdAt: "desc" },
     }),
     getInternshipApplications(),

@@ -23,6 +23,7 @@ interface Props {
 export default async function HomePage({ searchParams }: Props) {
   const query = searchParams.q?.trim();
   const [courses, session] = await Promise.all([getCourses(query), getSession()]);
+  const isAdmin = !!session?.user?.admin;
 
   // Collect purchased course IDs for the current user
   const purchasedIds = new Set<string>();
@@ -165,9 +166,8 @@ export default async function HomePage({ searchParams }: Props) {
             title={courses[0]!.title}
             description={courses[0]!.description}
             imageUrl={courses[0]!.imageUrl}
-            price={courses[0]!.price}
             purchased={purchasedIds.has(courses[0]!.id)}
-            hidePrice
+            isAdmin={isAdmin}
           />
         ) : (
           <div
@@ -180,10 +180,9 @@ export default async function HomePage({ searchParams }: Props) {
                 title={course.title}
                 description={course.description}
                 imageUrl={course.imageUrl}
-                price={course.price}
                 priority={i < 3}
                 purchased={purchasedIds.has(course.id)}
-                hidePrice
+                isAdmin={isAdmin}
               />
             ))}
           </div>

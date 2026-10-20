@@ -89,7 +89,44 @@ export async function getInternshipApplications() {
       preferredDuration: true,
       preferredStartDate: true,
       createdAt: true,
+      startDate: true,
+      durationMonths: true,
+      frozen: true,
     },
+  });
+}
+
+/** Permanently removes an application. Idempotent, same reasoning as revokeCertificate. */
+export async function deleteInternshipApplication(applicationId: string) {
+  await requireAdmin();
+  await prisma.internshipApplication.deleteMany({ where: { id: applicationId } });
+}
+
+/** Freezes or unfreezes an internship — a status flag only. It doesn't touch any
+ * course access already granted through issueCertificate; see that function's own
+ * comment for why access and the application record are kept independent. */
+export async function setInternshipFrozen(applicationId: string, frozen: boolean) {
+  await requireAdmin();
+  await prisma.internshipApplication.update({
+    where: { id: applicationId },
+    data: { frozen },
+  });
+}
+
+/** Sets (or clears, passing nulls) the admin-tracked start date and duration an
+ * internship actually runs for — distinct from the student's own preferredDuration/
+ * preferredStartDate, which stay as a record of what they originally asked for. */
+export async function setInternshipDuration(
+  applicationId: string,
+  data: { startDate: Date | null; durationMonths: number | null }
+) {
+  await requireAdmin();
+  if (data.durationMonths !== null && ![1, 2, 6].includes(data.durationMonths)) {
+    throw new Error("Duration must be 1, 2, or 6 months.");
+  }
+  await prisma.internshipApplication.update({
+    where: { id: applicationId },
+    data: { startDate: data.startDate, durationMonths: data.durationMonths },
   });
 }
 
@@ -167,6 +204,18 @@ export async function issueCertificate(userId: string, trackName: string) {
   }
 
   return certificate;
+}
+
+// Revokes a certificate — deletes the row, which is enough to invalidate its
+// verification page (getCertificateByCode returns null, same as a code that never
+// existed). Deliberately scoped to the certificate only: it does not touch the
+// UserPurchases rows issueCertificate granted, since those may be the student's only
+// access to courses they're actively using — revoking a certificate shouldn't
+// silently take a course away. Idempotent: revoking an already-gone certificate is a
+// no-op, not an error, so a stale admin UI can't fail double-clicking this.
+export async function revokeCertificate(certificateId: string) {
+  await requireAdmin();
+  await prisma.internshipCertificate.deleteMany({ where: { id: certificateId } });
 }
 
 /** The signed-in user's own certificates — for the "My Certificates" profile section. */
