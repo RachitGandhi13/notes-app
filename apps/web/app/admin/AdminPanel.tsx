@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { Dialog, DialogContent } from "@repo/ui";
 import { indexTrack, toggleTrackHidden, deleteNoteTrack } from "@/lib/track-actions";
 import { CreateTrackForm } from "@/components/admin/CreateTrackForm";
@@ -15,7 +16,19 @@ interface Track {
   hidden: boolean;
 }
 
-export function AdminPanel({ tracks: initialTracks }: { tracks: Track[] }) {
+interface CourseSummary {
+  id: string;
+  title: string;
+  slug: string;
+}
+
+export function AdminPanel({
+  tracks: initialTracks,
+  courses,
+}: {
+  tracks: Track[];
+  courses: CourseSummary[];
+}) {
   const router = useRouter();
   const [tracks, setTracks] = useState(initialTracks);
   const [indexingId, setIndexingId] = useState<string | null>(null);
@@ -67,6 +80,35 @@ export function AdminPanel({ tracks: initialTracks }: { tracks: Track[] }) {
 
   return (
     <div className="space-y-6">
+      {/* Courses — shown automatically on /notes, no action needed here. Content and
+          section materials for these are managed on the Courses tab, not here. */}
+      <div className="space-y-3 rounded-lg border p-4">
+        <h2 className="font-semibold">Courses (shown automatically on /notes)</h2>
+        <p className="text-muted-foreground text-sm">
+          Every course appears on the public Notes page on its own — nothing to create here. Manage
+          a course&apos;s sections and attached materials from the Courses tab.
+        </p>
+        {courses.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No courses yet.</p>
+        ) : (
+          <ul className="divide-y rounded border text-sm">
+            {courses.map((course) => (
+              <li key={course.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
+                <p className="min-w-0 truncate font-medium">{course.title}</p>
+                <Link
+                  href={`/courses/${course.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary flex shrink-0 items-center gap-1 text-xs font-medium hover:underline"
+                >
+                  View on /notes <ArrowRight className="h-3 w-3" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <CreateTrackForm
         onCreated={(track) =>
           setTracks((prev) => [{ ...track, inSearch: false, hidden: false }, ...prev])
