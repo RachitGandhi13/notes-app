@@ -137,7 +137,7 @@ function PresentationEditor({ problem }: { problem: SectionProblem }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold">Slides (PPT / PPTX / PDF)</h3>
+      <h3 className="text-sm font-semibold">Slides (PPT, PPTX, PDF or image)</h3>
       <p className="text-muted-foreground text-sm">
         {fileName ? (
           <>
@@ -155,7 +155,7 @@ function PresentationEditor({ problem }: { problem: SectionProblem }) {
           <input
             ref={fileRef}
             type="file"
-            accept=".ppt,.pptx,.pdf,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png,image/jpeg"
             aria-label="Choose a slides file"
             onChange={handleUpload}
             className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-9 max-w-xs items-center rounded-md border px-2 text-sm file:mr-3 file:rounded file:border-0 file:px-2 file:py-1 file:text-xs"
@@ -173,7 +173,7 @@ function PresentationEditor({ problem }: { problem: SectionProblem }) {
       )}
       <p className="text-muted-foreground text-xs">
         Choosing a file uploads it straight away{fileName ? " and replaces the current one" : ""}. A
-        PDF export shows inside the page for every student; PPT/PPTX needs the site to be live.
+        PDF or image shows inside the page for every student; PPT/PPTX needs the site to be live.
       </p>
     </div>
   );

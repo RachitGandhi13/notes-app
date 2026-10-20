@@ -63,7 +63,10 @@ export default async function AdminPage() {
           <p className="text-muted-foreground mb-4 text-sm">
             Create a track, then upload PPT lessons and write MCQ quizzes for it directly.
           </p>
-          <AdminPanel tracks={notesTracks} />
+          <AdminPanel
+            tracks={notesTracks}
+            courses={courses.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+          />
         </TabsContent>
 
         <TabsContent value="internships" className="space-y-6 pt-4">

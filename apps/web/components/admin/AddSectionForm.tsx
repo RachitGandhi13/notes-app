@@ -83,13 +83,13 @@ export function AddSectionForm({ trackId }: { trackId: string }) {
       />
       <div className="space-y-1">
         <label htmlFor="new-section-file" className="text-xs font-medium">
-          Slides: PPT, PPTX or PDF (optional)
+          Slides: PPT, PPTX, PDF or image (optional)
         </label>
         <input
           id="new-section-file"
           ref={fileRef}
           type="file"
-          accept=".ppt,.pptx,.pdf,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+          accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png,image/jpeg"
           className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-9 w-full items-center rounded-md border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-1 file:text-xs"
         />
       </div>

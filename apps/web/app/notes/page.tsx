@@ -1,8 +1,9 @@
 import { BookOpen, ClipboardCheck, Presentation } from "lucide-react";
 import Image from "next/image";
 import { getTracks } from "@/lib/track-actions";
-import { getUserPurchases } from "@/lib/actions";
+import { getCourses, getUserPurchases } from "@/lib/actions";
 import { TrackCard } from "@/components/TrackCard";
+import { CourseNoteCard } from "@/components/CourseNoteCard";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 
 // Rendered per request. Prerendering at build time would need the database and
@@ -25,11 +26,15 @@ const STEPS = [
 ];
 
 export default async function NotesPage() {
-  const tracks = await getTracks();
+  const [tracks, courses] = await Promise.all([getTracks(), getCourses()]);
   const purchasedCourseIds = new Set((await getUserPurchases()).map((p) => p.courseId));
   const sectionCount = tracks.reduce((sum, t) => sum + t.problems.length, 0);
 
   const stats = [
+    courses.length > 0 && {
+      value: String(courses.length),
+      label: courses.length === 1 ? "Course" : "Courses",
+    },
     tracks.length > 0 && {
       value: String(tracks.length),
       label: tracks.length === 1 ? "Track" : "Tracks",
@@ -104,50 +109,90 @@ export default async function NotesPage() {
         ))}
       </section>
 
-      {/* Track grid */}
-      <div id="browse" className="scroll-mt-20">
-        {tracks.length === 0 ? (
+      {/* Course + track grid */}
+      <div id="browse" className="scroll-mt-20 space-y-16">
+        {courses.length === 0 && tracks.length === 0 ? (
           <div className="text-muted-foreground py-12 text-center sm:py-20">
-            No tracks yet. Ask an admin to add one.
+            No courses or tracks yet. Ask an admin to add one.
           </div>
         ) : (
           <>
-            <div className="mb-8 text-center">
-              <p className="text-primary text-sm font-semibold uppercase tracking-wide">Tracks</p>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-                Choose what to <span className="text-primary">study</span>
-              </h2>
-            </div>
-            {/* A single card in a three-column grid would leave two thirds of the row empty */}
-            <div
-              className={`grid gap-6 sm:grid-cols-2 ${
-                tracks.length > 2
-                  ? "lg:grid-cols-3"
-                  : tracks.length === 1
-                    ? "mx-auto max-w-md sm:grid-cols-1"
-                    : "mx-auto max-w-3xl"
-              }`}
-            >
-              {tracks.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  id={track.id}
-                  title={track.title}
-                  description={track.description}
-                  image={track.image}
-                  categories={track.categories}
-                  problemCount={track.problems.length}
-                  bundle={
-                    track.courses.length > 0
-                      ? {
-                          price: track.bundlePrice ?? 0,
-                          owned: track.courses.some((c) => purchasedCourseIds.has(c.course.id)),
-                        }
-                      : null
-                  }
-                />
-              ))}
-            </div>
+            {courses.length > 0 && (
+              <div>
+                <div className="mb-8 text-center">
+                  <p className="text-primary text-sm font-semibold uppercase tracking-wide">
+                    Courses
+                  </p>
+                  <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
+                    Notes from your <span className="text-primary">courses</span>
+                  </h2>
+                </div>
+                {/* A single card in a three-column grid would leave two thirds of the row empty */}
+                <div
+                  className={`grid gap-6 sm:grid-cols-2 ${
+                    courses.length > 2
+                      ? "lg:grid-cols-3"
+                      : courses.length === 1
+                        ? "mx-auto max-w-md sm:grid-cols-1"
+                        : "mx-auto max-w-3xl"
+                  }`}
+                >
+                  {courses.map((course) => (
+                    <CourseNoteCard
+                      key={course.id}
+                      slug={course.slug}
+                      title={course.title}
+                      description={course.description}
+                      image={course.imageUrl}
+                      price={course.price}
+                      owned={purchasedCourseIds.has(course.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tracks.length > 0 && (
+              <div>
+                <div className="mb-8 text-center">
+                  <p className="text-primary text-sm font-semibold uppercase tracking-wide">
+                    Tracks
+                  </p>
+                  <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
+                    Choose what to <span className="text-primary">study</span>
+                  </h2>
+                </div>
+                <div
+                  className={`grid gap-6 sm:grid-cols-2 ${
+                    tracks.length > 2
+                      ? "lg:grid-cols-3"
+                      : tracks.length === 1
+                        ? "mx-auto max-w-md sm:grid-cols-1"
+                        : "mx-auto max-w-3xl"
+                  }`}
+                >
+                  {tracks.map((track) => (
+                    <TrackCard
+                      key={track.id}
+                      id={track.id}
+                      title={track.title}
+                      description={track.description}
+                      image={track.image}
+                      categories={track.categories}
+                      problemCount={track.problems.length}
+                      bundle={
+                        track.courses.length > 0
+                          ? {
+                              price: track.bundlePrice ?? 0,
+                              owned: track.courses.some((c) => purchasedCourseIds.has(c.course.id)),
+                            }
+                          : null
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

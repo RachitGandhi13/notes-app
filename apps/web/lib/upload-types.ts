@@ -28,6 +28,11 @@ export const DOCUMENT_TYPES: Record<string, AllowedType> = {
     contentType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     sig: "zip",
   },
+  // A section's "slides" file doesn't have to be slides — a cheatsheet image works the
+  // same way, so the upload and viewer both treat it as just another document type.
+  ".png": { ext: ".png", contentType: "image/png", sig: "png" },
+  ".jpg": { ext: ".jpg", contentType: "image/jpeg", sig: "jpeg" },
+  ".jpeg": { ext: ".jpg", contentType: "image/jpeg", sig: "jpeg" },
 };
 
 export const VIDEO_TYPES: Record<string, AllowedType> = {
