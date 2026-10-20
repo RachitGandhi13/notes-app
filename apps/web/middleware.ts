@@ -13,9 +13,12 @@ const CANONICAL_HOST = "www.cloudvidyaacademy.com";
 export function middleware(request: NextRequest) {
   const host = request.headers.get("host")?.toLowerCase();
   if (host === APEX_HOST) {
-    const url = request.nextUrl.clone();
-    url.host = CANONICAL_HOST;
-    return NextResponse.redirect(url, 308);
+    // Built as a plain string, not via request.nextUrl.clone() — the container
+    // listens on :3000 behind the Lightsail load balancer, and NextURL carries
+    // that internal port along even after overwriting .host, which previously
+    // sent real visitors to a port nothing public can reach.
+    const { pathname, search } = request.nextUrl;
+    return NextResponse.redirect(`https://${CANONICAL_HOST}${pathname}${search}`, 308);
   }
   return NextResponse.next();
 }
