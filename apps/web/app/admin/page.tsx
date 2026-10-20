@@ -4,13 +4,16 @@ import { redirect } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { getPendingComments } from "@/lib/community";
 import { getAllCoursesForAdmin } from "@/lib/actions";
-import { getInternshipApplications } from "@/lib/internship-actions";
+import { getInternshipApplications, getInternshipTracks } from "@/lib/internship-actions";
+import { getActiveBundles } from "@/lib/track-actions";
 import { ModerationPanel } from "./ModerationPanel";
 import { CourseManager } from "./CourseManager";
 import { AdminPanel } from "./AdminPanel";
 import { EnrolledStudentsTable } from "./EnrolledStudentsTable";
 import { StudentAccessPanel } from "@/components/admin/StudentAccessPanel";
 import { InternshipApplicationsList } from "@/components/admin/InternshipApplicationsList";
+import { InternshipTrackManager } from "@/components/admin/InternshipTrackManager";
+import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 
 // Rendered per request (same reasoning as app/notes/page.tsx) — requireAdmin() already
 // forces this dynamically, but this makes it explicit. Admin needs to see every
@@ -24,25 +27,28 @@ export default async function AdminPage() {
     redirect("/auth");
   }
 
-  const [pending, courses, notesTracks, applications] = await Promise.all([
-    getPendingComments(),
-    getAllCoursesForAdmin(),
-    prisma.track.findMany({
-      // Excludes tracks auto-mirrored from a course — those are managed from
-      // the Courses list above, not this standalone-track list.
-      where: { courseId: null },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        image: true,
-        inSearch: true,
-        hidden: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    getInternshipApplications(),
-  ]);
+  const [pending, courses, notesTracks, applications, internshipTracks, activeBundles] =
+    await Promise.all([
+      getPendingComments(),
+      getAllCoursesForAdmin(),
+      prisma.track.findMany({
+        // Excludes tracks auto-mirrored from a course — those are managed from
+        // the Courses list above, not this standalone-track list.
+        where: { courseId: null },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          image: true,
+          inSearch: true,
+          hidden: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      getInternshipApplications(),
+      getInternshipTracks(),
+      getActiveBundles(),
+    ]);
 
   return (
     // `container` matches every other page's widening (caps at 1400px, same
@@ -74,7 +80,21 @@ export default async function AdminPage() {
           <CourseManager courses={courses as any} />
         </TabsContent>
 
-        <TabsContent value="students" className="pt-4">
+        <TabsContent value="students" className="space-y-4 pt-4">
+          <GrantAccessModal
+            courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+            bundles={activeBundles.map((b) => ({
+              id: b.id,
+              title: b.title,
+              bundlePrice: b.bundlePrice ?? 0,
+              courses: b.courses.map((tc) => ({ id: tc.course.id, title: tc.course.title })),
+            }))}
+            internshipTracks={internshipTracks.map((t) => ({
+              id: t.id,
+              title: t.title,
+              courses: t.courses.map((tc) => ({ id: tc.course.id, title: tc.course.title })),
+            }))}
+          />
           <EnrolledStudentsTable courses={courses.map((c) => ({ id: c.id, title: c.title }))} />
         </TabsContent>
 
@@ -93,8 +113,25 @@ export default async function AdminPage() {
         </TabsContent>
 
         <TabsContent value="internships" className="space-y-6 pt-4">
+          <InternshipTrackManager
+            tracks={internshipTracks}
+            allCourses={courses.map((c) => ({
+              id: c.id,
+              title: c.title,
+              price: c.price,
+              slug: c.slug,
+            }))}
+          />
           <StudentAccessPanel
             courses={courses.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+            internshipTracks={internshipTracks.map((t) => ({
+              id: t.id,
+              title: t.title,
+              hidden: t.hidden,
+              courses: t.courses.map((tc) => ({
+                course: { id: tc.course.id, title: tc.course.title },
+              })),
+            }))}
           />
           <div className="space-y-3">
             <h2 className="font-semibold">Applications</h2>

@@ -587,15 +587,31 @@ export async function deleteCourse(courseId: string) {
     where: { id: courseId },
     select: {
       slug: true,
-      _count: { select: { purchases: true, paymentOrders: true, certificate: true } },
+      _count: {
+        select: {
+          purchases: true,
+          paymentOrders: true,
+          certificate: true,
+          trackBundles: true,
+          internshipBundles: true,
+        },
+      },
     },
   });
   if (!course) throw new Error("Course not found.");
 
-  const { purchases, paymentOrders, certificate } = course._count;
+  const { purchases, paymentOrders, certificate, trackBundles, internshipBundles } = course._count;
   if (purchases > 0 || paymentOrders > 0 || certificate > 0) {
     throw new Error(
       "This course has purchase, payment or certificate records and can't be deleted. Hide it instead to remove it from listings without losing them."
+    );
+  }
+  // Both TrackCourse and InternshipTrackCourse have an ON DELETE RESTRICT FK to
+  // Course, so deleting a bundled course would otherwise fail with a raw
+  // Postgres error instead of this friendly message.
+  if (trackBundles > 0 || internshipBundles > 0) {
+    throw new Error(
+      "This course is linked into a combo bundle or internship track and can't be deleted. Unlink it there first, or hide it instead."
     );
   }
 

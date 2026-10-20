@@ -8,11 +8,15 @@ import {
   APPS_SCRIPT_URL,
   DURATION_OPTIONS,
   EMPTY_APPLICATION,
-  INTERNSHIP_TRACK_OPTIONS,
   YEAR_OF_STUDY_OPTIONS,
   type InternshipApplication,
 } from "@/lib/internships";
 import { submitInternshipApplication } from "@/lib/internship-actions";
+
+interface InternshipTrackOption {
+  id: string;
+  title: string;
+}
 
 const fieldClass =
   "border-input bg-background focus:ring-ring flex h-11 w-full rounded-lg border px-3.5 text-sm focus:outline-none focus:ring-2";
@@ -36,7 +40,7 @@ function Field({
   );
 }
 
-export function InternshipForm() {
+export function InternshipForm({ tracks }: { tracks: InternshipTrackOption[] }) {
   const { data: session } = useSession();
   const [data, setData] = useState<InternshipApplication>(EMPTY_APPLICATION);
   const [submitting, setSubmitting] = useState(false);
@@ -202,9 +206,9 @@ export function InternshipForm() {
             <option value="" disabled>
               Select track
             </option>
-            {INTERNSHIP_TRACK_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
+            {tracks.map((track) => (
+              <option key={track.id} value={track.title}>
+                {track.title}
               </option>
             ))}
           </select>

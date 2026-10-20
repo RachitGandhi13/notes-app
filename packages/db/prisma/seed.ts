@@ -142,6 +142,77 @@ async function main() {
     },
   });
 
+  // ── Internship tracks (migrated off the old hardcoded INTERNSHIP_TRACKS in
+  // lib/internships.ts) — the 3 existing programs, plus the new bootcamp
+  // track. courseSlugs matches that file's former TRACK_COURSE_SLUGS mapping;
+  // on a fresh local DB these slugs usually don't exist yet (only
+  // fullstack-dev-101 is seeded above), so the link step below just creates
+  // zero InternshipTrackCourse rows rather than erroring.
+  const internshipTrackSeeds = [
+    {
+      id: "seed-internship-aws",
+      title: "AWS Cloud Engineering Internship",
+      duration: "4 Weeks",
+      description:
+        "Learn cloud fundamentals, IAM, VPC, EC2, S3, Lambda, databases, monitoring, security, and deploying applications on AWS.",
+      courseSlugs: ["aws-solutions"],
+    },
+    {
+      id: "seed-internship-devops",
+      title: "DevOps & Automation Internship",
+      duration: "4 Weeks",
+      description:
+        "Learn Git, CodeCommit/GitHub, Linux, Jenkins, Docker, Terraform, CI/CD pipelines, containers, and automated deployments.",
+      courseSlugs: ["devops"],
+    },
+    {
+      id: "seed-internship-ai",
+      title: "AI & Cloud Application Development Internship",
+      duration: "4 Weeks",
+      description:
+        "Learn Python-based automation, generative AI fundamentals, API integration, AI-powered applications, and cloud deployment.",
+      courseSlugs: ["dsa-python", "aws-solutions"],
+    },
+    {
+      id: "seed-internship-bootcamp",
+      title: "Integrated AWS, DevOps & AI Bootcamp Internship",
+      duration: "6-8 weeks",
+      description:
+        "An integrated learning journey covering cloud infrastructure, automation, application deployment, CI/CD, and AI-enabled cloud projects.",
+      courseSlugs: [] as string[],
+    },
+  ];
+
+  for (const t of internshipTrackSeeds) {
+    const track = await prisma.internshipTrack.upsert({
+      where: { id: t.id },
+      update: {},
+      create: { id: t.id, title: t.title, duration: t.duration, description: t.description },
+    });
+    const courses = await prisma.course.findMany({
+      where: { slug: { in: t.courseSlugs } },
+      select: { id: true },
+    });
+    await prisma.internshipTrackCourse.createMany({
+      data: courses.map((c) => ({ trackId: track.id, courseId: c.id })),
+      skipDuplicates: true,
+    });
+  }
+
+  // Best-effort backfill of the new FK on any pre-existing text-matched rows
+  // from before InternshipTrack existed — safe to re-run, a no-op once a row
+  // is already backfilled.
+  await prisma.$executeRaw`
+    UPDATE "InternshipApplication" a SET "internshipTrackId" = t.id
+    FROM "InternshipTrack" t
+    WHERE a."internshipTrack" = t.title AND a."internshipTrackId" IS NULL
+  `;
+  await prisma.$executeRaw`
+    UPDATE "InternshipCertificate" c SET "internshipTrackId" = t.id
+    FROM "InternshipTrack" t
+    WHERE c."trackName" = t.title AND c."internshipTrackId" IS NULL
+  `;
+
   console.log("Seed complete.");
 }
 

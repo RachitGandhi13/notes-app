@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import { Award, ArrowRight, Briefcase, CheckCircle2, ClipboardCheck, Clock } from "lucide-react";
 import { InternshipForm } from "@/components/InternshipForm";
-import {
-  INTERNSHIP_ROADMAP,
-  INTERNSHIP_TRACKS,
-  PROGRAM_BENEFITS,
-  PROGRAM_DELIVERABLES,
-} from "@/lib/internships";
+import { INTERNSHIP_ROADMAP, PROGRAM_BENEFITS, PROGRAM_DELIVERABLES } from "@/lib/internships";
+import { getActiveInternshipTracks } from "@/lib/internship-actions";
 
 export const metadata: Metadata = {
   title: "Internship Program",
   description:
-    "Hands-on 4-week internships in AWS Cloud Engineering, DevOps & Automation, and AI & Cloud Application Development, by CloudVidya Academy.",
+    "Hands-on internship tracks in Cloud, DevOps and AI application development, by CloudVidya Academy.",
 };
 
-export default function InternshipsPage() {
+// Rendered per request — the track list and application form are both
+// admin/DB-driven now, same reasoning as every other data page in this app.
+export const dynamic = "force-dynamic";
+
+export default async function InternshipsPage() {
+  const tracks = await getActiveInternshipTracks();
+
   return (
     <div className="mx-auto max-w-5xl space-y-16 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
       {/* Hero */}
@@ -27,8 +29,8 @@ export default function InternshipsPage() {
           Industry Internship Program
         </h1>
         <p className="text-muted-foreground mx-auto max-w-2xl text-lg leading-relaxed">
-          Three hands-on, 4-week internship tracks in Cloud, DevOps and AI application development —
-          real projects, mentorship, and a certificate at the end.
+          Hands-on internship tracks in Cloud, DevOps and AI application development — real
+          projects, mentorship, and a certificate at the end.
         </p>
         <a
           href="#apply"
@@ -44,10 +46,10 @@ export default function InternshipsPage() {
         <h2 className="text-center text-2xl font-extrabold tracking-tight sm:text-3xl">
           Choose your track
         </h2>
-        <div className="grid gap-6 sm:grid-cols-3">
-          {INTERNSHIP_TRACKS.map((track) => (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {tracks.map((track) => (
             <div
-              key={track.title}
+              key={track.id}
               className="bg-card hover:border-primary/40 flex flex-col gap-3 rounded-2xl border p-6 transition-colors"
             >
               <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
@@ -140,7 +142,7 @@ export default function InternshipsPage() {
         <h2 className="mb-6 text-center text-2xl font-extrabold tracking-tight sm:text-3xl">
           Apply now
         </h2>
-        <InternshipForm />
+        <InternshipForm tracks={tracks.map((t) => ({ id: t.id, title: t.title }))} />
       </div>
     </div>
   );

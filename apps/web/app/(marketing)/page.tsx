@@ -3,12 +3,14 @@ import { ArrowRight, BadgeCheck, BookOpen, Users, type LucideIcon } from "lucide
 import Image from "next/image";
 import Link from "next/link";
 import { getCourses, getUserPurchases } from "@/lib/actions";
+import { getActiveBundles } from "@/lib/track-actions";
 import { CourseCard } from "@/components/CourseCard";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
 // import { InstructorSection, SupportSection } from "@/components/InstructorSection";
 import { SupportSection } from "@/components/InstructorSection";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
+import { ComboBanner } from "@/components/home/ComboBanner";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
 import { HeroArt } from "@/components/home/HeroArt";
@@ -28,7 +30,11 @@ interface Props {
 
 export default async function HomePage({ searchParams }: Props) {
   const query = searchParams.q?.trim();
-  const [courses, session] = await Promise.all([getCourses(query), getSession()]);
+  const [courses, session, bundles] = await Promise.all([
+    getCourses(query),
+    getSession(),
+    getActiveBundles(),
+  ]);
   const isAdmin = !!session?.user?.admin;
 
   // Collect purchased course IDs for the current user
@@ -161,6 +167,23 @@ export default async function HomePage({ searchParams }: Props) {
             )}
           </h2>
         </div>
+
+        {!query && (
+          <ComboBanner
+            bundles={bundles.map((b) => ({
+              id: b.id,
+              title: b.title,
+              bundlePrice: b.bundlePrice ?? 0,
+              courses: b.courses.map((tc) => ({
+                id: tc.course.id,
+                slug: tc.course.slug,
+                title: tc.course.title,
+                price: tc.course.price,
+              })),
+            }))}
+            prefill={session?.user ? { name: session.user.name, email: session.user.email } : null}
+          />
+        )}
 
         {courses.length === 0 ? (
           <div className="text-muted-foreground py-12 text-center sm:py-20">
