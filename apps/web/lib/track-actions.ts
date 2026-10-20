@@ -227,6 +227,36 @@ export async function toggleTrackHidden(trackId: string) {
   revalidatePath("/admin");
 }
 
+// Permanently removes a track and its section/category links. Problem rows
+// (sections) are NOT deleted — TrackProblems is many-to-many (no trackId on
+// Problem itself), so a section can be shared across tracks; only this
+// track's membership in it goes away, same as removing one entry from a
+// playlist without touching the song.
+export async function deleteNoteTrack(trackId: string) {
+  await requireAdmin();
+
+  const track = await prisma.track.findUnique({ where: { id: trackId }, select: { id: true } });
+  if (!track) throw new Error("Track not found.");
+
+  const paidOrders = await prisma.paymentOrder.count({ where: { trackId, status: "PAID" } });
+  if (paidOrders > 0) {
+    throw new Error(
+      "This track has paid combo-bundle purchases and can't be deleted. Hide it instead to keep the payment record."
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.trackCategory.deleteMany({ where: { trackId } }),
+    prisma.trackProblems.deleteMany({ where: { trackId } }),
+    prisma.trackCourse.deleteMany({ where: { trackId } }),
+    prisma.track.delete({ where: { id: trackId } }),
+  ]);
+
+  await cacheDel("tracks:all", trackCacheKey(trackId));
+  revalidatePath("/notes");
+  revalidatePath("/admin");
+}
+
 // ── Admin: sections ─────────────────────────────────────────────────────────────
 // A "section" is one Problem row in a track. It can carry an uploaded
 // presentation (pptUrl), practice MCQs, or both. `type` is kept in step with

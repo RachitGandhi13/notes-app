@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
-import { indexTrack, toggleTrackHidden } from "@/lib/track-actions";
+import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { Dialog, DialogContent } from "@repo/ui";
+import { indexTrack, toggleTrackHidden, deleteNoteTrack } from "@/lib/track-actions";
 import { CreateTrackForm } from "@/components/admin/CreateTrackForm";
 
 interface Track {
@@ -20,11 +21,30 @@ export function AdminPanel({ tracks: initialTracks }: { tracks: Track[] }) {
   const [indexingId, setIndexingId] = useState<string | null>(null);
   const [indexResults, setIndexResults] = useState<Record<string, number>>({});
   const [indexErrors, setIndexErrors] = useState<Record<string, string>>({});
+  const [deletingTrack, setDeletingTrack] = useState<Track | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function handleToggleHidden(track: Track) {
     await toggleTrackHidden(track.id);
     setTracks((prev) => prev.map((t) => (t.id === track.id ? { ...t, hidden: !t.hidden } : t)));
     router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!deletingTrack) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteNoteTrack(deletingTrack.id);
+      setTracks((prev) => prev.filter((t) => t.id !== deletingTrack.id));
+      setDeletingTrack(null);
+      router.refresh();
+    } catch (err: any) {
+      setDeleteError(err?.message ?? "Failed to delete track.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleIndex(track: Track) {
@@ -89,12 +109,55 @@ export function AdminPanel({ tracks: initialTracks }: { tracks: Track[] }) {
                   >
                     Open &amp; edit
                   </a>
+                  <button
+                    onClick={() => {
+                      setDeleteError("");
+                      setDeletingTrack(track);
+                    }}
+                    className="text-muted-foreground hover:text-destructive hover:bg-accent rounded p-1.5"
+                    aria-label="Delete track"
+                    title="Delete track"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <Dialog
+        open={!!deletingTrack}
+        onOpenChange={(open) => !deleting && !open && setDeletingTrack(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <h3 className="text-lg font-semibold">Delete &quot;{deletingTrack?.title}&quot;?</h3>
+          <p className="text-muted-foreground text-sm">
+            Are you sure you want to delete this track? This can&apos;t be undone. Uploaded slides
+            and practice questions are kept in case another track uses them.
+          </p>
+          {deleteError && <p className="text-destructive text-sm">{deleteError}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setDeletingTrack(null)}
+              disabled={deleting}
+              className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete track"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* AI Search Indexing */}
       {tracks.length > 0 && (
