@@ -54,3 +54,33 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 }
+
+/* Mobile Safari/Chrome zoom the page on focusing any text input smaller than
+   16px. Every input in this app is hand-rolled (no shared <Input>), so this
+   overrides their text-sm/text-xs utility classes below the sm breakpoint
+   instead of editing every call site; desktop sizing is untouched. */
+@media (max-width: 639px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input:not([type]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* iOS notch / home-indicator safe areas, used by the sticky navbar and the
+   mobile bottom-sheet dialog variant. */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+  .safe-bottom {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
