@@ -96,14 +96,14 @@ export default async function HomePage({ searchParams }: Props) {
             <div className="animate-fade-up flex flex-wrap items-center gap-3 [animation-delay:240ms]">
               <Link
                 href="/#browse"
-                className="bg-primary text-primary-foreground shadow-primary/30 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:gap-3 hover:shadow-xl"
+                className="bg-primary text-primary-foreground shadow-primary/30 ring-offset-background focus-visible:ring-ring inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:gap-3 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 Browse courses
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/notes"
-                className="bg-card/80 hover:bg-accent inline-flex items-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold backdrop-blur transition-colors"
+                className="bg-card/80 hover:bg-accent ring-offset-background focus-visible:ring-ring inline-flex items-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold backdrop-blur transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 <BookOpen className="h-4 w-4" />
                 Explore notes
@@ -121,7 +121,7 @@ export default async function HomePage({ searchParams }: Props) {
                   className="bg-card/80 flex h-full items-center gap-3 rounded-xl border p-4 backdrop-blur"
                 >
                   <span className="bg-primary/15 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">
                     {value ? (
