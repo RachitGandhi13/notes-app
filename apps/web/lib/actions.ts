@@ -395,6 +395,22 @@ export async function setContentThumbnail(
   revalidatePath("/admin");
 }
 
+// Renames a section (playlist) or a video after creation — the title was previously
+// only ever set once, at creation, with no way to fix a typo short of deleting it.
+export async function renameContent(contentId: string, courseId: string, title: string) {
+  await requireAdmin();
+  if (!title.trim()) throw new Error("Title is required.");
+
+  await prisma.content.update({
+    where: { id: contentId },
+    data: { title: title.trim() },
+  });
+
+  await invalidateCourseCache(courseId);
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 export async function updateCourse(
   courseId: string,
   data: { title: string; description: string; imageUrl?: string; price: number; slug: string }
