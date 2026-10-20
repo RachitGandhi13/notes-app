@@ -235,6 +235,22 @@ export async function setTrackBundle(
   revalidatePath("/admin");
 }
 
+// Renames a track and/or updates its description — previously only settable at
+// creation, the same gap renameContent (Courses tab) already closed for sections.
+export async function updateTrack(trackId: string, data: { title: string; description: string }) {
+  await requireAdmin();
+  const title = data.title.trim();
+  if (!title) throw new Error("Track title is required.");
+
+  await prisma.track.update({
+    where: { id: trackId },
+    data: { title, description: data.description.trim() },
+  });
+  await cacheDel("tracks:all", trackCacheKey(trackId));
+  revalidatePath("/notes");
+  revalidatePath("/admin");
+}
+
 export async function toggleTrackHidden(trackId: string) {
   await requireAdmin();
   const track = await prisma.track.findUnique({ where: { id: trackId }, select: { hidden: true } });

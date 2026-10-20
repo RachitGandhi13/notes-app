@@ -7,6 +7,7 @@ import { ThumbnailPicker } from "./ThumbnailPicker";
 interface CreatedTrack {
   id: string;
   title: string;
+  description: string;
   image: string;
 }
 
@@ -31,7 +32,12 @@ export function CreateTrackForm({ onCreated }: { onCreated: (track: CreatedTrack
     setCreated(null);
     try {
       const track = await createTrack({ title, description, image, categoryName });
-      const result = { id: track.id, title: track.title, image: track.image };
+      const result = {
+        id: track.id,
+        title: track.title,
+        description: track.description,
+        image: track.image,
+      };
       onCreated(result);
       setCreated(result);
       setTitle("");
