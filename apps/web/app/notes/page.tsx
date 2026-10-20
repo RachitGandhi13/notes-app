@@ -137,17 +137,19 @@ export default async function NotesPage() {
                         : "mx-auto max-w-3xl"
                   }`}
                 >
-                  {courses.map((course) => (
-                    <CourseNoteCard
-                      key={course.id}
-                      slug={course.slug}
-                      title={course.title}
-                      description={course.description}
-                      image={course.imageUrl}
-                      price={course.price}
-                      owned={purchasedCourseIds.has(course.id)}
-                    />
-                  ))}
+                  {courses
+                    .filter((course) => course.linkedTrack)
+                    .map((course) => (
+                      <CourseNoteCard
+                        key={course.id}
+                        trackId={course.linkedTrack!.id}
+                        title={course.title}
+                        description={course.description}
+                        image={course.imageUrl}
+                        price={course.price}
+                        owned={purchasedCourseIds.has(course.id)}
+                      />
+                    ))}
                 </div>
               </div>
             )}

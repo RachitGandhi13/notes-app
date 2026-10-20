@@ -10,6 +10,7 @@ import { ProblemSidebar } from "@/components/ProblemSidebar";
 import { PPTViewer } from "@/components/PPTViewer";
 import { MCQQuiz } from "@/components/MCQQuiz";
 import { TrackPaywall } from "@/components/TrackPaywall";
+import { CourseNotesLocked } from "@/components/CourseNotesLocked";
 import { SectionAdminPanel } from "@/components/admin/SectionAdminPanel";
 
 // Depends on who is looking (admins see editing tools) and is edited live by
@@ -86,6 +87,12 @@ export default async function TrackPage({ params }: Props) {
         prefill={session?.user ? { name: session.user.name, email: session.user.email } : null}
       />
     );
+  }
+  // Auto-mirrored from a course (courseId set): there's no separate purchase for
+  // the notes themselves, so point back at the course's own page instead of a
+  // second checkout flow.
+  if (!hasAccess && track.courseId) {
+    return <CourseNotesLocked trackTitle={track.title} courseSlug={track.course?.slug ?? ""} />;
   }
 
   // Default to first section if none specified

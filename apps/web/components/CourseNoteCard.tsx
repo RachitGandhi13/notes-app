@@ -4,7 +4,7 @@ import Link from "next/link";
 import { needsUnoptimized } from "@/lib/images";
 
 interface CourseNoteCardProps {
-  slug: string;
+  trackId: string;
   title: string;
   description: string;
   image: string | null;
@@ -13,10 +13,10 @@ interface CourseNoteCardProps {
 }
 
 // Mirrors TrackCard's layout so a course card and a track card sit together
-// consistently on /notes — but links into the course's own page, which already
-// has the gated section-material viewer, rather than a separate notes view.
+// consistently on /notes — links into the course's own dedicated notes track
+// (sidebar, slides/image viewer, quizzes), not the course's video page.
 export function CourseNoteCard({
-  slug,
+  trackId,
   title,
   description,
   image,
@@ -24,7 +24,7 @@ export function CourseNoteCard({
   owned,
 }: CourseNoteCardProps) {
   return (
-    <Link href={`/courses/${slug}`} className="group block">
+    <Link href={`/tracks/${trackId}`} className="group block">
       <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
         <div className="bg-muted relative aspect-video w-full overflow-hidden">
           {image ? (

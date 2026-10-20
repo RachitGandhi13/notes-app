@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Dialog, DialogContent } from "@repo/ui";
 import { indexTrack, toggleTrackHidden, deleteNoteTrack } from "@/lib/track-actions";
@@ -19,7 +19,7 @@ interface Track {
 interface CourseSummary {
   id: string;
   title: string;
-  slug: string;
+  linkedTrackId: string | null;
 }
 
 export function AdminPanel({
@@ -80,13 +80,15 @@ export function AdminPanel({
 
   return (
     <div className="space-y-6">
-      {/* Courses — shown automatically on /notes, no action needed here. Content and
-          section materials for these are managed on the Courses tab, not here. */}
+      {/* Courses — each gets its own notes track automatically, shown on /notes as its
+          own card. Video lessons stay on the Courses tab; this is purely the notes side:
+          sections, slide/image uploads, quizzes — independent of the video content. */}
       <div className="space-y-3 rounded-lg border p-4">
         <h2 className="font-semibold">Courses (shown automatically on /notes)</h2>
         <p className="text-muted-foreground text-sm">
-          Every course appears on the public Notes page on its own — nothing to create here. Manage
-          a course&apos;s sections and attached materials from the Courses tab.
+          Every course gets a matching notes track automatically — nothing to create here. Open one
+          to add sections, upload slides/images, and write practice questions, same as any other
+          track.
         </p>
         {courses.length === 0 ? (
           <p className="text-muted-foreground text-sm">No courses yet.</p>
@@ -95,14 +97,16 @@ export function AdminPanel({
             {courses.map((course) => (
               <li key={course.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
                 <p className="min-w-0 truncate font-medium">{course.title}</p>
-                <Link
-                  href={`/courses/${course.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary flex shrink-0 items-center gap-1 text-xs font-medium hover:underline"
-                >
-                  View on /notes <ArrowRight className="h-3 w-3" />
-                </Link>
+                {course.linkedTrackId ? (
+                  <Link
+                    href={`/tracks/${course.linkedTrackId}`}
+                    className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium"
+                  >
+                    Open &amp; edit
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground shrink-0 text-xs">Notes pending…</span>
+                )}
               </li>
             ))}
           </ul>
