@@ -21,6 +21,16 @@ interface Props {
 // Shared by generateMetadata and the page, so one request reads the course only once.
 const loadCourse = cache((slug: string) => getCourse(slug));
 
+// Only the kind is sent to the client, not the raw Bunny path — the viewer only needs
+// to know whether to render an <iframe> or an <img>, not the storage path itself.
+function materialKind(path: string | null): "pdf" | "image" | null {
+  if (!path) return null;
+  const ext = path.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "pdf";
+  if (ext === "jpg" || ext === "jpeg" || ext === "png") return "image";
+  return null;
+}
+
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
   const path = `/courses/${params.courseSlug}`;
   try {
@@ -121,6 +131,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       id: cc.content.id,
       title: cc.content.title,
       thumbnail: cc.content.thumbnail as string | null,
+      materialKind: materialKind(cc.content.materialPath as string | null),
       lessons: cc.content.children.map((child) => ({
         id: child.id,
         type: child.type,
@@ -145,6 +156,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       id: "standalone",
       title: "More Lessons",
       thumbnail: null,
+      materialKind: null,
       lessons: standaloneLessons,
     });
   }
@@ -224,7 +236,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
             {chapters.length === 0 ? (
               <p className="text-muted-foreground text-sm">No content yet.</p>
             ) : (
-              <CurriculumAccordion chapters={chapters} />
+              <CurriculumAccordion chapters={chapters} purchased={purchased} />
             )}
           </div>
         </div>

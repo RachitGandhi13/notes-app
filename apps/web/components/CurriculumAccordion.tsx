@@ -4,6 +4,7 @@ import { ChevronDown, Circle, FileText, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { needsUnoptimized } from "@/lib/images";
+import { MaterialViewer } from "@/components/MaterialViewer";
 
 interface LessonItem {
   id: string;
@@ -17,6 +18,7 @@ interface ChapterGroup {
   id: string;
   title: string;
   thumbnail?: string | null;
+  materialKind?: "pdf" | "image" | null;
   lessons: LessonItem[];
 }
 
@@ -55,16 +57,24 @@ function LessonRow({ lesson, index }: { lesson: LessonItem; index: number }) {
   );
 }
 
-function ChapterPanel({ chapter, index }: { chapter: ChapterGroup; index: number }) {
+function ChapterPanel({
+  chapter,
+  index,
+  purchased,
+}: {
+  chapter: ChapterGroup;
+  index: number;
+  purchased: boolean;
+}) {
   const [open, setOpen] = useState(index === 0);
 
   return (
     <div className="bg-card overflow-hidden rounded-2xl border">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-5 py-4 text-left"
-      >
-        <div className="flex min-w-0 items-center gap-4">
+      <div className="flex w-full items-center justify-between gap-3 px-5 py-4">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 items-center gap-4 text-left"
+        >
           {chapter.thumbnail && (
             <div className="bg-muted relative hidden h-14 w-24 shrink-0 overflow-hidden rounded-lg sm:block">
               <Image
@@ -83,16 +93,26 @@ function ChapterPanel({ chapter, index }: { chapter: ChapterGroup; index: number
             </p>
             <h3 className="mt-0.5 text-lg font-bold">{chapter.title}</h3>
           </div>
-        </div>
+        </button>
         <div className="flex shrink-0 items-center gap-3">
           <span className="text-muted-foreground text-xs">
             {chapter.lessons.length} {chapter.lessons.length === 1 ? "lesson" : "lessons"}
           </span>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-          />
+          {chapter.materialKind && (
+            <MaterialViewer
+              contentId={chapter.id}
+              kind={chapter.materialKind}
+              label="View material"
+              locked={!purchased}
+            />
+          )}
+          <button onClick={() => setOpen((o) => !o)} aria-label={open ? "Collapse" : "Expand"}>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          </button>
         </div>
-      </button>
+      </div>
       {open && (
         <ul className="divide-y border-t">
           {chapter.lessons.map((lesson, i) => (
@@ -104,11 +124,17 @@ function ChapterPanel({ chapter, index }: { chapter: ChapterGroup; index: number
   );
 }
 
-export function CurriculumAccordion({ chapters }: { chapters: ChapterGroup[] }) {
+export function CurriculumAccordion({
+  chapters,
+  purchased,
+}: {
+  chapters: ChapterGroup[];
+  purchased: boolean;
+}) {
   return (
     <div className="space-y-4">
       {chapters.map((chapter, i) => (
-        <ChapterPanel key={chapter.id} chapter={chapter} index={i} />
+        <ChapterPanel key={chapter.id} chapter={chapter} index={i} purchased={purchased} />
       ))}
     </div>
   );

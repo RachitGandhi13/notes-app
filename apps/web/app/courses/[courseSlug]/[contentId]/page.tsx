@@ -1,5 +1,4 @@
 import { getSession } from "@repo/auth";
-import { FileText } from "lucide-react";
 import { redirect, notFound } from "next/navigation";
 import { getCourse, getContent, getCourseProgress, getBookmarks } from "@/lib/actions";
 import { userCanAccessCourse } from "@/lib/access";
@@ -7,11 +6,21 @@ import { getComments, getQuestions } from "@/lib/community";
 import { ContentSidebar } from "@/components/ContentSidebar";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { BunnyVideoPlayer } from "@/components/BunnyVideoPlayer";
+import { MaterialViewer } from "@/components/MaterialViewer";
 import { ProgressButton } from "@/components/ProgressButton";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { CommentSection } from "@/components/CommentSection";
 import { QASection } from "@/components/QASection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
+
+// Only the kind is needed client-side to pick <iframe> vs <img> — not the raw Bunny path.
+function materialKind(path: string | null | undefined): "pdf" | "image" | null {
+  if (!path) return null;
+  const ext = path.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "pdf";
+  if (ext === "jpg" || ext === "jpeg" || ext === "png") return "image";
+  return null;
+}
 
 interface Props {
   params: { courseSlug: string; contentId: string };
@@ -90,20 +99,19 @@ export default async function ContentViewerPage({ params }: Props) {
               )
             ))}
 
-          {/* PDF notes, if the admin attached one — served through the authenticated
-              proxy, never a direct Bunny Storage URL. Only ever reached after the
-              hasAccess check above, so this never renders for an unentitled user. */}
-          {content.type === "VIDEO" && content.videoMetadata?.bunnyPdfPath && (
-            <a
-              href={`/api/notes/${content.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-card hover:bg-accent flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
-            >
-              <FileText className="h-4 w-4 shrink-0" />
-              View notes (PDF)
-            </a>
-          )}
+          {/* Notes, if the admin attached one — view-only, served through the authenticated
+              proxy inside a modal, never a direct Bunny Storage URL or a new-tab download.
+              Only ever reached after the hasAccess check above, so this never renders for
+              an unentitled user. */}
+          {content.type === "VIDEO" &&
+            content.videoMetadata?.bunnyPdfPath &&
+            materialKind(content.videoMetadata.bunnyPdfPath) && (
+              <MaterialViewer
+                contentId={content.id}
+                kind={materialKind(content.videoMetadata.bunnyPdfPath)!}
+                label="View notes"
+              />
+            )}
 
           {/* Notion placeholder */}
           {content.type === "NOTION" && content.notionMetadata && (

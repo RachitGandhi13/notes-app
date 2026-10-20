@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  FileText,
   Folder,
   ImageIcon,
   Pencil,
@@ -26,6 +27,7 @@ import {
   deleteContent,
   moveContentOrder,
   setContentThumbnail,
+  setContentMaterial,
   renameContent,
 } from "@/lib/actions";
 import { ThumbnailPicker } from "@/components/admin/ThumbnailPicker";
@@ -43,6 +45,7 @@ interface ContentNode {
   title: string;
   hidden: boolean;
   thumbnail: string | null;
+  materialPath: string | null;
   videoMetadata: {
     videoUrl: string | null;
     bunnyVideoId: string | null;
@@ -209,7 +212,7 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
       />
       <input
-        placeholder="Bunny PDF path (optional)"
+        placeholder="Bunny file path — PDF, JPG or PNG (optional)"
         value={bunnyPdfPath}
         onChange={(e) => setBunnyPdfPath(e.target.value)}
         className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
@@ -336,6 +339,9 @@ function ContentNodeRow({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(node.title);
   const [renameError, setRenameError] = useState("");
+  const [editingMaterial, setEditingMaterial] = useState(false);
+  const [materialInput, setMaterialInput] = useState(node.materialPath ?? "");
+  const [materialError, setMaterialError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const isFolder = node.type === "FOLDER";
@@ -345,6 +351,20 @@ function ContentNodeRow({
     try {
       await setContentThumbnail(node.id, courseId, url || null);
       router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleMaterialSave() {
+    setBusy(true);
+    setMaterialError("");
+    try {
+      await setContentMaterial(node.id, courseId, materialInput || null);
+      setEditingMaterial(false);
+      router.refresh();
+    } catch (err: any) {
+      setMaterialError(err?.message ?? "Couldn't save this.");
     } finally {
       setBusy(false);
     }
@@ -506,6 +526,25 @@ function ContentNodeRow({
           >
             <ImageIcon className="h-3.5 w-3.5" />
           </button>
+          {isFolder && (
+            <button
+              onClick={() => {
+                setMaterialInput(node.materialPath ?? "");
+                setMaterialError("");
+                setEditingMaterial((v) => !v);
+              }}
+              disabled={busy}
+              className={`hover:bg-accent rounded p-1 disabled:opacity-50 ${node.materialPath ? "text-primary" : "text-muted-foreground"}`}
+              aria-label={node.materialPath ? "Change attached material" : "Attach material"}
+              title={
+                node.materialPath
+                  ? "Change this section's attached material (PDF/image)"
+                  : "Attach a section material (PDF/image) — a cheatsheet for the whole section"
+              }
+            >
+              <FileText className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             onClick={handleToggleHidden}
             disabled={busy}
@@ -552,7 +591,32 @@ function ContentNodeRow({
       </div>
 
       {renameError && <p className="text-destructive mt-2 text-xs">{renameError}</p>}
+      {materialError && <p className="text-destructive mt-2 text-xs">{materialError}</p>}
       {deleteError && <p className="text-destructive mt-2 text-xs">{deleteError}</p>}
+
+      {editingMaterial && (
+        <div className="mt-3 space-y-1.5 border-t pt-3">
+          <label className="text-muted-foreground text-xs font-medium">
+            Section material — Bunny file path (PDF, JPG, JPEG or PNG), or leave blank to remove
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={materialInput}
+              onChange={(e) => setMaterialInput(e.target.value)}
+              placeholder="notes/aws-cheatsheet.pdf"
+              disabled={busy}
+              className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
+            />
+            <button
+              onClick={handleMaterialSave}
+              disabled={busy}
+              className="bg-primary text-primary-foreground shrink-0 rounded px-3 text-xs font-medium disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
 
       {editingThumb && (
         <div className="mt-3 border-t pt-3">
