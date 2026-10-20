@@ -5,7 +5,7 @@ import { AuthError, getSession, requireAdmin, requireAuth } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
 import { validateQuestion, type QuestionInput } from "@/lib/question-validation";
-import { userCanAccessProblem } from "@/lib/access";
+import { userCanAccessCourse, userCanAccessProblem } from "@/lib/access";
 
 // ── Tracks ─────────────────────────────────────────────────────────────────────
 
@@ -20,8 +20,10 @@ export async function getTracks() {
 }
 
 function _fetchTracks() {
+  // Excludes tracks auto-mirrored from a course (courseId set) — those are
+  // surfaced on /notes as the course's own card, not a second entry here.
   return prisma.track.findMany({
-    where: { hidden: false },
+    where: { hidden: false, courseId: null },
     include: {
       categories: { include: { category: true } },
       problems: { select: { problemId: true } },
@@ -52,6 +54,10 @@ function _fetchTrackById(trackId: string) {
       courses: {
         include: { course: { select: { id: true, slug: true, price: true, title: true } } },
       },
+      // The course this track was auto-mirrored from (courseId), if any — distinct
+      // from `courses` above (the many-to-many combo-bundle link). Only its slug is
+      // needed, to link back to the course's own page from the locked state.
+      course: { select: { slug: true } },
     },
   });
 }
@@ -87,7 +93,19 @@ export async function getTrack(trackId: string) {
 // the courses it bundles — whichever course they bought it through, whether
 // that was the combo itself or one of the courses individually.
 
-export async function hasTrackAccess(track: { id: string }): Promise<boolean> {
+export async function hasTrackAccess(track: {
+  id: string;
+  courseId?: string | null;
+}): Promise<boolean> {
+  // Auto-mirrored from a course (courseId set): access is simply "do you own
+  // that course" — the same UserPurchases check as everywhere else, not the
+  // combo-bundle purchase flow below, which doesn't apply to these at all.
+  if (track.courseId) {
+    const session = await getSession();
+    if (!session?.user) return false;
+    return userCanAccessCourse(track.courseId);
+  }
+
   const links = await prisma.trackCourse.findMany({
     where: { trackId: track.id },
     select: { courseId: true },

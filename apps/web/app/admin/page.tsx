@@ -23,6 +23,9 @@ export default async function AdminPage() {
     getPendingComments(),
     getAllCoursesForAdmin(),
     prisma.track.findMany({
+      // Excludes tracks auto-mirrored from a course — those are managed from
+      // the Courses list above, not this standalone-track list.
+      where: { courseId: null },
       select: { id: true, title: true, image: true, inSearch: true, hidden: true },
       orderBy: { createdAt: "desc" },
     }),
@@ -65,7 +68,11 @@ export default async function AdminPage() {
           </p>
           <AdminPanel
             tracks={notesTracks}
-            courses={courses.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+            courses={courses.map((c) => ({
+              id: c.id,
+              title: c.title,
+              linkedTrackId: c.linkedTrack?.id ?? null,
+            }))}
           />
         </TabsContent>
 

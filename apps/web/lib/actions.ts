@@ -17,6 +17,7 @@ export async function getCourses(query?: string) {
     return prisma.course.findMany({
       where: { hidden: false, title: { contains: search, mode: "insensitive" } },
       orderBy: { createdAt: "desc" },
+      include: { linkedTrack: { select: { id: true } } },
     });
   }
 
@@ -33,6 +34,9 @@ function _fetchCourses() {
   return prisma.course.findMany({
     where: { hidden: false },
     orderBy: { createdAt: "desc" },
+    // The track this course was auto-mirrored into (see createCourse) — /notes
+    // links a course's card straight to its dedicated notes/track editor.
+    include: { linkedTrack: { select: { id: true } } },
   });
 }
 
@@ -307,19 +311,39 @@ export async function createCourse(data: {
 }) {
   await requireAdmin();
 
-  const course = await prisma.course.create({
-    data: {
-      title: data.title,
-      description: data.description,
-      imageUrl: data.imageUrl || null,
-      price: data.price,
-      slug: data.slug,
-    },
+  // Every course gets a paired Notes track automatically, inheriting its title and
+  // thumbnail at creation time — Track.courseId is the existing 1:1 link (already
+  // read by userCanAccessProblem), reused here rather than adding a new column.
+  // Beyond the initial name/image, the track is fully independent: its own
+  // sections, slide uploads and quizzes, never touching the course's video lessons.
+  // Track.image has no default, so a course created without a thumbnail falls back
+  // to an empty string, same as a manually created track with none set.
+  const course = await prisma.$transaction(async (tx) => {
+    const course = await tx.course.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl || null,
+        price: data.price,
+        slug: data.slug,
+      },
+    });
+    await tx.track.create({
+      data: {
+        title: course.title,
+        description: course.description,
+        image: course.imageUrl ?? "",
+        courseId: course.id,
+      },
+    });
+    return course;
   });
 
   await cacheDel("courses:all");
+  await cacheDel("tracks:all");
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/notes");
   return course;
 }
 
