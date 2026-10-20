@@ -68,6 +68,14 @@ export async function GET(_request: Request, { params }: Params) {
     // fetched as-is, with no AccessKey header, rather than treated as a Bunny path.
     const isLegacyUrl = bunnyPath.startsWith("http://") || bunnyPath.startsWith("https://");
 
+    // Defense in depth: the write side (setSectionPPT, setContentMaterial,
+    // createUploadedVideo) already rejects "..", a leading slash and backslashes
+    // via sanitizeBunnyPath before storing a path, but this is the one place that
+    // actually builds the upstream URL, so it's checked again here too.
+    if (!isLegacyUrl && (bunnyPath.includes("..") || bunnyPath.startsWith("/"))) {
+      return NextResponse.json({ error: "Not found." }, { status: 404 });
+    }
+
     let upstream: Response;
     if (isLegacyUrl) {
       upstream = await fetch(bunnyPath);

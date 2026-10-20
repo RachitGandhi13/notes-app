@@ -17,7 +17,11 @@ const csp = [
   "font-src 'self' data:",
   // Admin uploads send the file straight to Vercel Blob, which needs this host.
   "connect-src 'self' https://*.razorpay.com https://blob.vercel-storage.com",
-  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://view.officeapps.live.com https://iframe.mediadelivery.net",
+  // 'self' is required for MaterialViewer's inline <iframe src="/api/notes/...">
+  // (notes/track section PDFs) — without it the browser silently drops the frame
+  // with no network request and no visible error, since frame-src (once present)
+  // replaces the default-src fallback entirely rather than adding to it.
+  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://view.officeapps.live.com https://iframe.mediadelivery.net",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -5,6 +5,7 @@ import { AuthError, getSession, requireAuth, requireAdmin } from "@repo/auth";
 import { cacheGet, cacheSet, cacheDel } from "@repo/cache";
 import { revalidatePath } from "next/cache";
 import { userCanAccessContent } from "@/lib/access";
+import { sanitizeBunnyPath } from "@/lib/upload-types";
 
 // ── Courses ────────────────────────────────────────────────────────────────────
 
@@ -421,6 +422,7 @@ export async function createUploadedVideo(data: {
   if (!data.videoUrl && !data.bunnyVideoId) {
     throw new Error("Upload a video file or paste a Bunny video ID.");
   }
+  const bunnyPdfPath = data.bunnyPdfPath?.trim() ? sanitizeBunnyPath(data.bunnyPdfPath) : null;
 
   // The thumbnail is stored twice on purpose: Content.thumbnail feeds the
   // curriculum list, VideoMetadata.thumbnail1Url is the player's poster frame.
@@ -436,7 +438,7 @@ export async function createUploadedVideo(data: {
           videoUrl: data.videoUrl || null,
           thumbnail1Url: data.thumbnail || null,
           bunnyVideoId: data.bunnyVideoId || null,
-          bunnyPdfPath: data.bunnyPdfPath || null,
+          bunnyPdfPath,
         },
       },
     },
@@ -497,10 +499,11 @@ export async function setContentMaterial(
   materialPath: string | null
 ) {
   await requireAdmin();
+  const clean = materialPath?.trim() ? sanitizeBunnyPath(materialPath) : null;
 
   await prisma.content.update({
     where: { id: contentId },
-    data: { materialPath: materialPath?.trim() || null },
+    data: { materialPath: clean },
   });
 
   await invalidateCourseCache(courseId);
