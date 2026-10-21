@@ -26,6 +26,7 @@ model Account {
   user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -34,6 +35,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model User {
@@ -55,16 +58,16 @@ model User {
   quizScores QuizScore[]
 
   // Video domain relations
-  purchases     UserPurchases[]
-  videoProgress VideoProgress[]
-  bookmarks     Bookmark[]
-  comments      Comment[]
-  questions     Question[]
-  answers       Answer[]
-  votes             Vote[]
-  certificates      Certificate[]
-  bountySubmissions BountySubmission[]
-  paymentOrders     PaymentOrder[]
+  purchases              UserPurchases[]
+  videoProgress          VideoProgress[]
+  bookmarks              Bookmark[]
+  comments               Comment[]
+  questions              Question[]
+  answers                Answer[]
+  votes                  Vote[]
+  certificates           Certificate[]
+  bountySubmissions      BountySubmission[]
+  paymentOrders          PaymentOrder[]
   internshipApplications InternshipApplication[]
   // Distinct from `certificates` (Certificate) above, which is a per-course completion
   // certificate tied to a real Course row. An internship isn't a Course, so this is its
@@ -86,38 +89,41 @@ model VerificationToken {
 // ─── Notes Domain ─────────────────────────────────────────────────────────────
 
 model Track {
-  id          String          @id @default(uuid())
-  title       String
-  description String
-  image       String
-  categories  TrackCategory[]
-  problems    TrackProblems[]
-  inSearch    Boolean         @default(false)
-  hidden      Boolean         @default(false)
-  cohort      Int             @default(0)
+  id            String          @id @default(uuid())
+  title         String
+  description   String
+  image         String
+  categories    TrackCategory[]
+  problems      TrackProblems[]
+  inSearch      Boolean         @default(false)
+  hidden        Boolean         @default(false)
+  cohort        Int             @default(0)
   // Deprecated (superseded by `courses`/TrackCourse, a many-to-many combo-bundle
   // link) — kept, unused by app code, rather than dropped, since a production row
   // could still have this set. A later cleanup migration can remove it.
-  courseId    String?         @unique
-  course      Course?         @relation(fields: [courseId], references: [id])
+  courseId      String?         @unique
+  course        Course?         @relation(fields: [courseId], references: [id])
   // Combo bundling: the courses this track unlocks on purchase, and what the
   // bundle itself costs. Null price (or no linked courses) means the track is
   // free — see hasTrackAccess() in lib/track-actions.ts.
-  courses     TrackCourse[]
-  bundlePrice Float?
+  courses       TrackCourse[]
+  bundlePrice   Float?
   paymentOrders PaymentOrder[]
-  createdAt   DateTime        @default(now())
+  createdAt     DateTime        @default(now())
 }
 
 // Many-to-many: a track can bundle several courses, and a course can appear in
 // more than one bundle. Paying a track's bundlePrice grants every course here.
 model TrackCourse {
-  track     Track   @relation(fields: [trackId], references: [id])
-  trackId   String
-  course    Course  @relation(fields: [courseId], references: [id])
-  courseId  String
+  track    Track  @relation(fields: [trackId], references: [id])
+  trackId  String
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
 
   @@id([trackId, courseId])
+  // trackId is already covered by the composite PK above (leftmost-prefix) — this
+  // covers the reverse lookup, Course.trackBundles (e.g. deleteCourse's guard count).
+  @@index([courseId])
 }
 
 model Categories {
@@ -155,17 +161,22 @@ model TrackProblems {
   sortingOrder Int
 
   @@id([trackId, problemId])
+  // trackId covered by the composite PK (leftmost-prefix) — this covers deleting
+  // a problem's own TrackProblems rows by problemId alone (see track-actions.ts).
+  @@index([problemId])
 }
 
 model MCQQuestion {
-  id            String  @id @default(uuid())
+  id            String   @id @default(uuid())
   question      String
   options       String[]
   correctOption String
-  problem       Problem @relation(fields: [problemId], references: [id])
+  problem       Problem  @relation(fields: [problemId], references: [id])
   problemId     String
   // Questions are listed in the order they were added (ties broken by id).
   createdAt     DateTime @default(now())
+
+  @@index([problemId])
 }
 
 model QuizScore {
@@ -176,6 +187,9 @@ model QuizScore {
   problem   Problem  @relation(fields: [problemId], references: [id])
   problemId String
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([problemId])
 }
 
 enum ProblemType {
@@ -186,17 +200,17 @@ enum ProblemType {
 // ─── Video Domain ─────────────────────────────────────────────────────────────
 
 model Course {
-  id            String          @id @default(uuid())
-  title         String
-  description   String
-  imageUrl      String?
-  price         Float           @default(0) // in INR (rupees) — Razorpay integration
-  slug          String          @unique
-  hidden        Boolean         @default(false)
-  content       CourseContent[]
-  purchases     UserPurchases[]
-  certificate   Certificate[]
-  paymentOrders PaymentOrder[]
+  id                String                  @id @default(uuid())
+  title             String
+  description       String
+  imageUrl          String?
+  price             Float                   @default(0) // in INR (rupees) — Razorpay integration
+  slug              String                  @unique
+  hidden            Boolean                 @default(false)
+  content           CourseContent[]
+  purchases         UserPurchases[]
+  certificate       Certificate[]
+  paymentOrders     PaymentOrder[]
   // Deprecated 1:1 reverse side — see Track.courseId. Superseded by trackBundles.
   linkedTrack       Track?
   trackBundles      TrackCourse[] // combo bundles (Tracks) this course is included in
@@ -214,6 +228,9 @@ model UserPurchases {
   createdAt DateTime @default(now())
 
   @@unique([userId, courseId])
+  // userId is already covered by the unique constraint above (leftmost-prefix) —
+  // this covers getEnrolledStudents(courseId), a courseId-only filter.
+  @@index([courseId])
 }
 
 // Razorpay payment audit trail — separate from UserPurchases (the access-check
@@ -235,6 +252,9 @@ model PaymentOrder {
   status            PaymentStatus @default(CREATED)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+
+  @@index([courseId])
+  @@index([trackId])
 }
 
 enum PaymentStatus {
@@ -269,6 +289,10 @@ model Content {
   questions      Question[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  // Self-referential tree traversal (building a subtree for cascading deletes,
+  // see deleteCourse/deleteContent in lib/actions.ts) filters by parentId alone.
+  @@index([parentId])
 }
 
 model CourseContent {
@@ -279,6 +303,9 @@ model CourseContent {
   order     Int
 
   @@id([courseId, contentId])
+  // courseId covered by the composite PK (leftmost-prefix) — this covers the
+  // reverse lookup from a Content row to its course (e.g. getBookmarks()).
+  @@index([contentId])
 }
 
 model VideoMetadata {
@@ -310,15 +337,18 @@ model NotionMetadata {
 }
 
 model VideoProgress {
-  id          String   @id @default(uuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  content     Content  @relation(fields: [contentId], references: [id])
-  contentId   String
-  markAsRead  Boolean  @default(false)
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  content    Content  @relation(fields: [contentId], references: [id])
+  contentId  String
+  markAsRead Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
 
+  // userId is already covered by the unique constraint below (leftmost-prefix) —
+  // this covers deleteContent's cascading cleanup, a contentId-only filter.
   @@unique([userId, contentId])
+  @@index([contentId])
 }
 
 model Bookmark {
@@ -329,7 +359,10 @@ model Bookmark {
   contentId String
   createdAt DateTime @default(now())
 
+  // userId covered by the unique constraint below — this covers deleteContent's
+  // cascading cleanup, a contentId-only filter.
   @@unique([userId, contentId])
+  @@index([contentId])
 }
 
 model Comment {
@@ -344,6 +377,8 @@ model Comment {
   votes     Vote[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+
+  @@index([contentId])
 }
 
 model Question {
@@ -358,6 +393,8 @@ model Question {
   votes     Vote[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([contentId])
 }
 
 model Answer {
@@ -371,11 +408,13 @@ model Answer {
   votes      Vote[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([questionId])
 }
 
 model Vote {
-  id         String   @id @default(uuid())
-  user       User     @relation(fields: [userId], references: [id])
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [id])
   userId     String
   voteType   VoteType
   comment    Comment?  @relation(fields: [commentId], references: [id])
@@ -384,6 +423,10 @@ model Vote {
   questionId String?
   answer     Answer?   @relation(fields: [answerId], references: [id])
   answerId   String?
+
+  @@index([commentId])
+  @@index([questionId])
+  @@index([answerId])
 }
 
 model Certificate {
@@ -399,25 +442,25 @@ model Certificate {
 }
 
 model Event {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
   startDate   DateTime
   endDate     DateTime?
   link        String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 }
 
 model BountySubmission {
-  id          String         @id @default(uuid())
-  user        User           @relation(fields: [userId], references: [id])
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
   userId      String
-  bountyId    String         // external reference — linked in Phase 8
-  description String         @db.Text
-  type        PostType       @default(BOUNTY)
-  approved    Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  bountyId    String // external reference — linked in Phase 8
+  description String   @db.Text
+  type        PostType @default(BOUNTY)
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // A record of a submitted internship application, kept so an admin can see who applied
@@ -426,8 +469,8 @@ model BountySubmission {
 // Still posted to the client's own Google Sheet from the browser (see lib/internships.ts);
 // this table is this app's own copy, independent of that external system.
 model InternshipApplication {
-  id                 String   @id @default(uuid())
-  user               User?    @relation(fields: [userId], references: [id])
+  id                 String           @id @default(uuid())
+  user               User?            @relation(fields: [userId], references: [id])
   userId             String?
   fullName           String
   email              String
@@ -448,7 +491,7 @@ model InternshipApplication {
   preferredStartDate String
   linkedIn           String
   resumeLink         String
-  createdAt          DateTime @default(now())
+  createdAt          DateTime         @default(now())
   // Admin-managed tracking, separate from the student's own preferredDuration/
   // preferredStartDate above (what they asked for at application time, left
   // untouched as a historical record). endDate isn't stored — it's always
@@ -459,7 +502,9 @@ model InternshipApplication {
   // Temporarily suspends the internship without deleting the application or
   // touching any course access already granted via an issued certificate —
   // see revokeCertificate's own comment for why those are kept separate.
-  frozen             Boolean  @default(false)
+  frozen             Boolean          @default(false)
+
+  @@index([internshipTrackId])
 }
 
 // An admin-issued internship completion certificate. certificateCode is the public,
@@ -467,8 +512,8 @@ model InternshipApplication {
 // /verify/[certificateCode] route — never the row's own id, so verification works the
 // same way slug-based lookups already do elsewhere (see Certificate.slug).
 model InternshipCertificate {
-  id                 String   @id @default(uuid())
-  user               User     @relation(fields: [userId], references: [id])
+  id                 String           @id @default(uuid())
+  user               User             @relation(fields: [userId], references: [id])
   userId             String
   // Deprecated free-text track name — kept, see InternshipApplication's own
   // comment for why. Still always written so @@unique([userId, trackName])
@@ -476,11 +521,14 @@ model InternshipCertificate {
   trackName          String
   internshipTrackId  String?
   internshipTrackRef InternshipTrack? @relation(fields: [internshipTrackId], references: [id], onDelete: SetNull)
-  issueDate          DateTime @default(now())
-  certificateCode    String   @unique @default(uuid())
-  createdAt          DateTime @default(now())
+  issueDate          DateTime         @default(now())
+  certificateCode    String           @unique @default(uuid())
+  createdAt          DateTime         @default(now())
 
   @@unique([userId, trackName])
+  // Confirmed hot path: deleteInternshipTrack's guard counts by internshipTrackId
+  // alone before allowing a catalog track to be removed.
+  @@index([internshipTrackId])
 }
 
 // Admin-managed internship track catalog — supersedes the former hardcoded
@@ -510,6 +558,9 @@ model InternshipTrackCourse {
   courseId String
 
   @@id([trackId, courseId])
+  // trackId covered by the composite PK (leftmost-prefix) — this covers the
+  // reverse lookup, Course.internshipBundles (deleteCourse's guard count).
+  @@index([courseId])
 }
 
 enum ContentType {
@@ -532,4 +583,3 @@ enum PostType {
   BOUNTY
   PROJECT
 }
-

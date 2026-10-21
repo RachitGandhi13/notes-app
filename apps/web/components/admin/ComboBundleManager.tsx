@@ -218,7 +218,7 @@ export function ComboBundleManager({
                 className={inputClass}
               />
               <p className="text-muted-foreground text-xs">
-                Total discounted price for all selected courses in INR — this is what the student
+                Total discounted price for all selected courses in INR. This is what the student
                 pays once for everything in the combo.
               </p>
             </div>
@@ -248,7 +248,7 @@ export function ComboBundleManager({
       </form>
 
       {bundles.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No combos yet — create one above.</p>
+        <p className="text-muted-foreground text-sm">No combos yet. Create one above.</p>
       ) : (
         <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
           {bundles.map((bundle) => (
@@ -321,8 +321,8 @@ export function ComboBundleManager({
           <h3 className="text-lg font-semibold">Delete &quot;{deletingBundle?.title}&quot;?</h3>
           <p className="text-muted-foreground text-sm">
             This will permanently remove this combo deal from the storefront. If a student has
-            already paid for it, deletion is blocked automatically to protect their purchase record
-            — hide it instead in that case.
+            already paid for it, deletion is blocked automatically to protect their purchase record.
+            Hide it instead in that case.
           </p>
           {deleteError && <p className="text-destructive text-sm">{deleteError}</p>}
           <div className="flex justify-end gap-2 pt-2">

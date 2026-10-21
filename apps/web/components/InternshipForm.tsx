@@ -40,7 +40,20 @@ function Field({
   );
 }
 
-export function InternshipForm({ tracks }: { tracks: InternshipTrackOption[] }) {
+export function InternshipForm({
+  tracks,
+  selectedTrack,
+  onTrackChange,
+}: {
+  tracks: InternshipTrackOption[];
+  /** Pre-fills the track dropdown when set from outside — e.g. a track card clicked on
+   * the page above. Re-applies whenever this changes, so clicking a different card
+   * always wins over whatever the dropdown currently shows. */
+  selectedTrack?: string | null;
+  /** Mirrors the dropdown's own changes back up, so an outside track card (if any) can
+   * stay in sync when the student picks a track directly from the dropdown instead. */
+  onTrackChange?: (title: string) => void;
+}) {
   const { data: session } = useSession();
   const [data, setData] = useState<InternshipApplication>(EMPTY_APPLICATION);
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +67,15 @@ export function InternshipForm({ tracks }: { tracks: InternshipTrackOption[] }) 
       setData((prev) => (prev.usn ? prev : { ...prev, usn: session.user.studentId! }));
     }
   }, [session]);
+
+  // Mirrors an externally-selected track (a card click) into the dropdown.
+  useEffect(() => {
+    if (selectedTrack) {
+      setData((prev) =>
+        prev.internshipTrack === selectedTrack ? prev : { ...prev, internshipTrack: selectedTrack }
+      );
+    }
+  }, [selectedTrack]);
 
   function set<K extends keyof InternshipApplication>(key: K, value: string) {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -200,7 +222,10 @@ export function InternshipForm({ tracks }: { tracks: InternshipTrackOption[] }) 
             id="internshipTrack"
             required
             value={data.internshipTrack}
-            onChange={(e) => set("internshipTrack", e.target.value)}
+            onChange={(e) => {
+              set("internshipTrack", e.target.value);
+              onTrackChange?.(e.target.value);
+            }}
             className={fieldClass}
           >
             <option value="" disabled>
@@ -244,28 +269,30 @@ export function InternshipForm({ tracks }: { tracks: InternshipTrackOption[] }) 
           />
         </Field>
 
-        <Field label="LinkedIn Profile" htmlFor="linkedIn">
+        <Field label="LinkedIn Profile (optional)" htmlFor="linkedIn">
           <input
             id="linkedIn"
             type="url"
             placeholder="https://linkedin.com/in/..."
-            required
             value={data.linkedIn}
             onChange={(e) => set("linkedIn", e.target.value)}
             className={fieldClass}
           />
         </Field>
 
-        <Field label="Resume Link (Google Drive)" htmlFor="resumeLink">
+        <Field label="Resume Link" htmlFor="resumeLink">
           <input
             id="resumeLink"
-            type="url"
+            type="text"
             placeholder="https://drive.google.com/..."
             required
             value={data.resumeLink}
             onChange={(e) => set("resumeLink", e.target.value)}
             className={fieldClass}
           />
+          <p className="text-muted-foreground text-xs">
+            Provide a shareable Google Drive, Dropbox, or portfolio link.
+          </p>
         </Field>
       </div>
 

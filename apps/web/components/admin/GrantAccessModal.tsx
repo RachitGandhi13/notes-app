@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { Dialog, DialogContent } from "@repo/ui";
-import { findStudentByIdentifier, grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
+import { grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
 import { grantComboAccess } from "@/lib/track-actions";
 import { issueCertificate } from "@/lib/internship-actions";
+import { useStudentLookup } from "@/lib/hooks/useStudentLookup";
 
 interface CourseOption {
   id: string;
@@ -25,15 +26,6 @@ interface InternshipTrackOption {
   courses: { id: string; title: string }[];
 }
 
-interface FoundStudent {
-  id: string;
-  name: string | null;
-  email: string | null;
-  studentId: string | null;
-  purchasedCourseIds: string[];
-  certificates: { id: string; trackName: string; certificateCode: string; issueDate: Date }[];
-}
-
 // A second, deliberately separate surface from StudentAccessPanel (Internships
 // tab, cert-issuing-focused) — this one lives on the Students tab per the
 // client's explicit "Grant Manual Access modal on Admin -> Students" ask, and
@@ -49,42 +41,24 @@ export function GrantAccessModal({
   internshipTracks: InternshipTrackOption[];
 }) {
   const [open, setOpen] = useState(false);
-  const [identifier, setIdentifier] = useState("");
-  const [looking, setLooking] = useState(false);
-  const [student, setStudent] = useState<FoundStudent | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    identifier,
+    setIdentifier,
+    looking,
+    student,
+    setStudent,
+    notFound,
+    error,
+    setError,
+    handleLookup,
+    refresh,
+    reset,
+  } = useStudentLookup();
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   function closeModal() {
     setOpen(false);
-    setIdentifier("");
-    setStudent(null);
-    setNotFound(false);
-    setError("");
-  }
-
-  async function refresh() {
-    if (!student?.email) return;
-    const refreshed = await findStudentByIdentifier(student.email);
-    if (refreshed) setStudent(refreshed);
-  }
-
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    setLooking(true);
-    setError("");
-    setNotFound(false);
-    setStudent(null);
-    try {
-      const result = await findStudentByIdentifier(identifier);
-      if (!result) setNotFound(true);
-      else setStudent(result);
-    } catch (err: any) {
-      setError(err?.message ?? "Lookup failed.");
-    } finally {
-      setLooking(false);
-    }
+    reset();
   }
 
   async function handleToggleCourse(courseId: string, hasAccess: boolean) {

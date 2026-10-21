@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import { Navbar, Footer } from "@repo/ui";
 import { Providers } from "./providers";
@@ -7,8 +6,6 @@ import { CourseSearchBar } from "@/components/CourseSearchBar";
 import { SITE_URL } from "@/lib/site";
 import { jsonLd } from "@/lib/seo";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -29,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans`}>
+      <body className="font-sans">
         {/* Tells search engines the official site name, which Google uses for the result's name. */}
         <script
           type="application/ld+json"

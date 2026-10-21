@@ -31,10 +31,10 @@ export function TrackCard({
   return (
     <Link
       href={`/tracks/${id}`}
-      className="ring-offset-background focus-visible:ring-ring group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="ring-offset-background focus-visible:ring-ring group block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
     >
-      <div className="bg-card hover:border-primary/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-[0.99]">
-        <div className="bg-muted relative aspect-video w-full overflow-hidden">
+      <div className="bg-card hover:border-primary/30 flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-[0.99]">
+        <div className="bg-muted relative aspect-video w-full shrink-0 overflow-hidden">
           {image ? (
             <Image
               src={image}
@@ -51,8 +51,8 @@ export function TrackCard({
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
-        <div className="space-y-3 p-5">
-          <div>
+        <div className="flex flex-1 flex-col space-y-3 p-5">
+          <div className="flex-1">
             {categories.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {categories.map((c) => (

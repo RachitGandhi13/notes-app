@@ -204,7 +204,7 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         accept="video/*"
         className="border-input bg-background file:bg-primary file:text-primary-foreground flex h-8 w-full rounded border px-2 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-0.5 file:text-xs"
       />
-      <p className="text-muted-foreground text-center text-[10px]">— or, instead of a file —</p>
+      <p className="text-muted-foreground text-center text-[10px]">Or, instead of a file</p>
       <input
         placeholder="Bunny video ID (optional, skips the file above)"
         value={bunnyVideoId}
@@ -212,7 +212,7 @@ function AddVideoForm({ courseId, parentId }: { courseId: string; parentId?: str
         className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
       />
       <input
-        placeholder="Bunny file path — PDF, JPG or PNG (optional)"
+        placeholder="Bunny file path (PDF, JPG or PNG, optional)"
         value={bunnyPdfPath}
         onChange={(e) => setBunnyPdfPath(e.target.value)}
         className="border-input bg-background flex h-8 w-full rounded border px-2 text-xs"
@@ -539,7 +539,7 @@ function ContentNodeRow({
               title={
                 node.materialPath
                   ? "Change this section's attached material (PDF/image)"
-                  : "Attach a section material (PDF/image) — a cheatsheet for the whole section"
+                  : "Attach a section material (PDF/image): a cheatsheet for the whole section"
               }
             >
               <FileText className="h-3.5 w-3.5" />
@@ -597,7 +597,7 @@ function ContentNodeRow({
       {editingMaterial && (
         <div className="mt-3 space-y-1.5 border-t pt-3">
           <label className="text-muted-foreground text-xs font-medium">
-            Section material — Bunny file path (PDF, JPG, JPEG or PNG), or leave blank to remove
+            Section material: Bunny file path (PDF, JPG, JPEG or PNG), or leave blank to remove
           </label>
           <div className="flex gap-2">
             <input
@@ -819,7 +819,7 @@ function CourseRow({ course }: { course: AdminCourse }) {
             title={
               canDelete
                 ? "Delete course"
-                : "Can't delete — this course has purchase, payment or certificate records. Hide it instead."
+                : "Can't delete: this course has purchase, payment or certificate records. Hide it instead."
             }
           >
             <Trash2 className="h-4 w-4" />
@@ -895,11 +895,24 @@ function CourseRow({ course }: { course: AdminCourse }) {
   );
 }
 
+// "cloud architecture 101" -> "cloud-architecture-101".
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function CreateCourseForm() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [slug, setSlug] = useState("");
+  // Once the admin types into the slug field directly, auto-generation stops so it
+  // never clobbers a deliberate edit — flips back to auto on the next course (reset
+  // alongside every other field after a successful submit).
+  const [slugTouched, setSlugTouched] = useState(false);
   const [price, setPrice] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -921,6 +934,7 @@ function CreateCourseForm() {
       setTitle("");
       setDescription("");
       setSlug("");
+      setSlugTouched(false);
       setPrice("0");
       setImageUrl("");
       setSuccess(true);
@@ -950,7 +964,11 @@ function CreateCourseForm() {
           <input
             required
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setTitle(value);
+              if (!slugTouched) setSlug(slugify(value));
+            }}
             className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
           />
         </div>
@@ -960,9 +978,15 @@ function CreateCourseForm() {
             required
             placeholder="e.g. react-fundamentals"
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => {
+              setSlug(e.target.value);
+              setSlugTouched(true);
+            }}
             className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
           />
+          <p className="text-muted-foreground text-xs">
+            Auto-generated from the title — edit anytime before creating.
+          </p>
         </div>
       </div>
 

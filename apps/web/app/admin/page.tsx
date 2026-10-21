@@ -1,6 +1,7 @@
 import { requireAdmin } from "@repo/auth";
 import { prisma } from "@repo/db/client";
 import { redirect } from "next/navigation";
+import { ClipboardList, MessageSquare, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { getPendingComments } from "@/lib/community";
 import { getAllCoursesForAdmin } from "@/lib/actions";
@@ -28,7 +29,7 @@ export default async function AdminPage() {
     redirect("/auth");
   }
 
-  const [pending, courses, notesTracks, applications, internshipTracks, bundles] =
+  const [pending, courses, notesTracks, applications, internshipTracks, bundles, enrolledStudents] =
     await Promise.all([
       getPendingComments(),
       getAllCoursesForAdmin(),
@@ -49,7 +50,13 @@ export default async function AdminPage() {
       getInternshipApplications(),
       getInternshipTracks(),
       getAllBundlesForAdmin(),
+      // Distinct students with at least one course (bought or manually granted) —
+      // the same definition EnrolledStudentsTable uses per-course, just unscoped.
+      prisma.userPurchases.findMany({ select: { userId: true }, distinct: ["userId"] }),
     ]);
+
+  // "Pending" mirrors InternshipApplicationsList's own badge rule (no startDate yet).
+  const pendingApplicationsCount = applications.filter((app) => !app.startDate).length;
 
   return (
     // `container` matches every other page's widening (caps at 1400px, same
@@ -59,9 +66,36 @@ export default async function AdminPage() {
     <div className="container space-y-8 py-6 sm:py-8">
       <div>
         <h1 className="text-2xl font-bold">Admin</h1>
-        <p className="text-muted-foreground">
-          Manage courses and notes, moderate comments, review enrolled students.
-        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="bg-card border-border/60 hover:border-primary/40 flex items-center gap-4 rounded-xl border p-5 transition-all">
+          <span className="bg-primary/15 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+            <Users className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-2xl font-bold leading-none">{enrolledStudents.length}</p>
+            <p className="text-muted-foreground mt-1 text-xs">Enrolled Students</p>
+          </div>
+        </div>
+        <div className="bg-card border-border/60 hover:border-primary/40 flex items-center gap-4 rounded-xl border p-5 transition-all">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+            <ClipboardList className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-2xl font-bold leading-none">{pendingApplicationsCount}</p>
+            <p className="text-muted-foreground mt-1 text-xs">Pending Internship Applications</p>
+          </div>
+        </div>
+        <div className="bg-card border-border/60 hover:border-primary/40 flex items-center gap-4 rounded-xl border p-5 transition-all">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400">
+            <MessageSquare className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-2xl font-bold leading-none">{pending.length}</p>
+            <p className="text-muted-foreground mt-1 text-xs">Pending Moderation Comments</p>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="courses">
@@ -133,31 +167,46 @@ export default async function AdminPage() {
           />
         </TabsContent>
 
-        <TabsContent value="internships" className="space-y-6 pt-6">
-          <InternshipTrackManager
-            tracks={internshipTracks}
-            allCourses={courses.map((c) => ({
-              id: c.id,
-              title: c.title,
-              price: c.price,
-              slug: c.slug,
-            }))}
-          />
-          <StudentAccessPanel
-            courses={courses.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
-            internshipTracks={internshipTracks.map((t) => ({
-              id: t.id,
-              title: t.title,
-              hidden: t.hidden,
-              courses: t.courses.map((tc) => ({
-                course: { id: tc.course.id, title: tc.course.title },
-              })),
-            }))}
-          />
-          <div className="space-y-3">
-            <h2 className="font-semibold">Applications</h2>
-            <InternshipApplicationsList applications={applications} />
-          </div>
+        <TabsContent value="internships" className="pt-6">
+          <Tabs defaultValue="trackManager">
+            <TabsList className="h-auto flex-wrap">
+              <TabsTrigger value="trackManager">Track Manager</TabsTrigger>
+              <TabsTrigger value="grantAccess">Grant Access</TabsTrigger>
+              <TabsTrigger value="applications">
+                Applications {applications.length > 0 && `(${applications.length})`}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="trackManager" className="pt-6">
+              <InternshipTrackManager
+                tracks={internshipTracks}
+                allCourses={courses.map((c) => ({
+                  id: c.id,
+                  title: c.title,
+                  price: c.price,
+                  slug: c.slug,
+                }))}
+              />
+            </TabsContent>
+
+            <TabsContent value="grantAccess" className="pt-6">
+              <StudentAccessPanel
+                courses={courses.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+                internshipTracks={internshipTracks.map((t) => ({
+                  id: t.id,
+                  title: t.title,
+                  hidden: t.hidden,
+                  courses: t.courses.map((tc) => ({
+                    course: { id: tc.course.id, title: tc.course.title },
+                  })),
+                }))}
+              />
+            </TabsContent>
+
+            <TabsContent value="applications" className="pt-6">
+              <InternshipApplicationsList applications={applications} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="comments" className="pt-6">

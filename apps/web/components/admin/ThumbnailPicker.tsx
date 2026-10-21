@@ -203,7 +203,7 @@ export function ThumbnailPicker({
               className="border-input bg-background flex h-8 w-full rounded-md border px-2 text-xs"
             />
             <p className="text-muted-foreground text-xs">
-              Paste a direct image link — Unsplash, a Vercel Blob URL, or any hosted image.
+              Paste a direct image link: Unsplash, a Vercel Blob URL, or any hosted image.
             </p>
             {urlBroken && (
               <p className="text-destructive text-xs">That URL didn&apos;t load as an image.</p>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pause, Play, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Pause, Play, Search, Trash2 } from "lucide-react";
 import {
   deleteInternshipApplication,
   setInternshipDuration,
@@ -13,15 +13,19 @@ interface Application {
   id: string;
   fullName: string;
   email: string;
+  phone: string;
   usn: string;
   internshipTrack: string;
   preferredDuration: string;
   preferredStartDate: string;
+  resumeLink: string;
   createdAt: Date;
   startDate: Date | null;
   durationMonths: number | null;
   frozen: boolean;
 }
+
+const PAGE_SIZE = 10;
 
 const DURATION_OPTIONS = [1, 2, 6];
 
@@ -195,11 +199,22 @@ function ApplicationRow({ app }: { app: Application }) {
         </span>
       </div>
       <p className="text-muted-foreground text-xs">
-        {app.email} · {app.usn}
+        {app.email} · {app.phone} · {app.usn}
       </p>
       <p className="text-xs">
         {app.internshipTrack} · requested {app.preferredDuration}, starting {app.preferredStartDate}
       </p>
+      {app.resumeLink && (
+        <a
+          href={app.resumeLink.startsWith("http") ? app.resumeLink : `https://${app.resumeLink}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary ring-offset-background focus-visible:ring-ring inline-flex items-center gap-1 rounded text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        >
+          View resume
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
 
       <DurationEditor app={app} />
 
@@ -249,15 +264,84 @@ function ApplicationRow({ app }: { app: Application }) {
 }
 
 export function InternshipApplicationsList({ applications }: { applications: Application[] }) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return applications;
+    return applications.filter(
+      (app) =>
+        app.fullName.toLowerCase().includes(q) ||
+        app.email.toLowerCase().includes(q) ||
+        app.phone.toLowerCase().includes(q)
+    );
+  }, [applications, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamped rather than reset via effect — if a mutation (e.g. deleting the last
+  // applicant on the last page) leaves `page` out of range, this just quietly shows
+  // the new last page instead of an empty one.
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   if (applications.length === 0) {
     return <p className="text-muted-foreground text-sm">No applications yet.</p>;
   }
 
   return (
-    <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
-      {applications.map((app) => (
-        <ApplicationRow key={app.id} app={app} />
-      ))}
-    </ul>
+    <div className="space-y-3">
+      <div className="relative">
+        <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+        <input
+          placeholder="Search by name, email, or phone…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
+          className="border-input bg-background focus:ring-ring flex h-9 w-full rounded-md border pl-9 pr-3 text-sm focus:outline-none focus:ring-2"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No applications match &quot;{query}&quot;.</p>
+      ) : (
+        <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
+          {paged.map((app) => (
+            <ApplicationRow key={app.id} app={app} />
+          ))}
+        </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="text-muted-foreground">
+            Page {safePage} of {totalPages} · {filtered.length}{" "}
+            {filtered.length === 1 ? "applicant" : "applicants"}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="hover:bg-accent ring-offset-background focus-visible:ring-ring flex items-center gap-1 rounded-md border px-2.5 py-1.5 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-40"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="hover:bg-accent ring-offset-background focus-visible:ring-ring flex items-center gap-1 rounded-md border px-2.5 py-1.5 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-40"
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -34,7 +34,7 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
 
   if (comments.length === 0) {
     return (
-      <div className="bg-muted/40 text-muted-foreground rounded-xl border py-12 text-center">
+      <div className="bg-muted/40 text-muted-foreground border-border/60 rounded-xl border py-12 text-center">
         No pending comments. You&apos;re all caught up!
       </div>
     );
@@ -43,7 +43,7 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
   return (
     <ul className="space-y-4">
       {comments.map((c) => (
-        <li key={c.id} className="bg-card space-y-3 rounded-xl border p-4">
+        <li key={c.id} className="bg-card border-border/60 space-y-3 rounded-xl border p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-0.5">
               <p className="text-muted-foreground text-xs">
@@ -63,7 +63,7 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
             <button
               onClick={() => handleApprove(c.id)}
               disabled={loading === c.id}
-              className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="ring-offset-background focus-visible:ring-ring flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-all hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               <CheckCircle2 className="h-4 w-4" />
               Approve
@@ -74,14 +74,14 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
                 <button
                   onClick={() => handleDelete(c.id)}
                   disabled={loading === c.id}
-                  className="text-destructive font-medium hover:underline disabled:opacity-50"
+                  className="text-destructive ring-offset-background focus-visible:ring-ring rounded font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                   Yes, delete
                 </button>
                 <button
                   onClick={() => setConfirmingId(null)}
                   disabled={loading === c.id}
-                  className="hover:underline disabled:opacity-50"
+                  className="ring-offset-background focus-visible:ring-ring rounded hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -90,7 +90,7 @@ export function ModerationPanel({ initialComments }: { initialComments: PendingC
               <button
                 onClick={() => setConfirmingId(c.id)}
                 disabled={loading === c.id}
-                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground ring-offset-background focus-visible:ring-ring flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete

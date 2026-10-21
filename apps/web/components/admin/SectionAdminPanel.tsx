@@ -112,7 +112,7 @@ function PresentationEditor({ problem }: { problem: SectionProblem }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold">Slide / material — Bunny Storage file path</h3>
+      <h3 className="text-sm font-semibold">Slide / material: Bunny Storage file path</h3>
       <p className="text-muted-foreground text-sm">
         PDF, JPG, JPEG or PNG from the <code>cloudvidya-notes</code> storage zone (e.g.{" "}
         <code>devops-notes.pdf</code>). Leave blank to remove it.
