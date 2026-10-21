@@ -15,9 +15,13 @@ function getTransport() {
  * unusable. In development, the email is printed instead so you can read the link.
  */
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  if (!process.env.SMTP_HOST) {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    // Named individually rather than a single "SMTP_HOST is not set" message, so
+    // whoever reads this log line knows exactly which secret to fill in — not just
+    // that *something* is missing.
+    const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"].filter((key) => !process.env[key]);
     if (process.env.NODE_ENV === "production") {
-      throw new Error("SMTP_HOST is not set. Transactional email cannot be sent.");
+      throw new Error(`Transactional email cannot be sent: ${missing.join(", ")} not set.`);
     }
     if (process.env.NODE_ENV === "development") {
       // Dev only: shows the subject and body (which contains the link) in the terminal.
@@ -36,6 +40,16 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     // Logged, not thrown: callers create the account before sending, so a throw
     // here would leave an account that exists but was never verified. The
     // recipient address is not logged, because production logs are long-lived.
-    console.error("[email] Failed to send:", err instanceof Error ? err.message : "unknown error");
+    // code/responseCode/command (when nodemailer's SMTP transport sets them) are
+    // the actionable part — "auth failed" vs. "connection refused" vs. "rejected
+    // by the recipient's server" need different fixes, and a bare message string
+    // often doesn't say which.
+    const e = err as { message?: string; code?: string; responseCode?: number; command?: string };
+    console.error("[email] Failed to send:", {
+      message: e?.message ?? "unknown error",
+      code: e?.code,
+      responseCode: e?.responseCode,
+      command: e?.command,
+    });
   }
 }
