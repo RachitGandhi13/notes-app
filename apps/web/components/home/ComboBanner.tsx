@@ -54,7 +54,7 @@ export function ComboBanner({ bundles, prefill }: ComboBannerProps) {
         <DialogContent className="max-w-lg">
           <h3 className="text-lg font-semibold">Combo bundles</h3>
           <p className="text-muted-foreground text-sm">
-            One payment unlocks every course below — and the notes track that comes with each one.
+            One payment unlocks every course below, and the notes track that comes with each one.
           </p>
 
           <div className="max-h-[65vh] space-y-5 overflow-y-auto">

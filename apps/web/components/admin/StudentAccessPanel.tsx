@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { findStudentByIdentifier, grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
+import { grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
 import { issueCertificate, revokeCertificate } from "@/lib/internship-actions";
+import { useStudentLookup } from "@/lib/hooks/useStudentLookup";
 
 interface AdminCourseOption {
   id: string;
@@ -17,22 +18,6 @@ interface AdminInternshipTrack {
   courses: { course: { id: string; title: string } }[];
 }
 
-interface FoundStudentCertificate {
-  id: string;
-  trackName: string;
-  certificateCode: string;
-  issueDate: Date;
-}
-
-interface FoundStudent {
-  id: string;
-  name: string | null;
-  email: string | null;
-  studentId: string | null;
-  purchasedCourseIds: string[];
-  certificates: FoundStudentCertificate[];
-}
-
 // "Option B" access management: look a student up by email or Student ID, then grant or
 // revoke individual courses. Writes straight to UserPurchases — the same table Razorpay
 // purchases land in — so a manually granted course is indistinguishable from a bought one.
@@ -43,34 +28,23 @@ export function StudentAccessPanel({
   courses: AdminCourseOption[];
   internshipTracks: AdminInternshipTrack[];
 }) {
-  const [identifier, setIdentifier] = useState("");
-  const [looking, setLooking] = useState(false);
-  const [student, setStudent] = useState<FoundStudent | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    identifier,
+    setIdentifier,
+    looking,
+    student,
+    setStudent,
+    notFound,
+    error,
+    handleLookup,
+    refresh,
+  } = useStudentLookup();
   const [busyCourseId, setBusyCourseId] = useState<string | null>(null);
   const [certTrack, setCertTrack] = useState("");
   const [issuing, setIssuing] = useState(false);
   const [certError, setCertError] = useState("");
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null);
-
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    setLooking(true);
-    setError("");
-    setNotFound(false);
-    setStudent(null);
-    try {
-      const result = await findStudentByIdentifier(identifier);
-      if (!result) setNotFound(true);
-      else setStudent(result);
-    } catch (err: any) {
-      setError(err?.message ?? "Lookup failed.");
-    } finally {
-      setLooking(false);
-    }
-  }
 
   async function handleToggle(courseId: string, hasAccess: boolean) {
     if (!student) return;
@@ -100,8 +74,7 @@ export function StudentAccessPanel({
       // Re-fetch full state rather than reconstructing it here: issuing can also grant
       // this track's mapped courses, so this is what keeps the course checklist above
       // accurate (showing "Revoke" instead of "Grant") without duplicating that logic.
-      const refreshed = student.email ? await findStudentByIdentifier(student.email) : null;
-      if (refreshed) setStudent(refreshed);
+      await refresh();
       setCertTrack("");
     } catch (err: any) {
       setCertError(err?.message ?? "Couldn't issue the certificate.");
@@ -205,7 +178,7 @@ export function StudentAccessPanel({
                 {student.certificates.map((cert) => (
                   <li key={cert.id} className="text-muted-foreground flex items-center gap-2">
                     <span className="min-w-0 flex-1 truncate">
-                      {cert.trackName} —{" "}
+                      {cert.trackName} ·{" "}
                       <a
                         href={`/verify/${cert.certificateCode}`}
                         target="_blank"

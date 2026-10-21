@@ -193,7 +193,6 @@ export async function markProgress(contentId: string, markAsRead: boolean) {
 
 // ── Bookmarks ──────────────────────────────────────────────────────────────────
 
-// Titles and thumbnails only. The bookmark list never carries a playable URL.
 export async function getBookmarks() {
   const session = await getSession();
   if (!session?.user) return [];
@@ -203,7 +202,18 @@ export async function getBookmarks() {
       id: true,
       contentId: true,
       createdAt: true,
-      content: { select: { id: true, title: true, type: true, thumbnail: true } },
+      content: {
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          thumbnail: true,
+          // A piece of content only ever sits under one course today (CourseContent
+          // has no other consumer) — this is what lets the profile page link a
+          // bookmark straight back to /courses/[slug]/[contentId].
+          courseContent: { take: 1, select: { course: { select: { slug: true } } } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

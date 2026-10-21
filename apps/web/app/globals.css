@@ -53,6 +53,9 @@
 @layer base {
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
 }
 
 /* Mobile Safari/Chrome zoom the page on focusing any text input smaller than

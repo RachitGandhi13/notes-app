@@ -58,7 +58,7 @@ export async function sendEnrollmentEmail(params: {
     `Enrollment Confirmed: ${courseTitle} 🎉`,
     wrapEmail(
       "You're enrolled!",
-      `<p>Hi ${escapeHtml(name)}, congratulations — your enrollment in <strong>${escapeHtml(courseTitle)}</strong> is now active, with lifetime access.</p>`,
+      `<p>Hi ${escapeHtml(name)}, congratulations, your enrollment in <strong>${escapeHtml(courseTitle)}</strong> is now active, with lifetime access.</p>`,
       { label: "Start learning", url: `${appUrl}/courses/${courseSlug}` }
     )
   );

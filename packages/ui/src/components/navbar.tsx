@@ -145,7 +145,7 @@ export function Navbar({
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
+                  className="text-blue-600 focus:text-blue-700 dark:text-blue-400 dark:focus:text-blue-300"
                   onSelect={() => signOut()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
@@ -244,7 +244,7 @@ export function Navbar({
                 <button
                   type="button"
                   onClick={() => signOut()}
-                  className="text-destructive hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium"
+                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium text-blue-600 dark:text-blue-400"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out

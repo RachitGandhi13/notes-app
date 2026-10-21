@@ -20,6 +20,8 @@ import { type InternshipApplication } from "@/lib/internships";
  * to an account when deciding whether to grant course access.
  */
 export async function submitInternshipApplication(data: InternshipApplication): Promise<void> {
+  // linkedIn is intentionally not required — not every applicant has a LinkedIn
+  // profile yet, and the form itself no longer requires it either.
   const required: (keyof InternshipApplication)[] = [
     "fullName",
     "email",
@@ -31,7 +33,6 @@ export async function submitInternshipApplication(data: InternshipApplication): 
     "internshipTrack",
     "preferredDuration",
     "preferredStartDate",
-    "linkedIn",
     "resumeLink",
   ];
   for (const field of required) {
@@ -95,11 +96,13 @@ export async function getInternshipApplications() {
       id: true,
       fullName: true,
       email: true,
+      phone: true,
       usn: true,
       internshipTrack: true,
       internshipTrackId: true,
       preferredDuration: true,
       preferredStartDate: true,
+      resumeLink: true,
       createdAt: true,
       startDate: true,
       durationMonths: true,

@@ -78,7 +78,7 @@ export function AddSectionForm({ trackId }: { trackId: string }) {
       />
       <div className="space-y-1">
         <label htmlFor="new-section-material" className="text-xs font-medium">
-          Bunny Storage file path — PDF, JPG, JPEG or PNG (optional)
+          Bunny Storage file path (PDF, JPG, JPEG or PNG, optional)
         </label>
         <input
           id="new-section-material"

@@ -211,7 +211,7 @@ export function InternshipTrackManager({
                 className={inputClass}
               />
               <p className="text-muted-foreground text-xs">
-                Shown to applicants as plain text only — it doesn&apos;t schedule anything or affect
+                Shown to applicants as plain text only. It doesn&apos;t schedule anything or affect
                 an individual application&apos;s dates.
               </p>
             </div>
@@ -429,7 +429,7 @@ export function InternshipTrackManager({
           <h3 className="text-lg font-semibold">Delete &quot;{deletingTrack?.title}&quot;?</h3>
           <p className="text-muted-foreground text-sm">
             Are you sure you want to delete this internship track? This can&apos;t be undone. A
-            track that already has issued certificates can&apos;t be deleted — hide it instead.
+            track that already has issued certificates can&apos;t be deleted. Hide it instead.
           </p>
           {deleteError && <p className="text-destructive text-sm">{deleteError}</p>}
           <div className="flex justify-end gap-2 pt-2">

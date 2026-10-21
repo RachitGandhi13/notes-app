@@ -80,11 +80,23 @@ export default async function ProfilePage() {
           <p className="text-muted-foreground">No bookmarks yet.</p>
         ) : (
           <ul className="divide-y rounded-xl border">
-            {bookmarks.map((b) => (
-              <li key={b.id} className="px-4 py-3 text-sm">
-                {b.content.title}
-              </li>
-            ))}
+            {bookmarks.map((b) => {
+              const slug = b.content.courseContent[0]?.course.slug;
+              return (
+                <li key={b.id}>
+                  {slug ? (
+                    <Link
+                      href={`/courses/${slug}/${b.content.id}`}
+                      className="hover:bg-accent block px-4 py-3 text-sm transition-colors"
+                    >
+                      {b.content.title}
+                    </Link>
+                  ) : (
+                    <span className="block px-4 py-3 text-sm">{b.content.title}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -103,14 +115,31 @@ export default async function ProfilePage() {
           </p>
         ) : (
           <ul className="divide-y rounded-xl border">
-            {scores.map((s) => (
-              <li key={s.id} className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm font-medium">{s.problem.title}</span>
-                <span className="text-muted-foreground text-sm tabular-nums">
-                  Score: <strong>{s.score}</strong>
-                </span>
-              </li>
-            ))}
+            {scores.map((s) => {
+              const trackId = s.problem.trackProblems[0]?.trackId;
+              const row = (
+                <>
+                  <span className="text-sm font-medium">{s.problem.title}</span>
+                  <span className="text-muted-foreground text-sm tabular-nums">
+                    Score: <strong>{s.score}</strong>
+                  </span>
+                </>
+              );
+              return (
+                <li key={s.id}>
+                  {trackId ? (
+                    <Link
+                      href={`/tracks/${trackId}/${s.problemId}`}
+                      className="hover:bg-accent flex items-center justify-between px-4 py-3 transition-colors"
+                    >
+                      {row}
+                    </Link>
+                  ) : (
+                    <div className="flex items-center justify-between px-4 py-3">{row}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

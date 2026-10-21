@@ -110,24 +110,27 @@ export function AdminPanel({
       {/* Courses — each gets its own notes track automatically, shown on /notes as its
           own card. Video lessons stay on the Courses tab; this is purely the notes side:
           sections, slide/image uploads, quizzes — independent of the video content. */}
-      <div className="space-y-3 rounded-lg border p-4">
+      <div className="bg-card border-border/60 space-y-3 rounded-xl border p-6">
         <h2 className="font-semibold">Courses (shown automatically on /notes)</h2>
         <p className="text-muted-foreground text-sm">
-          Every course gets a matching notes track automatically — nothing to create here. Open one
+          Every course gets a matching notes track automatically. Nothing to create here. Open one
           to add sections, upload slides/images, and write practice questions, same as any other
           track.
         </p>
         {courses.length === 0 ? (
           <p className="text-muted-foreground text-sm">No courses yet.</p>
         ) : (
-          <ul className="divide-y rounded border text-sm">
+          <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
             {courses.map((course) => (
-              <li key={course.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
+              <li
+                key={course.id}
+                className="hover:bg-muted/40 flex items-center justify-between gap-4 px-3 py-2.5 transition-colors"
+              >
                 <p className="min-w-0 truncate font-medium">{course.title}</p>
                 {course.linkedTrackId ? (
                   <Link
                     href={`/tracks/${course.linkedTrackId}`}
-                    className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium"
+                    className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                   >
                     Open &amp; edit
                   </Link>
@@ -147,7 +150,7 @@ export function AdminPanel({
       />
 
       {/* Existing tracks */}
-      <div className="space-y-3 rounded-lg border p-4">
+      <div className="bg-card border-border/60 space-y-3 rounded-xl border p-6">
         <h2 className="font-semibold">Your tracks</h2>
         <p className="text-muted-foreground text-sm">
           Open a track to add sections, upload slides and write practice questions right on its
@@ -156,7 +159,7 @@ export function AdminPanel({
         {tracks.length === 0 ? (
           <p className="text-muted-foreground text-sm">No tracks yet. Create one above.</p>
         ) : (
-          <ul className="divide-y rounded border text-sm">
+          <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
             {tracks.map((track) =>
               editingTrackId === track.id ? (
                 <li key={track.id} className="space-y-2 px-3 py-2.5">
@@ -165,34 +168,37 @@ export function AdminPanel({
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     aria-label="Track title"
-                    className="border-input bg-background flex h-8 w-full rounded border px-2 text-sm"
+                    className="border-input bg-background focus:ring-ring flex h-8 w-full rounded-md border px-2 text-sm focus:outline-none focus:ring-2"
                   />
                   <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     aria-label="Track description"
                     rows={2}
-                    className="border-input bg-background w-full resize-none rounded border px-2 py-1.5 text-sm"
+                    className="border-input bg-background focus:ring-ring w-full resize-none rounded-md border px-2 py-1.5 text-sm focus:outline-none focus:ring-2"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleSaveTrackEdit(track.id)}
                       disabled={editSaving}
-                      className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                      className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                     >
                       {editSaving ? "Saving…" : "Save"}
                     </button>
                     <button
                       onClick={() => setEditingTrackId(null)}
                       disabled={editSaving}
-                      className="hover:bg-accent rounded-md border px-3 py-1.5 text-xs disabled:opacity-50"
+                      className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                     >
                       Cancel
                     </button>
                   </div>
                 </li>
               ) : (
-                <li key={track.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
+                <li
+                  key={track.id}
+                  className="hover:bg-muted/40 flex items-center justify-between gap-4 px-3 py-2.5 transition-colors"
+                >
                   <p
                     className={`min-w-0 truncate font-medium ${track.hidden ? "text-muted-foreground line-through" : ""}`}
                   >
@@ -209,7 +215,7 @@ export function AdminPanel({
                         setEditError("");
                         setEditingTrackId(track.id);
                       }}
-                      className="text-muted-foreground hover:bg-accent rounded p-1.5"
+                      className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                       aria-label="Rename track"
                       title="Rename track"
                     >
@@ -217,7 +223,7 @@ export function AdminPanel({
                     </button>
                     <button
                       onClick={() => handleToggleHidden(track)}
-                      className="text-muted-foreground hover:bg-accent rounded p-1.5"
+                      className="text-muted-foreground hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                       aria-label={track.hidden ? "Show track" : "Hide track"}
                       title={track.hidden ? "Hidden. Click to show" : "Visible. Click to hide"}
                     >
@@ -225,7 +231,7 @@ export function AdminPanel({
                     </button>
                     <a
                       href={`/tracks/${track.id}`}
-                      className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-medium"
+                      className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring rounded-md px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                     >
                       Open &amp; edit
                     </a>
@@ -234,7 +240,7 @@ export function AdminPanel({
                         setDeleteError("");
                         setDeletingTrack(track);
                       }}
-                      className="text-muted-foreground hover:text-destructive hover:bg-accent rounded p-1.5"
+                      className="text-muted-foreground hover:text-destructive hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95"
                       aria-label="Delete track"
                       title="Delete track"
                     >
@@ -264,7 +270,7 @@ export function AdminPanel({
               type="button"
               onClick={() => setDeletingTrack(null)}
               disabled={deleting}
-              className="hover:bg-accent rounded-md border px-4 py-1.5 text-sm disabled:opacity-50"
+              className="hover:bg-accent ring-offset-background focus-visible:ring-ring rounded-md border px-4 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -272,7 +278,7 @@ export function AdminPanel({
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground rounded-md px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+              className="bg-destructive text-destructive-foreground ring-offset-background focus-visible:ring-ring rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
             >
               {deleting ? "Deleting…" : "Delete track"}
             </button>
@@ -282,14 +288,19 @@ export function AdminPanel({
 
       {/* AI Search Indexing */}
       {tracks.length > 0 && (
-        <div className="space-y-3 rounded-lg border p-4">
+        <div className="bg-card border-border/60 space-y-3 rounded-xl border p-6">
           <h2 className="font-semibold">AI Search Indexing</h2>
           <p className="text-muted-foreground text-sm">
-            Index tracks into Qdrant so they appear in semantic search results.
+            Index tracks into Qdrant so they appear in semantic search results — this powers
+            semantic Q&amp;A and search across the platform&apos;s notes. Nothing else changes for
+            students; this just makes a track&apos;s content findable.
           </p>
-          <ul className="divide-y rounded border text-sm">
+          <ul className="border-border/60 divide-border/60 divide-y rounded-lg border text-sm">
             {tracks.map((track) => (
-              <li key={track.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
+              <li
+                key={track.id}
+                className="hover:bg-muted/40 flex items-center justify-between gap-4 px-3 py-2.5 transition-colors"
+              >
                 <div className="min-w-0">
                   <p className="truncate font-medium">{track.title}</p>
                   {indexResults[track.id] !== undefined && (
@@ -304,7 +315,7 @@ export function AdminPanel({
                 <button
                   onClick={() => handleIndex(track)}
                   disabled={indexingId === track.id}
-                  className="hover:bg-accent shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+                  className="hover:bg-accent ring-offset-background focus-visible:ring-ring shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50"
                 >
                   {indexingId === track.id
                     ? "Indexing…"

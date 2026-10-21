@@ -36,10 +36,21 @@ function getClient(): Redis {
 
 const DEFAULT_TTL = 3600; // 1 hour
 
+// Local dev and production point at the same REDIS_URL (no separate dev instance),
+// so an unscoped key lets local work read, overwrite, or invalidate real production
+// cache entries — this is what let a locally-triggered revalidation briefly affect
+// production's course/bundle lists. Every key is scoped by NODE_ENV so the two
+// environments can never collide, even while sharing one Redis URL. This app runs
+// on Lightsail (via the Dockerfile's own ENV NODE_ENV=production), not Vercel, so
+// VERCEL_ENV is never set here and isn't used.
+function scopedKey(key: string): string {
+  return `${process.env.NODE_ENV ?? "development"}:${key}`;
+}
+
 // Network and parse failures degrade to "no cache". Configuration errors are rethrown.
 export async function cacheGet<T>(key: string): Promise<T | null> {
   try {
-    const raw = await getClient().get(key);
+    const raw = await getClient().get(scopedKey(key));
     if (!raw) return null;
     return JSON.parse(raw) as T;
   } catch (err) {
@@ -54,7 +65,7 @@ export async function cacheSet(
   ttlSeconds = DEFAULT_TTL
 ): Promise<void> {
   try {
-    await getClient().set(key, JSON.stringify(value), "EX", ttlSeconds);
+    await getClient().set(scopedKey(key), JSON.stringify(value), "EX", ttlSeconds);
   } catch (err) {
     if (err instanceof CacheConfigError) throw err;
     // best-effort
@@ -63,7 +74,7 @@ export async function cacheSet(
 
 export async function cacheDel(...keys: string[]): Promise<void> {
   try {
-    if (keys.length > 0) await getClient().del(...keys);
+    if (keys.length > 0) await getClient().del(...keys.map(scopedKey));
   } catch (err) {
     if (err instanceof CacheConfigError) throw err;
     // best-effort

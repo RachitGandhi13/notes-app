@@ -158,7 +158,17 @@ export async function getUserQuizScores() {
   if (!session?.user) return [];
   return prisma.quizScore.findMany({
     where: { userId: session.user.id },
-    include: { problem: { select: { title: true } } },
+    include: {
+      problem: {
+        select: {
+          title: true,
+          // A problem's track, so the profile page can link a quiz score straight
+          // back to /tracks/[trackId]/[problemId]. TrackProblems is many-to-many in
+          // the schema, but every problem is created under a single track in practice.
+          trackProblems: { take: 1, select: { trackId: true } },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 }
