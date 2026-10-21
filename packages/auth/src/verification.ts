@@ -13,7 +13,14 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Creates a fresh single-use link (valid for an hour) and emails it. */
+/**
+ * Creates a fresh single-use link (valid for an hour) and emails it. Both
+ * callers (registerUser on signup, resendVerification on the "resend" link)
+ * rely on this never throwing — the account is already created either way,
+ * and resendVerification's own contract is to never reveal whether an
+ * address has an account, which a thrown error would break just as it did
+ * for password resets (see requestPasswordReset's own comment).
+ */
 export async function sendVerificationEmail(params: {
   email: string;
   name: string;
@@ -22,11 +29,15 @@ export async function sendVerificationEmail(params: {
   const { email, name, appUrl } = params;
   const token = await createVerificationToken(email);
   const verifyUrl = `${appUrl}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
-  await sendEmail(
-    email,
-    "Verify your email",
-    `<p>Hi ${escapeHtml(name)},</p><p>Click below to verify your email address:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 1 hour.</p>`
-  );
+  try {
+    await sendEmail(
+      email,
+      "Verify your email",
+      `<p>Hi ${escapeHtml(name)},</p><p>Click below to verify your email address:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 1 hour.</p>`
+    );
+  } catch (err) {
+    console.error("[email] Verification email failed:", err instanceof Error ? err.message : err);
+  }
 }
 
 /**

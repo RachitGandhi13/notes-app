@@ -23,11 +23,18 @@ export async function requestPasswordReset(
 
   const token = await createVerificationToken(email);
   const resetUrl = `${appUrl}/auth/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
-  await sendEmail(
-    email,
-    "Reset your password",
-    `<p>Click below to reset your password. This link expires in 1 hour.</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can ignore this email.</p>`
-  );
+  try {
+    await sendEmail(
+      email,
+      "Reset your password",
+      `<p>Click below to reset your password. This link expires in 1 hour.</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can ignore this email.</p>`
+    );
+  } catch (err) {
+    // Never let this propagate — see the docstring above. A thrown error here would
+    // make this request 500 while a request for a non-existent email still quietly
+    // succeeds above, which leaks exactly the thing this function exists to hide.
+    console.error("[email] Password reset email failed:", err instanceof Error ? err.message : err);
+  }
 }
 
 export async function resetPassword(
