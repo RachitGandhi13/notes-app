@@ -19,7 +19,7 @@ import { cn } from "../lib/utils";
 const CONTACT = {
   phone: "+91 91135 92725",
   phoneHref: "tel:+919113592725",
-  email: "veeranna@cloudvidyaacademy.com",
+  email: "admin@cloudvidyaacademy.com",
 };
 
 export interface NavLink {
@@ -118,37 +118,45 @@ export function Navbar({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5 text-sm">
-                  <p className="font-medium">{session.user.name ?? "User"}</p>
-                  <p className="text-muted-foreground truncate text-xs">{session.user.email}</p>
+              <DropdownMenuContent
+                align="end"
+                className="w-60 rounded-xl border border-white/10 bg-zinc-900/95 p-2 shadow-2xl backdrop-blur-md"
+              >
+                <div className="px-3 py-2 text-sm">
+                  <p className="font-bold text-white">{session.user.name ?? "User"}</p>
+                  <p className="truncate text-xs text-zinc-400">{session.user.email}</p>
                   {session.user.studentId && (
-                    <p className="text-muted-foreground truncate text-xs">
+                    <span className="mt-1.5 inline-block w-fit rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 font-mono text-xs text-blue-400">
                       ID: {session.user.studentId}
-                    </p>
+                    </span>
                   )}
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem
+                  asChild
+                  className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/5 focus:bg-white/5"
+                >
                   <Link href="/profile">
-                    <User className="mr-2 h-4 w-4" />
+                    <User className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-white" />
                     Profile
                   </Link>
                 </DropdownMenuItem>
                 {session.user.admin && (
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem
+                    asChild
+                    className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/5 focus:bg-white/5"
+                  >
                     <Link href="/admin">
-                      <Shield className="mr-2 h-4 w-4" />
+                      <Shield className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-white" />
                       Admin
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-blue-600 focus:text-blue-700 dark:text-blue-400 dark:focus:text-blue-300"
+                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border-t border-white/10 px-3 py-2 text-sm font-medium text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300 focus:bg-rose-500/10 focus:text-rose-300"
                   onSelect={() => signOut()}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -162,17 +170,40 @@ export function Navbar({
                 <DropdownMenuTrigger asChild>
                   <Button size="sm">Contact us</Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-auto">
-                  <DropdownMenuItem asChild>
-                    <a href={CONTACT.phoneHref} className="whitespace-nowrap">
-                      <Phone className="mr-2 h-4 w-4 shrink-0" />
-                      {CONTACT.phone}
+                <DropdownMenuContent
+                  align="end"
+                  className="w-80 rounded-xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur-md"
+                >
+                  <DropdownMenuItem
+                    asChild
+                    className="group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 text-sm transition-colors hover:bg-white/5 focus:bg-white/5"
+                  >
+                    <a href={CONTACT.phoneHref}>
+                      <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 transition-all group-hover:bg-blue-500 group-hover:text-white">
+                        <Phone className="h-4 w-4" />
+                      </span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="text-xs text-zinc-400">Call us</span>
+                        <span className="truncate text-sm font-medium text-zinc-100">
+                          {CONTACT.phone}
+                        </span>
+                      </span>
                     </a>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href={`mailto:${CONTACT.email}`} className="whitespace-nowrap">
-                      <Mail className="mr-2 h-4 w-4 shrink-0" />
-                      {CONTACT.email}
+                  <DropdownMenuItem
+                    asChild
+                    className="group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 text-sm transition-colors hover:bg-white/5 focus:bg-white/5"
+                  >
+                    <a href={`mailto:${CONTACT.email}`}>
+                      <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 transition-all group-hover:bg-blue-500 group-hover:text-white">
+                        <Mail className="h-4 w-4" />
+                      </span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="text-xs text-zinc-400">Email support</span>
+                        <span className="truncate text-sm font-medium text-zinc-100">
+                          {CONTACT.email}
+                        </span>
+                      </span>
                     </a>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

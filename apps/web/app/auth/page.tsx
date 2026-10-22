@@ -151,39 +151,6 @@ function AuthPageInner() {
           </div>
         )}
 
-        {/* Social sign-in. Shown only for providers that are configured, and the divider
-            goes with it, so an email-only setup shows just the form. */}
-        {hasSocial && (
-          <>
-            <div className="space-y-3">
-              {oauth.github && (
-                <button
-                  onClick={() => signIn("github", { callbackUrl })}
-                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
-                >
-                  <GitHubIcon />
-                  Continue with GitHub
-                </button>
-              )}
-              {oauth.google && (
-                <button
-                  onClick={() => signIn("google", { callbackUrl })}
-                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
-                >
-                  <GoogleIcon />
-                  Continue with Google
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <hr className="border-border flex-1" />
-              <span className="text-muted-foreground text-xs">or continue with email</span>
-              <hr className="border-border flex-1" />
-            </div>
-          </>
-        )}
-
         {/* Tab switcher */}
         <div className="flex rounded-md border p-1">
           <button
@@ -272,7 +239,7 @@ function AuthPageInner() {
               disabled={loading}
               className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {loading ? "Signing in…" : "Sign in with Email"}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
         ) : (
@@ -327,6 +294,39 @@ function AuthPageInner() {
               {loading ? "Creating account…" : "Create Account"}
             </button>
           </form>
+        )}
+
+        {/* Social sign-in, below the primary form. Shown only for providers that are
+            configured, so an email-only setup shows just the form with no divider. */}
+        {hasSocial && (
+          <>
+            <div className="flex items-center gap-3">
+              <hr className="border-border flex-1" />
+              <span className="text-muted-foreground text-xs">or sign in with</span>
+              <hr className="border-border flex-1" />
+            </div>
+
+            <div className="space-y-3">
+              {oauth.github && (
+                <button
+                  onClick={() => signIn("github", { callbackUrl })}
+                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
+                >
+                  <GitHubIcon />
+                  Continue with GitHub
+                </button>
+              )}
+              {oauth.google && (
+                <button
+                  onClick={() => signIn("google", { callbackUrl })}
+                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
