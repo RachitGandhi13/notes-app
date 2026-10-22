@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@repo/ui";
+import { FormSelect } from "@/components/FormSelect";
 import {
   APPS_SCRIPT_URL,
   DURATION_OPTIONS,
@@ -19,7 +20,7 @@ interface InternshipTrackOption {
 }
 
 const fieldClass =
-  "border-input bg-background focus:ring-ring flex h-11 w-full rounded-lg border px-3.5 text-sm focus:outline-none focus:ring-2";
+  "border-input bg-background flex h-11 w-full rounded-lg border px-3.5 text-sm transition-colors focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30";
 
 function Field({
   label,
@@ -199,12 +200,13 @@ export function InternshipForm({
         </Field>
 
         <Field label="Year of Study" htmlFor="yearOfStudy">
-          <select
+          <FormSelect
             id="yearOfStudy"
             required
             value={data.yearOfStudy}
             onChange={(e) => set("yearOfStudy", e.target.value)}
-            className={fieldClass}
+            className={`${fieldClass} pr-7`}
+            wrapperClassName="w-full"
           >
             <option value="" disabled>
               Select year
@@ -214,11 +216,11 @@ export function InternshipForm({
                 {opt}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </Field>
 
         <Field label="Internship Track" htmlFor="internshipTrack">
-          <select
+          <FormSelect
             id="internshipTrack"
             required
             value={data.internshipTrack}
@@ -226,7 +228,8 @@ export function InternshipForm({
               set("internshipTrack", e.target.value);
               onTrackChange?.(e.target.value);
             }}
-            className={fieldClass}
+            className={`${fieldClass} pr-7`}
+            wrapperClassName="w-full"
           >
             <option value="" disabled>
               Select track
@@ -236,16 +239,17 @@ export function InternshipForm({
                 {track.title}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </Field>
 
         <Field label="Preferred Duration" htmlFor="preferredDuration">
-          <select
+          <FormSelect
             id="preferredDuration"
             required
             value={data.preferredDuration}
             onChange={(e) => set("preferredDuration", e.target.value)}
-            className={fieldClass}
+            className={`${fieldClass} pr-7`}
+            wrapperClassName="w-full"
           >
             <option value="" disabled>
               Select duration
@@ -255,7 +259,7 @@ export function InternshipForm({
                 {opt}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </Field>
 
         <Field label="Preferred Start Date" htmlFor="preferredStartDate">

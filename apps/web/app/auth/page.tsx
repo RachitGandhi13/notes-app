@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { PasswordInput } from "@/components/PasswordInput";
+import { AuthCard, authButtonClass, authInputClass, authLabelClass } from "@/components/AuthCard";
 
 type OAuthFlags = { github: boolean; google: boolean };
 type ResendState = { status: "idle" | "sending" | "done" | "error"; message: string };
@@ -128,208 +129,195 @@ function AuthPageInner() {
   const hasSocial = !!oauth && (oauth.github || oauth.google);
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Continue with your preferred method</p>
+    <AuthCard title="Sign in" subtitle="Continue with your preferred method">
+      {verified && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Email verified. You can now sign in.
         </div>
+      )}
 
-        {verified && (
-          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-            Email verified. You can now sign in.
-          </div>
-        )}
-
-        {error && (
-          <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm">
-            {error === "OAuthAccountNotLinked"
-              ? "This email is already used with a different provider."
-              : error === "InvalidVerification"
-                ? "That verification link is invalid or has expired."
-                : "An error occurred. Please try again."}
-          </div>
-        )}
-
-        {/* Tab switcher */}
-        <div className="flex rounded-md border p-1">
-          <button
-            onClick={() => setTab("signin")}
-            className={`flex-1 rounded py-1.5 text-sm font-medium transition-colors ${tab === "signin" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setTab("register")}
-            className={`min-h-11 flex-1 rounded py-1.5 text-sm font-medium transition-colors ${tab === "register" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
-          >
-            Register
-          </button>
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {error === "OAuthAccountNotLinked"
+            ? "This email is already used with a different provider."
+            : error === "InvalidVerification"
+              ? "That verification link is invalid or has expired."
+              : "An error occurred. Please try again."}
         </div>
+      )}
 
-        {credError && <p className="text-destructive text-sm">{credError}</p>}
+      {/* Tab switcher */}
+      <div className="flex rounded-lg border border-white/10 bg-white/5 p-1">
+        <button
+          onClick={() => setTab("signin")}
+          className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-all ${tab === "signin" ? "bg-blue-600 text-white shadow" : "text-zinc-400 hover:text-zinc-100"}`}
+        >
+          Sign In
+        </button>
+        <button
+          onClick={() => setTab("register")}
+          className={`min-h-11 flex-1 rounded-md py-1.5 text-sm font-medium transition-all ${tab === "register" ? "bg-blue-600 text-white shadow" : "text-zinc-400 hover:text-zinc-100"}`}
+        >
+          Register
+        </button>
+      </div>
 
-        {unverifiedEmail && tab === "signin" && (
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resend.status === "sending"}
-              className="text-primary inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4 disabled:opacity-50"
-            >
-              {resend.status === "sending"
-                ? "Sending a new link…"
-                : "Email not verified? Click here to resend verification email"}
-            </button>
-            <p
-              role="status"
-              aria-live="polite"
-              className={`text-sm ${resend.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
-            >
-              {resend.message}
-            </p>
-          </div>
-        )}
+      {credError && <p className="text-sm text-red-400">{credError}</p>}
 
-        {registerSuccess && (
-          <p className="text-sm text-green-600 dark:text-green-400">
-            Account created. Check your email to verify it.
+      {unverifiedEmail && tab === "signin" && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resend.status === "sending"}
+            className="inline-flex min-h-11 items-center text-sm font-medium text-blue-400 underline underline-offset-4 hover:text-blue-300 disabled:opacity-50"
+          >
+            {resend.status === "sending"
+              ? "Sending a new link…"
+              : "Email not verified? Click here to resend verification email"}
+          </button>
+          <p
+            role="status"
+            aria-live="polite"
+            className={`text-sm ${resend.status === "error" ? "text-red-400" : "text-zinc-400"}`}
+          >
+            {resend.message}
           </p>
-        )}
+        </div>
+      )}
 
-        {tab === "signin" ? (
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium" htmlFor="password">
-                  Password
-                </label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-xs underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <PasswordInput
-                id="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="name">
-                Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                autoComplete="name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="reg-email">
-                Email
-              </label>
-              <input
-                id="reg-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="reg-password">
+      {registerSuccess && (
+        <p className="text-sm text-emerald-400">Account created. Check your email to verify it.</p>
+      )}
+
+      {tab === "signin" ? (
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className={authLabelClass} htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={authInputClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className={authLabelClass} htmlFor="password">
                 Password
               </label>
-              <PasswordInput
-                id="reg-password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              />
+              <Link
+                href="/auth/forgot-password"
+                className="inline-flex min-h-11 items-center text-xs text-zinc-400 underline hover:text-blue-400"
+              >
+                Forgot password?
+              </Link>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-primary text-primary-foreground min-h-11 w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? "Creating account…" : "Create Account"}
-            </button>
-          </form>
-        )}
+            <PasswordInput
+              id="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </div>
+          <button type="submit" disabled={loading} className={authButtonClass}>
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className={authLabelClass} htmlFor="name">
+              Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={authInputClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className={authLabelClass} htmlFor="reg-email">
+              Email
+            </label>
+            <input
+              id="reg-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={authInputClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className={authLabelClass} htmlFor="reg-password">
+              Password
+            </label>
+            <PasswordInput
+              id="reg-password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </div>
+          <button type="submit" disabled={loading} className={authButtonClass}>
+            {loading ? "Creating account…" : "Create Account"}
+          </button>
+        </form>
+      )}
 
-        {/* Social sign-in, below the primary form. Shown only for providers that are
-            configured, so an email-only setup shows just the form with no divider. */}
-        {hasSocial && (
-          <>
-            <div className="flex items-center gap-3">
-              <hr className="border-border flex-1" />
-              <span className="text-muted-foreground text-xs">or sign in with</span>
-              <hr className="border-border flex-1" />
-            </div>
+      {/* Social sign-in, below the primary form. Shown only for providers that are
+          configured, so an email-only setup shows just the form with no divider. */}
+      {hasSocial && (
+        <>
+          <div className="flex items-center gap-3">
+            <hr className="flex-1 border-white/10" />
+            <span className="text-xs text-zinc-500">or sign in with</span>
+            <hr className="flex-1 border-white/10" />
+          </div>
 
-            <div className="space-y-3">
-              {oauth.github && (
-                <button
-                  onClick={() => signIn("github", { callbackUrl })}
-                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
-                >
+          <div className="space-y-3">
+            {oauth.github && (
+              <button
+                onClick={() => signIn("github", { callbackUrl })}
+                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-zinc-300 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
                   <GitHubIcon />
-                  Continue with GitHub
-                </button>
-              )}
-              {oauth.google && (
-                <button
-                  onClick={() => signIn("google", { callbackUrl })}
-                  className="bg-card hover:bg-accent flex min-h-11 w-full items-center justify-center gap-3 rounded-md border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors"
-                >
+                </span>
+                Continue with GitHub
+              </button>
+            )}
+            {oauth.google && (
+              <button
+                onClick={() => signIn("google", { callbackUrl })}
+                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-zinc-300 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
                   <GoogleIcon />
-                  Continue with Google
-                </button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+                </span>
+                Continue with Google
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </AuthCard>
   );
 }
 

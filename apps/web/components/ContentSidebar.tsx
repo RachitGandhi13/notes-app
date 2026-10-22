@@ -50,15 +50,17 @@ function ContentNode({
       <li>
         <button
           onClick={() => setOpen((o) => !o)}
-          className="hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          className="hover:bg-accent flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
           style={{ paddingLeft: `${depth * 12 + 12}px` }}
         >
           {open ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            <ChevronDown className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
           )}
-          <Folder className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+          <span className="bg-primary/10 text-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-md">
+            <Folder className="h-3.5 w-3.5" />
+          </span>
           <span className="truncate">{item.title}</span>
         </button>
         {open && item.children && item.children.length > 0 && (
@@ -86,21 +88,40 @@ function ContentNode({
       <Link
         href={`/courses/${courseSlug}/${item.id}`}
         className={cn(
-          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
           isActive
             ? "bg-primary text-primary-foreground"
             : "text-muted-foreground hover:bg-accent hover:text-foreground"
         )}
         style={{ paddingLeft: `${depth * 12 + 12}px` }}
       >
-        {isWatched ? (
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
-        ) : (
-          <Icon className="h-3.5 w-3.5 shrink-0" />
-        )}
+        <span
+          className={cn(
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
+            isActive ? "bg-white/15" : isWatched ? "bg-emerald-500/10" : "bg-primary/10"
+          )}
+        >
+          {isWatched ? (
+            <CheckCircle2
+              className={cn("h-3.5 w-3.5", isActive ? "text-white" : "text-emerald-500")}
+            />
+          ) : (
+            <Icon
+              className={cn("h-3.5 w-3.5", isActive ? "text-primary-foreground" : "text-primary")}
+            />
+          )}
+        </span>
         <span className="truncate">{item.title}</span>
       </Link>
     </li>
+  );
+}
+
+// Folders can nest lessons arbitrarily deep, so the count has to walk the
+// whole tree rather than just the top-level items.
+function flattenLeaves(items: ContentItem[]): ContentItem[] {
+  return items.flatMap((item) =>
+    item.type === "FOLDER" ? flattenLeaves(item.children ?? []) : [item]
   );
 }
 
@@ -111,8 +132,9 @@ export function ContentSidebar({
   activeContentId,
   watchedIds,
 }: ContentSidebarProps) {
-  const totalLeaves = items.filter((i) => i.type !== "FOLDER").length;
-  const watched = items.filter((i) => watchedIds.has(i.id)).length;
+  const leaves = flattenLeaves(items);
+  const totalLeaves = leaves.length;
+  const watched = leaves.filter((i) => watchedIds.has(i.id)).length;
   const pct = totalLeaves > 0 ? Math.round((watched / totalLeaves) * 100) : 0;
 
   return (

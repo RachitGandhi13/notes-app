@@ -101,7 +101,9 @@ async function main() {
     },
   });
 
-  const videoLeaf = await prisma.content.upsert({
+  // Its upsert result isn't needed beyond creating the row — see the comment
+  // below on why it gets no CourseContent row of its own.
+  await prisma.content.upsert({
     where: { id: "seed-content-video-1" },
     update: {},
     create: {
@@ -119,11 +121,12 @@ async function main() {
     },
   });
 
+  // Only the folder gets a CourseContent row — videoLeaf is reached via its
+  // parentId (same convention as createUploadedVideo in lib/actions.ts); giving
+  // it its own row too made it render twice in the sidebar, once nested and
+  // once as a stray top-level entry.
   await prisma.courseContent.createMany({
-    data: [
-      { courseId: course.id, contentId: rootFolder.id, order: 1 },
-      { courseId: course.id, contentId: videoLeaf.id, order: 2 },
-    ],
+    data: [{ courseId: course.id, contentId: rootFolder.id, order: 1 }],
     skipDuplicates: true,
   });
 

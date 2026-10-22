@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { PasswordInput } from "@/components/PasswordInput";
+import { AuthCard, authButtonClass, authInputClass, authLabelClass } from "@/components/AuthCard";
 
 export default function ResetPasswordPage() {
   return (
@@ -50,58 +51,45 @@ function ResetPasswordPageInner() {
 
   if (!email || !token) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center px-4">
-        <div className="max-w-sm text-center">
-          <p className="text-destructive text-sm">
-            This reset link is missing required information.
-          </p>
-          <Link href="/auth/forgot-password" className="mt-3 inline-block text-sm underline">
-            Request a new link
-          </Link>
-        </div>
-      </div>
+      <AuthCard title="Invalid link" subtitle="This reset link is missing required information.">
+        <Link
+          href="/auth/forgot-password"
+          className="inline-block text-sm text-blue-400 underline hover:text-blue-300"
+        >
+          Request a new link
+        </Link>
+      </AuthCard>
     );
   }
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Choose a new password</h1>
-          <p className="text-muted-foreground mt-1 text-sm">for {email}</p>
-        </div>
-
-        {success ? (
-          <p className="rounded-md border bg-green-50 px-4 py-3 text-center text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
-            Password updated. Redirecting to sign in…
-          </p>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <p className="text-destructive text-sm">{error}</p>}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="password">
-                New password
-              </label>
-              <PasswordInput
-                id="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="border-input bg-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="bg-primary text-primary-foreground w-full rounded-md px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {submitting ? "Updating…" : "Update password"}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+    <AuthCard title="Choose a new password" subtitle={`for ${email}`}>
+      {success ? (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-400">
+          Password updated. Redirecting to sign in…
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div className="space-y-1.5">
+            <label className={authLabelClass} htmlFor="password">
+              New password
+            </label>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </div>
+          <button type="submit" disabled={submitting} className={authButtonClass}>
+            {submitting ? "Updating…" : "Update password"}
+          </button>
+        </form>
+      )}
+    </AuthCard>
   );
 }

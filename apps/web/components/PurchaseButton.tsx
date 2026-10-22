@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { purchaseCourse } from "@/lib/actions";
@@ -249,8 +250,9 @@ export function PurchaseButton(props: PurchaseButtonProps) {
         onClick={handleClick}
         disabled={loading}
         aria-busy={loading}
-        className="bg-primary text-primary-foreground w-full rounded-lg px-6 py-3 font-semibold transition-all duration-150 hover:scale-[1.01] hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+        className="bg-primary text-primary-foreground flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-semibold transition-all duration-150 hover:scale-[1.01] hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
       >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         {loading ? STAGE_LABEL[stage] : (label ?? defaultLabel)}
       </button>
       {error && (

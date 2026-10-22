@@ -4,6 +4,7 @@ import { useState } from "react";
 import { grantCourseAccess, revokeCourseAccess } from "@/lib/actions";
 import { issueCertificate, revokeCertificate } from "@/lib/internship-actions";
 import { useStudentLookup } from "@/lib/hooks/useStudentLookup";
+import { FormSelect } from "@/components/FormSelect";
 
 interface AdminCourseOption {
   id: string;
@@ -233,10 +234,11 @@ export function StudentAccessPanel({
             )}
             {certError && <p className="text-destructive text-xs">{certError}</p>}
             <div className="flex gap-2">
-              <select
+              <FormSelect
                 value={certTrack}
                 onChange={(e) => setCertTrack(e.target.value)}
-                className="border-input bg-background flex h-9 w-full rounded-md border px-2 text-xs"
+                className="h-9 text-xs"
+                wrapperClassName="w-full"
               >
                 <option value="">Choose a track…</option>
                 {internshipTracks
@@ -247,7 +249,7 @@ export function StudentAccessPanel({
                       {track.hidden ? " (hidden)" : ""}
                     </option>
                   ))}
-              </select>
+              </FormSelect>
               <button
                 onClick={handleIssueCertificate}
                 disabled={!certTrack || issuing}

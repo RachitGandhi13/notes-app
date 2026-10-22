@@ -186,8 +186,21 @@ export default async function HomePage({ searchParams }: Props) {
         )}
 
         {courses.length === 0 ? (
-          <div className="text-muted-foreground py-12 text-center sm:py-20">
-            {query ? <>No courses match &ldquo;{query}&rdquo;.</> : <>No courses yet.</>}
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed py-16 text-center sm:py-20">
+            <span className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
+              <BookOpen className="h-5 w-5" />
+            </span>
+            <p className="text-muted-foreground">
+              {query ? <>No courses match &ldquo;{query}&rdquo;.</> : <>No courses yet.</>}
+            </p>
+            {query && (
+              <Link
+                href="/"
+                className="text-primary text-sm font-medium underline underline-offset-4"
+              >
+                Clear search
+              </Link>
+            )}
           </div>
         ) : courses.length === 1 ? (
           <FeaturedCourse

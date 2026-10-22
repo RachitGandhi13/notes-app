@@ -8,6 +8,7 @@ import {
   setInternshipDuration,
   setInternshipFrozen,
 } from "@/lib/internship-actions";
+import { FormSelect } from "@/components/FormSelect";
 
 interface Application {
   id: string;
@@ -118,17 +119,17 @@ function DurationEditor({ app }: { app: Application }) {
         onChange={(e) => setStartDate(e.target.value)}
         className="border-input bg-background focus:ring-ring h-8 rounded-md border px-2 text-xs focus:outline-none focus:ring-2"
       />
-      <select
+      <FormSelect
         value={durationMonths}
         onChange={(e) => setDurationMonths(Number(e.target.value))}
-        className="border-input bg-background focus:ring-ring h-8 rounded-md border px-2 text-xs focus:outline-none focus:ring-2"
+        className="h-8 text-xs"
       >
         {DURATION_OPTIONS.map((m) => (
           <option key={m} value={m}>
             {m} {m === 1 ? "month" : "months"}
           </option>
         ))}
-      </select>
+      </FormSelect>
       <button
         onClick={handleSave}
         disabled={saving}

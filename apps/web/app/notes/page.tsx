@@ -114,8 +114,13 @@ export default async function NotesPage() {
       {/* Course + track grid */}
       <div id="browse" className="scroll-mt-20 space-y-16">
         {courses.length === 0 && tracks.length === 0 ? (
-          <div className="text-muted-foreground py-12 text-center sm:py-20">
-            No courses or tracks yet. Ask an admin to add one.
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed py-16 text-center sm:py-20">
+            <span className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
+              <BookOpen className="h-5 w-5" />
+            </span>
+            <p className="text-muted-foreground">
+              No courses or tracks yet. Ask an admin to add one.
+            </p>
           </div>
         ) : (
           <>
