@@ -25,23 +25,32 @@ export function MyCertificates({
   if (certificates.length === 0) return null;
 
   return (
-    <div>
-      <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-        <Award className="h-5 w-5" /> My Certificates
-      </h2>
-      <ul className="divide-y rounded-xl border">
+    <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5 shadow-xl backdrop-blur-md sm:p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+            <Award className="h-4 w-4" />
+          </span>
+          My Certificates
+        </h2>
+        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+          {certificates.length}
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
         {certificates.map((cert) => (
-          <li key={cert.certificateCode} className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm font-medium">{cert.trackName}</span>
-            <button
-              onClick={() => setOpenCode(cert.certificateCode)}
-              className="text-primary text-xs underline"
-            >
-              View &amp; download →
-            </button>
-          </li>
+          <button
+            key={cert.certificateCode}
+            onClick={() => setOpenCode(cert.certificateCode)}
+            className="group flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-blue-500/30 hover:bg-white/10"
+          >
+            <span className="truncate text-sm font-medium text-zinc-100">{cert.trackName}</span>
+            <span className="shrink-0 text-xs font-medium text-blue-400 opacity-0 transition-opacity group-hover:opacity-100">
+              View →
+            </span>
+          </button>
         ))}
-      </ul>
+      </div>
 
       <Dialog open={!!open} onOpenChange={(isOpen) => !isOpen && setOpenCode(null)}>
         <DialogContent className="max-w-3xl">
