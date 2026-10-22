@@ -153,7 +153,7 @@ export function Navbar({
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border-t border-white/10 px-3 py-2 text-sm font-medium text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300 focus:bg-rose-500/10 focus:text-rose-300"
+                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border-t border-white/10 px-3 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/10 hover:text-blue-300 focus:bg-blue-500/10 focus:text-blue-300"
                   onSelect={() => signOut()}
                 >
                   <LogOut className="h-4 w-4" />
