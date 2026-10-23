@@ -10,6 +10,8 @@ interface FooterProps {
   brand: string;
   brandHref?: string;
   brandLogo?: string;
+  /** Full brand mark, e.g. `<CloudVidyaLogo layout="horizontal" />`. Takes over the whole brand slot — `brand`/`brandLogo` are ignored when set. */
+  logo?: React.ReactNode;
   description: string;
   linkColumns: { title: string; links: FooterLink[] }[];
   linkedinUrl?: string;
@@ -21,6 +23,7 @@ export function Footer({
   brand,
   brandHref = "/",
   brandLogo,
+  logo,
   description,
   linkColumns,
   linkedinUrl,
@@ -31,19 +34,26 @@ export function Footer({
 
   return (
     <footer className="border-t">
-      <div className="container py-12">
-        <div className="bg-card rounded-2xl border p-8">
-          <div className="grid gap-8 sm:grid-cols-[1.2fr_1fr_1fr_auto]">
-            <div>
+      <div className="py-13 mx-auto max-w-7xl px-5 sm:px-8">
+        <div className="bg-card rounded-card border p-5 sm:p-8">
+          <div className="grid gap-8 sm:grid-cols-12">
+            <div className="sm:col-span-5">
               <Link
                 href={brandHref}
+                aria-label={logo ? `${brand}, home` : undefined}
                 className="ring-offset-background focus-visible:ring-ring flex min-h-11 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
-                {brandLogo && (
-                  // eslint-disable-next-line
-                  <img src={brandLogo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                {logo ?? (
+                  <>
+                    {brandLogo && (
+                      // eslint-disable-next-line
+                      <img src={brandLogo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    )}
+                    <span className="text-primary text-lg font-extrabold tracking-tight">
+                      {brand}
+                    </span>
+                  </>
                 )}
-                <span className="text-primary text-lg font-extrabold tracking-tight">{brand}</span>
               </Link>
               <p className="text-muted-foreground mt-3 max-w-xs text-sm leading-relaxed">
                 {description}
@@ -51,7 +61,7 @@ export function Footer({
             </div>
 
             {linkColumns.map((col) => (
-              <div key={col.title}>
+              <div key={col.title} className="sm:col-span-3">
                 <p className="text-sm font-semibold">{col.title}</p>
                 <ul className="mt-3 space-y-2">
                   {col.links.map((link) => (
@@ -69,7 +79,7 @@ export function Footer({
             ))}
 
             {(linkedinUrl || email) && (
-              <div className="flex items-start gap-2 sm:justify-end">
+              <div className="flex items-start gap-2 sm:col-span-1 sm:justify-end">
                 {linkedinUrl && (
                   <a
                     href={linkedinUrl}
@@ -94,7 +104,7 @@ export function Footer({
             )}
           </div>
 
-          <p className="text-muted-foreground mt-8 text-xs">
+          <p className="text-muted-foreground text-small mt-8">
             © {year} {brand}. All rights reserved.
           </p>
         </div>

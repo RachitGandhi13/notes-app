@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Dialog, DialogContent } from "@repo/ui";
+import { SectionEyebrow } from "@/components/SectionEyebrow";
 import { galleryItems, type GalleryItem } from "@/lib/gallery-data";
 
 function formatDate(iso: string): string {
@@ -24,9 +25,7 @@ export function GalleryGrid() {
   return (
     <section className="container py-12 sm:py-20">
       <div className="mx-auto max-w-2xl text-center">
-        <p className="text-primary text-sm font-semibold uppercase tracking-wide">
-          Inside the Academy
-        </p>
+        <SectionEyebrow>Inside the Academy</SectionEyebrow>
         <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
           Training <span className="text-primary">gallery</span>
         </h2>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { CloudVidyaLogo } from "@repo/ui";
 import {
   Award,
   Cloud,
@@ -112,22 +112,15 @@ export function HeroArt() {
         <div className="animate-breathe relative h-full w-full motion-reduce:animate-none">
           {/* ambient glow the rings seem to ripple out of */}
           <div className="bg-primary/35 animate-blob absolute inset-[-30%] rounded-full blur-3xl motion-reduce:animate-none" />
-          <div className="animate-blob absolute inset-[-30%] rounded-full bg-violet-500/25 blur-3xl [animation-delay:-9s] motion-reduce:animate-none" />
+          <div className="animate-blob absolute inset-[-30%] rounded-full bg-cyan-400/25 blur-3xl [animation-delay:-9s] motion-reduce:animate-none" />
 
           {/* gradient ring + logo, filling the medallion */}
           <div
             className="from-primary animate-gradient-shift relative h-full w-full rounded-full bg-gradient-to-br via-cyan-400 to-violet-500 bg-[length:200%_200%] p-[3px] motion-reduce:animate-none"
             style={{ boxShadow: "0 0 60px -8px hsl(var(--primary) / 0.65)" }}
           >
-            <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
-              <Image
-                src="/cloudvidya.png"
-                alt=""
-                fill
-                priority
-                sizes="380px"
-                className="object-cover"
-              />
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white">
+              <CloudVidyaLogo layout="mark" theme="light" height={220} />
             </div>
           </div>
         </div>

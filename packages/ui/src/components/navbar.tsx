@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "./button";
+import { AscendButton } from "./ascend/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,12 +34,17 @@ const glowClass =
   "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse";
 
 interface NavbarProps {
-  /** Brand name shown on the left */
+  /** Brand name shown on the left — ignored once `logo` is given. */
   brand?: string;
   /** Brand href */
   brandHref?: string;
   /** Optional small circular logo image shown before the brand name */
   brandLogo?: string;
+  /**
+   * Full brand mark, e.g. a responsive pair of `<CloudVidyaLogo>` elements.
+   * Takes over the whole brand slot — `brand`/`brandLogo` are ignored when set.
+   */
+  logo?: React.ReactNode;
   /** Extra nav links rendered before the auth buttons — e.g. a cross-app link */
   links?: NavLink[];
   /** Rendered in the center of the bar — typically a search input */
@@ -49,6 +55,7 @@ export function Navbar({
   brand = "Platform",
   brandHref = "/",
   brandLogo,
+  logo,
   links = [],
   search,
 }: NavbarProps) {
@@ -62,20 +69,29 @@ export function Navbar({
   }, [pathname]);
 
   return (
-    <header className="bg-background/95 safe-top sticky top-0 z-40 w-full border-b backdrop-blur">
-      <div className="container flex h-16 items-center gap-3 sm:gap-4">
+    <header className="glass safe-top sticky top-0 z-40 w-full">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
         {/* Brand */}
         <Link
           href={brandHref}
+          aria-label={logo ? `${brand}, home` : undefined}
           className="ring-offset-background focus-visible:ring-ring flex min-h-11 min-w-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
-          {brandLogo && (
-            // eslint-disable-next-line
-            <img src={brandLogo} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+          {logo ?? (
+            <>
+              {brandLogo && (
+                // eslint-disable-next-line
+                <img
+                  src={brandLogo}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                />
+              )}
+              <span className="text-primary text-sm font-extrabold leading-tight tracking-tight sm:text-lg">
+                {brand}
+              </span>
+            </>
           )}
-          <span className="text-primary text-sm font-extrabold leading-tight tracking-tight sm:text-lg">
-            {brand}
-          </span>
         </Link>
 
         {/* Search (desktop). On phones it lives in the menu panel instead. */}
@@ -85,15 +101,17 @@ export function Navbar({
           {links.length > 0 && (
             <nav className="hidden items-center gap-1 lg:flex">
               {links.map((link) => (
-                <Button
+                <Link
                   key={link.href}
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className={cn(link.glow && `${glowClass} rounded-full`)}
+                  href={link.href}
+                  aria-current={pathname === link.href ? "page" : undefined}
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground aria-[current=page]:text-foreground flex min-h-11 items-center rounded-full px-3 text-sm font-medium normal-case tracking-normal transition-colors dark:text-[#A1A1AA] dark:hover:text-[#FAFAFA] dark:aria-[current=page]:text-[#FAFAFA]",
+                    link.glow && `${glowClass} rounded-full`
+                  )}
                 >
-                  <Link href={link.href}>{link.label}</Link>
-                </Button>
+                  {link.label}
+                </Link>
               ))}
             </nav>
           )}
@@ -163,12 +181,14 @@ export function Navbar({
             </DropdownMenu>
           ) : (
             <div className="hidden items-center gap-2 lg:flex">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/auth">Login</Link>
-              </Button>
+              <AscendButton href="/auth" variant="secondary" size="md" className="h-11 py-0">
+                Login
+              </AscendButton>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm">Contact us</Button>
+                  <AscendButton variant="primary" size="md" className="h-11 py-0">
+                    Contact us
+                  </AscendButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
@@ -228,7 +248,7 @@ export function Navbar({
 
       {/* Phone menu panel */}
       {menuOpen && (
-        <div id="mobile-menu" className="bg-background border-t lg:hidden">
+        <div id="mobile-menu" className="glass border-t lg:hidden">
           <div className="container space-y-4 py-4">
             {search && <div>{search}</div>}
 
@@ -283,9 +303,9 @@ export function Navbar({
               </div>
             ) : (
               <div className="grid gap-2 border-t pt-3">
-                <Button asChild variant="outline">
-                  <Link href="/auth">Login</Link>
-                </Button>
+                <AscendButton href="/auth" variant="secondary" size="md" className="w-full">
+                  Login
+                </AscendButton>
                 <a
                   href={CONTACT.phoneHref}
                   className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"

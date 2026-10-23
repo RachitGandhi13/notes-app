@@ -16,8 +16,40 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["Helvetica Neue", "Helvetica", "Arial", "system-ui", "sans-serif"],
+        sans: [
+          "var(--font-sans)",
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial",
+          "system-ui",
+          "sans-serif",
+        ],
         serif: ["var(--font-serif)", "Georgia", "serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
+      },
+      spacing: {
+        13: "3.25rem", // 52px
+        21: "5.25rem", // 84px
+        34: "8.5rem", // 136px
+      },
+      fontSize: {
+        display: [
+          "clamp(2.625rem, 1.9rem + 3vw, 4.25rem)",
+          { lineHeight: "1.06", letterSpacing: "-0.032em", fontWeight: "700" },
+        ],
+        h1: [
+          "clamp(2rem, 1.6rem + 1.6vw, 2.625rem)",
+          { lineHeight: "1.14", letterSpacing: "-0.025em", fontWeight: "700" },
+        ],
+        h2: [
+          "clamp(1.5rem, 1.3rem + 0.8vw, 1.625rem)",
+          { lineHeight: "1.23", letterSpacing: "-0.015em", fontWeight: "600" },
+        ],
+        h3: ["1.25rem", { lineHeight: "1.4", letterSpacing: "-0.01em", fontWeight: "600" }],
+        "body-lg": ["clamp(1rem, 0.94rem + 0.3vw, 1.125rem)", { lineHeight: "1.56" }],
+        body: ["1rem", { lineHeight: "1.5" }],
+        small: ["0.875rem", { lineHeight: "1.43" }],
+        eyebrow: ["0.75rem", { lineHeight: "1.33", letterSpacing: "0.14em", fontWeight: "500" }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -58,6 +90,11 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Ascend radius scale. radius-sm(8px)/radius-md(12px) already match
+        // the existing `rounded-sm`/`rounded-xl` utilities above — only the
+        // two larger steps need new, non-colliding names.
+        card: "20px", // radius-lg
+        shell: "32px", // radius-xl
       },
       keyframes: {
         "accordion-down": {

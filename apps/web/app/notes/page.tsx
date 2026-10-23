@@ -1,11 +1,12 @@
 import { BookOpen, ClipboardCheck, Presentation } from "lucide-react";
-import Image from "next/image";
 import { getSession } from "@repo/auth";
+import { ThemedLogo } from "@repo/ui";
 import { getTracks } from "@/lib/track-actions";
 import { getCourses, getUserPurchases } from "@/lib/actions";
 import { TrackCard } from "@/components/TrackCard";
 import { CourseNoteCard } from "@/components/CourseNoteCard";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
+import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 // Rendered per request. Prerendering at build time would need the database and
 // Redis during `next build`, which the Docker build doesn't have. The track list
@@ -55,13 +56,7 @@ export default async function NotesPage() {
 
         <div className="mx-auto max-w-2xl space-y-7">
           <div className="bg-card/80 animate-fade-up inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm shadow-sm backdrop-blur">
-            <Image
-              src="/cloudvidya.png"
-              alt=""
-              width={20}
-              height={20}
-              className="rounded-full object-cover"
-            />
+            <ThemedLogo layout="mark" height={20} title="" />
             <span className="text-muted-foreground">Notes by CloudVidya Academy</span>
           </div>
 
@@ -127,9 +122,7 @@ export default async function NotesPage() {
             {courses.length > 0 && (
               <div>
                 <div className="mb-8 text-center">
-                  <p className="text-primary text-sm font-semibold uppercase tracking-wide">
-                    Courses
-                  </p>
+                  <SectionEyebrow>Courses</SectionEyebrow>
                   <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
                     Notes from your <span className="text-primary">courses</span>
                   </h2>
@@ -164,9 +157,7 @@ export default async function NotesPage() {
             {tracks.length > 0 && (
               <div>
                 <div className="mb-8 text-center">
-                  <p className="text-primary text-sm font-semibold uppercase tracking-wide">
-                    Tracks
-                  </p>
+                  <SectionEyebrow>Tracks</SectionEyebrow>
                   <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
                     Choose what to <span className="text-primary">study</span>
                   </h2>

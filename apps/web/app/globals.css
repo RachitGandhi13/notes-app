@@ -27,33 +27,107 @@
     --radius: 0.75rem;
   }
   .dark {
-    /* 100xDevs-style dark navy + vivid blue */
-    --background: 224 45% 5%;
-    --foreground: 210 40% 98%;
-    --card: 224 32% 9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 224 32% 9%;
-    --popover-foreground: 210 40% 98%;
+    /* Ascend design system — neutral zinc-black + saturated blue/cyan.
+       Replaces the previous navy-tinted dark theme; light mode (below) is
+       intentionally untouched, it's out of scope for the Ascend restyle. */
+    --background: 240 10% 4%; /* cv-bg #09090B */
+    --foreground: 0 0% 98%; /* cv-text #FAFAFA */
+    --card: 240 6% 10%; /* cv-surface #18181B */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 98%;
+    /* --primary/--ring stay at their pre-Ascend value: sitewide `text-primary`
+       (eyebrow labels, footer link, etc. — all out of scope for this restyle)
+       measured at 4.11:1 against the new, darker cv-bg with the Ascend blue —
+       under the 4.5:1 AA floor. Reverted per the Phase-1 review sweep; the new
+       #0066FF/#00F0FF pair is applied only via the raw --cv-* tokens below,
+       scoped to the shell + hero components themselves. */
     --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 222 25% 14%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 222 25% 13%;
-    --muted-foreground: 217 15% 65%;
-    --accent: 222 25% 16%;
-    --accent-foreground: 210 40% 98%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4% 16%; /* cv-raised #27272A */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 14%;
+    --muted-foreground: 240 5% 65%; /* cv-text-2 #A1A1AA */
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 22% 18%;
-    --input: 222 22% 18%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3% 14%; /* reads as ~white/8% over cv-bg */
+    --input: 240 3% 14%;
     --ring: 217 91% 60%;
+
+    /* Raw Ascend tokens — for the new primitives (gradients, glows, glass)
+       where an exact hex/alpha is needed beyond the HSL aliases above. */
+    --cv-bg: #09090b;
+    --cv-surface: #18181b;
+    --cv-raised: #27272a;
+    --cv-border: rgb(255 255 255 / 0.08);
+    --cv-border-strong: rgb(255 255 255 / 0.14);
+    --cv-text: #fafafa;
+    --cv-text-2: #a1a1aa;
+    --cv-blue: #0066ff;
+    --cv-cyan: #00f0ff;
+    --cv-link: #4d94ff;
+    --cv-gradient: linear-gradient(45deg, #0066ff, #00f0ff);
   }
 }
 
+:root {
+  --cv-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --cv-dur-hover: 144ms;
+  --cv-dur-enter: 233ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Navbar, modals and the hero spotlight card only — per Ascend spec.
+   Dark-only look; light mode (out of scope for the restyle) falls back to
+   the original navbar treatment via the `:not(.dark)` override below, so
+   light-mode pages render unchanged from before Phase 1. */
+.glass {
+  background-color: rgb(9 9 11 / 0.7);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background-color: rgb(9 9 11 / 0.95);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
+}
+:root:not(.dark) .glass {
+  background-color: hsl(var(--background) / 0.95);
+  backdrop-filter: blur(12px);
+  border-color: hsl(var(--border));
+}
+
 @layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
-  h1, h2, h3, h4, h5, h6 {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply tracking-tight;
   }
 }

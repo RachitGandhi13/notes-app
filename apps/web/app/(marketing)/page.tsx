@@ -1,21 +1,25 @@
 import { getSession } from "@repo/auth";
 import { ArrowRight, BadgeCheck, BookOpen, Users, type LucideIcon } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { AscendButton, AscendEyebrow, ThemedLogo } from "@repo/ui";
 import { getCourses, getUserPurchases } from "@/lib/actions";
 import { getActiveBundles } from "@/lib/track-actions";
+import { getActiveInternshipTracks } from "@/lib/internship-actions";
 import { CourseCard } from "@/components/CourseCard";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
 // import { InstructorSection, SupportSection } from "@/components/InstructorSection";
 import { SupportSection } from "@/components/InstructorSection";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
+import { SectionEyebrow } from "@/components/SectionEyebrow";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 import { ComboBanner } from "@/components/home/ComboBanner";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
 import { HeroArt } from "@/components/home/HeroArt";
+import { HeroGlow } from "@/components/home/HeroGlow";
 import { JoinBanner } from "@/components/home/JoinBanner";
 import { NotesShowcase } from "@/components/home/NotesShowcase";
+import { StatStrip } from "@/components/home/StatStrip";
 import { TechMarquee } from "@/components/home/TechMarquee";
 
 // Rendered per request (same reasoning as app/notes/page.tsx) — getSession() already
@@ -30,10 +34,11 @@ interface Props {
 
 export default async function HomePage({ searchParams }: Props) {
   const query = searchParams.q?.trim();
-  const [courses, session, bundles] = await Promise.all([
+  const [courses, session, bundles, internshipTracks] = await Promise.all([
     getCourses(query),
     getSession(),
     getActiveBundles(),
+    getActiveInternshipTracks(),
   ]);
   const isAdmin = !!session?.user?.admin;
 
@@ -66,48 +71,37 @@ export default async function HomePage({ searchParams }: Props) {
     <>
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b">
+        <HeroGlow />
         <AnimatedBackdrop />
-        <div className="container grid items-center gap-10 py-10 sm:gap-12 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <div className="pt-21 lg:gap-13 lg:pt-34 mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 sm:px-8 sm:pb-16 lg:grid-cols-[1.618fr_1fr] lg:pb-24">
           <div className="min-w-0 space-y-7">
-            <div className="bg-card/80 animate-fade-up inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm shadow-sm backdrop-blur">
-              <Image
-                src="/cloudvidya.png"
-                alt=""
-                width={20}
-                height={20}
-                className="rounded-full object-cover"
-              />
-              <span className="text-muted-foreground">Programs by CloudVidya Academy</span>
+            <div className="bg-card/80 animate-fade-up inline-flex items-center gap-2 rounded-full border px-4 py-1.5 shadow-sm backdrop-blur">
+              <ThemedLogo layout="mark" height={20} title="" />
+              <AscendEyebrow>Programs by CloudVidya Academy</AscendEyebrow>
             </div>
 
-            <h1 className="animate-fade-up text-5xl font-extrabold leading-[1.08] tracking-tight [animation-delay:80ms] sm:text-6xl">
+            <h1 className="font-display text-display animate-fade-up [animation-delay:80ms]">
               Level up your{" "}
-              <span className="animate-gradient-shift from-primary bg-gradient-to-r via-cyan-400 to-violet-500 bg-[length:200%_auto] bg-clip-text text-transparent motion-reduce:animate-none sm:whitespace-nowrap">
+              <span className="animate-gradient-shift from-primary bg-gradient-to-r via-cyan-400 to-violet-500 bg-[length:200%_auto] bg-clip-text text-transparent motion-reduce:animate-none sm:whitespace-nowrap dark:[background-image:linear-gradient(45deg,#0066FF,#00F0FF)]">
                 Cloud &amp; DevOps
               </span>{" "}
               skills
             </h1>
 
-            <p className="text-muted-foreground animate-fade-up max-w-xl text-lg leading-relaxed [animation-delay:160ms]">
+            <p className="text-body-lg text-muted-foreground animate-fade-up max-w-[65ch] [animation-delay:160ms]">
               Hands-on video courses by our Academy, with notes, practice quizzes and progress
               tracking. Learn at your own pace.
             </p>
 
             <div className="animate-fade-up flex flex-wrap items-center gap-3 [animation-delay:240ms]">
-              <Link
-                href="/#browse"
-                className="bg-primary text-primary-foreground shadow-primary/30 ring-offset-background focus-visible:ring-ring inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:gap-3 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              >
+              <AscendButton href="/#browse" variant="primary" size="lg">
                 Browse courses
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/notes"
-                className="bg-card/80 hover:bg-accent ring-offset-background focus-visible:ring-ring inline-flex items-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold backdrop-blur transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              >
+              </AscendButton>
+              <AscendButton href="/notes" variant="secondary" size="lg">
                 <BookOpen className="h-4 w-4" />
                 Explore notes
-              </Link>
+              </AscendButton>
             </div>
 
             <div className="animate-fade-up max-w-xl [animation-delay:320ms]">
@@ -126,10 +120,8 @@ export default async function HomePage({ searchParams }: Props) {
                   <div className="min-w-0">
                     {value ? (
                       <>
-                        <dd className="text-xl font-extrabold leading-tight tracking-tight">
-                          {value}
-                        </dd>
-                        <dt className="text-muted-foreground text-xs">{text}</dt>
+                        <dd className="text-h3 tabular-nums leading-tight">{value}</dd>
+                        <dt className="text-eyebrow text-muted-foreground normal-case">{text}</dt>
                       </>
                     ) : (
                       <dd className="text-sm font-semibold leading-snug">{text}</dd>
@@ -148,13 +140,14 @@ export default async function HomePage({ searchParams }: Props) {
 
       {!query && <TechMarquee />}
       {!query && <FeatureGrid />}
+      {!query && courses.length > 0 && (
+        <StatStrip courseCount={courses.length} trackCount={internshipTracks.length} />
+      )}
 
       {/* Courses */}
       <section id="browse" className="container scroll-mt-20 py-10 sm:py-16">
         <div className="mb-10 text-center">
-          <p className="text-primary text-sm font-semibold uppercase tracking-wide">
-            {query ? "Search results" : "Courses"}
-          </p>
+          <SectionEyebrow>{query ? "Search results" : "Courses"}</SectionEyebrow>
           <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
             {query ? (
               <>

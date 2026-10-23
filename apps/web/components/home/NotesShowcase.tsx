@@ -1,5 +1,6 @@
 import { ArrowRight, CheckCircle2, ClipboardCheck, FileText, LineChart } from "lucide-react";
 import Link from "next/link";
+import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 // An illustrative mock-up (not real content) of a notes section: slides on
 // top, practice question underneath.
@@ -77,9 +78,7 @@ export function NotesShowcase() {
         <div className="bg-primary/20 animate-blob absolute -left-16 -top-16 h-64 w-64 rounded-full blur-3xl motion-reduce:animate-none" />
         <div className="relative grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <p className="text-primary text-sm font-semibold uppercase tracking-wide">
-              Study notes
-            </p>
+            <SectionEyebrow>Study notes</SectionEyebrow>
             <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
               Learn with slides, then <span className="text-primary">practise</span> what you
               learned

@@ -45,7 +45,10 @@ function Row() {
 
 export function TechMarquee() {
   return (
-    <section aria-label="Topics you will learn" className="border-b py-8">
+    <section
+      aria-label="Topics you will learn"
+      className="from-primary/[0.06] via-primary/[0.02] to-primary/[0.06] border-b bg-gradient-to-b py-8"
+    >
       <p className="text-muted-foreground mb-4 text-center text-xs font-semibold uppercase tracking-widest">
         What you&apos;ll learn
       </p>

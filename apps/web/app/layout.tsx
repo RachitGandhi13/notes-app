@@ -1,11 +1,38 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
-import { Navbar, Footer } from "@repo/ui";
+import { Navbar, Footer, ThemedLogo, GlowCanvas } from "@repo/ui";
 import { Providers } from "./providers";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
 import { SITE_URL } from "@/lib/site";
 import { jsonLd } from "@/lib/seo";
 import "./globals.css";
+
+// Ascend design system's type stack. --font-sans replaces the previous
+// system-font stack sitewide (see tailwind.config.ts); --font-display and
+// --font-mono are scoped to the new display heading / eyebrow usages only.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-sans",
+  display: "swap",
+});
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
+export const viewport: Viewport = {
+  themeColor: "#09090B",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -25,8 +52,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="font-sans">
+        <GlowCanvas />
         {/* Tells search engines the official site name, which Google uses for the result's name. */}
         <script
           type="application/ld+json"
@@ -46,7 +78,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Navbar
               brand="CloudVidya Academy"
               brandHref="/"
-              brandLogo="/cloudvidya.png"
+              logo={
+                <>
+                  <ThemedLogo layout="inline" height={28} title="" className="hidden sm:block" />
+                  <ThemedLogo layout="mark" height={28} title="" className="sm:hidden" />
+                </>
+              }
               links={[
                 { label: "Courses", href: "/#browse" },
                 { label: "Notes", href: "/notes" },
@@ -57,7 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex-1">{children}</div>
             <Footer
               brand="CloudVidya Academy"
-              brandLogo="/cloudvidya.png"
+              logo={<ThemedLogo layout="horizontal" height={88} />}
               description="Learn AWS, DevOps, and Cloud through hands-on, project-based courses and mentorship from Dr. Veeranna Gatate."
               linkColumns={[
                 {

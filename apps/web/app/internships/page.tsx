@@ -3,6 +3,7 @@ import { Award, ArrowRight, Briefcase, CheckCircle2, ClipboardCheck } from "luci
 import { InternshipTrackPicker } from "@/components/InternshipTrackPicker";
 import { INTERNSHIP_ROADMAP, PROGRAM_BENEFITS, PROGRAM_DELIVERABLES } from "@/lib/internships";
 import { getActiveInternshipTracks } from "@/lib/internship-actions";
+import { HeroGlow } from "@/components/home/HeroGlow";
 
 export const metadata: Metadata = {
   title: "Internship Program",
@@ -20,21 +21,22 @@ export default async function InternshipsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-16 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
       {/* Hero */}
-      <div className="space-y-6 text-center">
+      <div className="relative isolate -mx-4 overflow-hidden px-4 py-6 text-center sm:-mx-6 sm:px-6">
+        <HeroGlow />
         <span className="bg-primary/15 text-primary mx-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">
           <Briefcase className="h-3.5 w-3.5" />
           CloudVidya Academy Internship Program
         </span>
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+        <h1 className="mt-6 text-4xl font-extrabold tracking-tight sm:text-5xl">
           Industry Internship Program
         </h1>
-        <p className="text-muted-foreground mx-auto max-w-2xl text-lg leading-relaxed">
+        <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg leading-relaxed">
           Hands-on internship tracks in Cloud, DevOps and AI application development: real projects,
           mentorship, and a certificate at the end.
         </p>
         <a
           href="#apply"
-          className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="bg-primary text-primary-foreground ring-offset-background focus-visible:ring-ring mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-[0_0_12px_hsl(var(--primary)/0.4)] transition-all hover:gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           Apply Now
           <ArrowRight className="h-4 w-4" />

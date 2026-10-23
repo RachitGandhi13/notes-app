@@ -1,6 +1,7 @@
 import { ArrowRight, BadgeCheck, Linkedin, Mail } from "lucide-react";
 import Image from "next/image";
 import { instructor } from "@/lib/instructor";
+import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 export function InstructorSection() {
   return (
@@ -67,7 +68,7 @@ export function InstructorSection() {
 export function SupportSection() {
   return (
     <div className="border-t py-10 text-center sm:py-14">
-      <p className="text-primary text-sm font-semibold uppercase tracking-wide">Student Support</p>
+      <SectionEyebrow>Student Support</SectionEyebrow>
       <h2 className="mt-2 text-4xl font-extrabold tracking-tight">
         Need <span className="text-primary">help?</span>
       </h2>
