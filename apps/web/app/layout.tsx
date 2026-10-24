@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { Inter, Inter_Tight, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import { Navbar, Footer, ThemedLogo, GlowCanvas } from "@repo/ui";
 import { Providers } from "./providers";
@@ -9,8 +9,14 @@ import { jsonLd } from "@/lib/seo";
 import "./globals.css";
 
 // Ascend design system's type stack. --font-sans replaces the previous
-// system-font stack sitewide (see tailwind.config.ts); --font-display and
-// --font-mono are scoped to the new display heading / eyebrow usages only.
+// system-font stack sitewide (see tailwind.config.ts); --font-display,
+// --font-serif and --font-mono are scoped to specific accent usages.
+//
+// Inter Tight 700 is preloaded explicitly (kept default `preload: true`)
+// since the hero h1 — set in that weight — is the page's LCP element;
+// JetBrains Mono and Instrument Serif are both small accent-only usages
+// below the fold's first paint, so they're not preloaded, keeping preload
+// priority on the one font that actually gates LCP.
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -22,12 +28,22 @@ const interTight = Inter_Tight({
   weight: ["600", "700"],
   variable: "--font-display",
   display: "swap",
+  preload: true,
+});
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
+  variable: "--font-serif",
+  display: "swap",
+  preload: false,
 });
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-mono",
   display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -55,7 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${interTight.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans">
         <GlowCanvas />
@@ -80,8 +96,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               brandHref="/"
               logo={
                 <>
-                  <ThemedLogo layout="inline" height={28} title="" className="hidden sm:block" />
-                  <ThemedLogo layout="mark" height={28} title="" className="sm:hidden" />
+                  <ThemedLogo layout="inline" height={26} title="" className="hidden sm:block" />
+                  <ThemedLogo layout="mark" height={26} title="" className="sm:hidden" />
                 </>
               }
               links={[

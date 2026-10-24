@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Mail, Menu, Phone, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -69,8 +70,8 @@ export function Navbar({
   }, [pathname]);
 
   return (
-    <header className="glass safe-top sticky top-0 z-40 w-full">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
+    <header className="safe-top sticky top-5 z-40 w-full px-5 sm:px-8">
+      <div className="nav-pill mx-auto flex h-16 max-w-[1120px] items-center gap-3 rounded-full px-4 sm:gap-4 sm:px-6">
         {/* Brand */}
         <Link
           href={brandHref}
@@ -106,7 +107,7 @@ export function Navbar({
                   href={link.href}
                   aria-current={pathname === link.href ? "page" : undefined}
                   className={cn(
-                    "text-muted-foreground hover:text-foreground aria-[current=page]:text-foreground flex min-h-11 items-center rounded-full px-3 text-sm font-medium normal-case tracking-normal transition-colors dark:text-[#A1A1AA] dark:hover:text-[#FAFAFA] dark:aria-[current=page]:text-[#FAFAFA]",
+                    "text-muted-foreground hover:text-foreground aria-[current=page]:text-foreground flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-medium normal-case tracking-normal transition-colors dark:text-[#D4D4D8] dark:hover:text-[#FAFAFA] dark:aria-[current=page]:text-[#FAFAFA]",
                     link.glow && `${glowClass} rounded-full`
                   )}
                 >
@@ -181,12 +182,9 @@ export function Navbar({
             </DropdownMenu>
           ) : (
             <div className="hidden items-center gap-2 lg:flex">
-              <AscendButton href="/auth" variant="secondary" size="md" className="h-11 py-0">
-                Login
-              </AscendButton>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <AscendButton variant="primary" size="md" className="h-11 py-0">
+                  <AscendButton variant="secondary" size="sm">
                     Contact us
                   </AscendButton>
                 </DropdownMenuTrigger>
@@ -228,6 +226,9 @@ export function Navbar({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <AscendButton asChild variant="default" size="sm">
+                <Link href="/auth">Login</Link>
+              </AscendButton>
             </div>
           )}
 
@@ -247,84 +248,93 @@ export function Navbar({
       </div>
 
       {/* Phone menu panel */}
-      {menuOpen && (
-        <div id="mobile-menu" className="glass border-t lg:hidden">
-          <div className="container space-y-4 py-4">
-            {search && <div>{search}</div>}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            id="mobile-menu"
+            className="glass overflow-hidden border-t lg:hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="container space-y-4 py-4">
+              {search && <div>{search}</div>}
 
-            {links.length > 0 && (
-              <nav className="flex flex-col gap-1">
-                {links.map((link) => (
+              {links.length > 0 && (
+                <nav className="flex flex-col gap-1">
+                  {links.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium",
+                        link.glow && glowClass
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </nav>
+              )}
+
+              <div className="flex min-h-11 items-center justify-between border-t pt-3">
+                <span className="text-muted-foreground text-sm">Theme</span>
+                <ThemeToggle />
+              </div>
+
+              {session?.user ? (
+                <div className="grid gap-1 border-t pt-3">
                   <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium",
-                      link.glow && glowClass
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
-
-            <div className="flex min-h-11 items-center justify-between border-t pt-3">
-              <span className="text-muted-foreground text-sm">Theme</span>
-              <ThemeToggle />
-            </div>
-
-            {session?.user ? (
-              <div className="grid gap-1 border-t pt-3">
-                <Link
-                  href="/profile"
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                >
-                  <User className="h-4 w-4" />
-                  Profile
-                </Link>
-                {session.user.admin && (
-                  <Link
-                    href="/admin"
+                    href="/profile"
                     className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
                   >
-                    <Shield className="h-4 w-4" />
-                    Admin
+                    <User className="h-4 w-4" />
+                    Profile
                   </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={() => signOut()}
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium text-blue-600 dark:text-blue-400"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <div className="grid gap-2 border-t pt-3">
-                <AscendButton href="/auth" variant="secondary" size="md" className="w-full">
-                  Login
-                </AscendButton>
-                <a
-                  href={CONTACT.phoneHref}
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                >
-                  <Phone className="h-4 w-4 shrink-0" />
-                  {CONTACT.phone}
-                </a>
-                <a
-                  href={`mailto:${CONTACT.email}`}
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                >
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span className="break-all">{CONTACT.email}</span>
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                  {session.user.admin && (
+                    <Link
+                      href="/admin"
+                      className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium text-blue-600 dark:text-blue-400"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-2 border-t pt-3">
+                  <AscendButton asChild variant="default" className="w-full">
+                    <Link href="/auth">Login</Link>
+                  </AscendButton>
+                  <a
+                    href={CONTACT.phoneHref}
+                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                  >
+                    <Phone className="h-4 w-4 shrink-0" />
+                    {CONTACT.phone}
+                  </a>
+                  <a
+                    href={`mailto:${CONTACT.email}`}
+                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                  >
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className="break-all">{CONTACT.email}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

@@ -1,10 +1,18 @@
 // Components
-export { AscendButton } from "./components/ascend/button";
-export type { AscendButtonSize, AscendButtonVariant } from "./components/ascend/button";
+export { Aurora } from "./components/ascend/aurora";
+export type { AuroraVariant } from "./components/ascend/aurora";
+export { BadgePill } from "./components/ascend/badge-pill";
+export { AscendButton, ascendButtonVariants } from "./components/ascend/button";
+export type { AscendButtonProps } from "./components/ascend/button";
 export { Card as AscendCard } from "./components/ascend/card";
 export { Eyebrow as AscendEyebrow } from "./components/ascend/eyebrow";
+export { GlassCard } from "./components/ascend/glass-card";
+export { Grain } from "./components/ascend/grain";
 export { GlowCanvas } from "./components/ascend/glow-canvas";
+export { HeroGrid } from "./components/ascend/hero-grid";
+export { LogoEmblem } from "./components/ascend/logo-emblem";
 export { Section as AscendSection } from "./components/ascend/section";
+export { WindowCard, WindowChrome as AscendWindowChrome } from "./components/ascend/window-card";
 export { Badge, badgeVariants } from "./components/badge";
 export type { BadgeProps } from "./components/badge";
 export { Button, buttonVariants } from "./components/button";

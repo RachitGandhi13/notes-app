@@ -69,6 +69,15 @@
     --cv-cyan: #00f0ff;
     --cv-link: #4d94ff;
     --cv-gradient: linear-gradient(45deg, #0066ff, #00f0ff);
+
+    /* Ascend v2 (Phase 2) accent set — additive, same dark-only/--cv-* scoping
+       as the Phase 1 tokens above. Not routed through --primary/--accent etc.,
+       for the same reason those were reverted in Phase 1: avoid shifting
+       sitewide semantic-token contrast outside this restyle's scope. */
+    --cv-violet: #7c5cff;
+    --cv-violet-ink: #b4a7ff;
+    --cv-amber: #ffb547;
+    --cv-green: #34d399;
   }
 }
 
@@ -113,6 +122,68 @@
   background-color: hsl(var(--background) / 0.95);
   backdrop-filter: blur(12px);
   border-color: hsl(var(--border));
+}
+
+/* Navbar's floating-pill glass (Ascend v2 Step 2) — a distinct recipe from
+   .glass (different alpha/blur/saturate/shadow), so it's its own utility
+   rather than overloading .glass, which GlassCard elsewhere still depends
+   on with its own values. Same fallback pattern throughout. */
+.nav-pill {
+  background-color: rgb(20 20 24 / 0.6);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 20px 50px -20px rgb(0 0 0 / 0.6);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .nav-pill {
+    background-color: var(--cv-surface, #18181b);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nav-pill {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
+}
+:root:not(.dark) .nav-pill {
+  background-color: hsl(var(--background) / 0.95);
+  backdrop-filter: blur(12px);
+  border-color: hsl(var(--border));
+  box-shadow: none;
+}
+
+.serif-accent {
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.08em;
+  letter-spacing: -0.02em;
+}
+
+/* GlassCard (Ascend v2) — lighter, more translucent tint than the navbar's
+   .glass (which is a near-opaque frosted panel). Dark mode only — in light
+   mode the GlassCard component uses plain bg-card/border-border instead
+   (set via Tailwind classes), so this rule is scoped under .dark and never
+   fires there. Same fallback pattern as .glass otherwise: solid background
+   when backdrop-filter is unsupported or the OS has reduced transparency on. */
+.dark .glass-card {
+  background-color: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  backdrop-filter: blur(24px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .dark .glass-card {
+    background-color: var(--cv-surface, #18181b);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dark .glass-card {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
 }
 
 @layer base {

@@ -1,3 +1,6 @@
+"use client";
+
+import { motion, type Variants } from "framer-motion";
 import { CheckCircle2, Circle, Copy, Download, Play, Share2, XCircle } from "lucide-react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { SectionEyebrow } from "@/components/SectionEyebrow";
@@ -213,6 +216,16 @@ const FEATURES: { title: string; text: string; Mockup: () => JSX.Element }[] = [
   },
 ];
 
+const gridVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+};
+
 export function FeatureGrid() {
   return (
     <section className="relative isolate overflow-hidden py-12 sm:py-20">
@@ -229,20 +242,30 @@ export function FeatureGrid() {
           />
         </div>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div
+          className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={gridVariants}
+        >
           {FEATURES.map(({ title, text, Mockup }) => (
-            <div
+            <motion.div
               key={title}
-              className="bg-card group rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5"
+              variants={cardVariants}
+              whileHover={{ y: -6 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              className="bg-card group rounded-2xl border p-5 transition-colors duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5"
             >
               <WindowChrome>
                 <Mockup />
               </WindowChrome>
               <h3 className="mt-5 text-lg font-bold">{title}</h3>
               <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{text}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

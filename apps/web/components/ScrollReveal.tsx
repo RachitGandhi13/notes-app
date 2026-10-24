@@ -1,48 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { cn } from "@repo/ui";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 
 // Avra-style scroll reveal — words brighten in sequence, staggered, the first
 // time the paragraph scrolls into view (once only, not on every scroll pass).
 // Stays within the site's existing muted-foreground/foreground palette — this
-// only animates brightness, not color or position.
+// only animates opacity, not color or position.
+const container: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.035 } },
+};
+
+const word: Variants = {
+  hidden: { opacity: 0.12 },
+  visible: { opacity: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+};
+
 export function ScrollReveal({ text, className }: { text: string; className?: string }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const [revealed, setRevealed] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setRevealed(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.4 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   const words = text.split(" ");
+  const reduceMotion = useReducedMotion();
+
+  if (reduceMotion) {
+    return <p className={className}>{text}</p>;
+  }
 
   return (
-    <p ref={ref} className={className}>
-      {words.map((word, i) => (
-        <span
-          key={i}
-          className={cn(
-            "transition-colors duration-700 ease-out motion-reduce:transition-none motion-reduce:duration-0",
-            revealed ? "text-muted-foreground" : "text-muted-foreground/15"
-          )}
-          style={{ transitionDelay: `${i * 30}ms` }}
-        >
-          {word}{" "}
-        </span>
+    <motion.p
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.4 }}
+      variants={container}
+    >
+      {words.map((w, i) => (
+        <motion.span key={i} variants={word} className="text-muted-foreground">
+          {w}{" "}
+        </motion.span>
       ))}
-    </p>
+    </motion.p>
   );
 }
