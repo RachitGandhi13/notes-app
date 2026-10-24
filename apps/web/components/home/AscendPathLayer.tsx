@@ -128,11 +128,8 @@ function anchorRect(
 ): Rect {
   switch (index) {
     case 0: {
-      const left = d.x - cardW / 2;
-      // 50px (vs. the spec's 36px) — at 36px the card's bottom-right corner
-      // grazes the next segment (dot1 -> dot2) within its 10px tolerance at
-      // every required size; the extra clearance keeps the card fully clear.
-      const bottom = d.y - 50;
+      const left = d.x - cardW / 2 - 4;
+      const bottom = d.y - 44;
       return { left, top: bottom - cardH, right: left + cardW, bottom };
     }
     case 1: {
@@ -141,8 +138,8 @@ function anchorRect(
       return { left, top, right: left + cardW, bottom: top + cardH };
     }
     case 2: {
-      const right = d.x;
-      const bottom = d.y - 36;
+      const right = d.x + 24;
+      const bottom = d.y - 20;
       return { left: right - cardW, top: bottom - cardH, right, bottom };
     }
     default: {
