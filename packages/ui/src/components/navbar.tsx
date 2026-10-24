@@ -1,5 +1,6 @@
 "use client";
 
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { LogOut, Mail, Menu, Phone, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -246,26 +247,19 @@ export function Navbar({
         </div>
       </div>
 
-      {/* Phone menu — a fixed, full-height right-side sheet. CSS-only motion
-          (no AnimatePresence/motion.div): the backdrop+panel are only in the
-          DOM while menuOpen is true, so the slide/fade below is a plain CSS
-          mount animation (tailwindcss-animate's `animate-in`), and closing it
-          unmounts immediately rather than coordinating an exit animation —
-          deliberately, since adding exit-delay state would be a logic change. */}
-      {menuOpen && (
-        <>
-          {/* Backdrop is decorative only — no click-to-close handler added,
-              per the tripwire gate (that would be new logic, not a pure
-              restyle). Closing still works via the X toggle button and the
-              existing pathname-change effect. See NEEDS LOGIC CHANGE. */}
-          <div
-            aria-hidden="true"
-            className="animate-in fade-in-0 fixed inset-0 z-40 bg-black/60 duration-[233ms] ease-[var(--cv-ease)] lg:hidden dark:backdrop-blur-sm"
-          />
-          <div
+      {/* Phone menu — a fixed, full-height right-side sheet, now a real Radix
+          Dialog (owner-approved exception, Phase 4 Step 0a) so Esc, focus
+          trap and backdrop-close come from Radix instead of being hand-rolled.
+          Wired to the existing menuOpen/setMenuOpen state only — no new
+          state, effects, refs or handlers were added. */}
+      <DialogPrimitive.Root open={menuOpen} onOpenChange={setMenuOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="animate-in fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fixed inset-0 z-40 bg-black/60 duration-[233ms] ease-[var(--cv-ease)] lg:hidden dark:backdrop-blur-sm" />
+          <DialogPrimitive.Content
             id="mobile-menu"
-            className="sheet-panel bg-background animate-in slide-in-from-right fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto rounded-l-[32px] border-l duration-[233ms] ease-[var(--cv-ease)] lg:hidden"
+            className="sheet-panel bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto rounded-l-[32px] border-l duration-[233ms] ease-[var(--cv-ease)] focus:outline-none lg:hidden"
           >
+            <DialogPrimitive.Title className="sr-only">Menu</DialogPrimitive.Title>
             <div className="flex flex-col gap-4 p-6">
               {search && <div>{search}</div>}
 
@@ -345,9 +339,9 @@ export function Navbar({
                 </div>
               )}
             </div>
-          </div>
-        </>
-      )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </header>
   );
 }

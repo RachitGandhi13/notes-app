@@ -229,12 +229,6 @@
   box-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.6);
 }
 
-/* Mobile nav sheet is only in the DOM while open (plain conditional render,
-   no new JS state) — :has() locks background scroll without a JS listener. */
-body:has(#mobile-menu) {
-  overflow: hidden;
-}
-
 /* Sheet (mobile nav drawer, Ascend v2 Phase 3) — same recipe as dialog-panel,
    full height instead of a centered/bottom-sheet card. */
 .dark .sheet-panel {
