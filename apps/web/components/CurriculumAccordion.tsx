@@ -26,7 +26,7 @@ function LessonRow({ lesson }: { lesson: LessonItem }) {
   const Icon = lesson.type === "NOTION" ? FileText : PlayCircle;
 
   return (
-    <li className="flex items-center gap-3 border-t border-white/[0.06] px-5 py-3 first:border-t-0">
+    <li className="border-border flex items-center gap-3 border-t px-5 py-3 first:border-t-0 dark:border-white/[0.06]">
       <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-5">{lesson.title}</p>
@@ -75,7 +75,7 @@ function ChapterPanel({
             </div>
           )}
           <div className="min-w-0">
-            <span className="font-mono text-xs text-[#00F0FF]">
+            <span className="font-mono text-xs text-[#0052CC] dark:text-[#00F0FF]">
               {String(index + 1).padStart(2, "0")}
             </span>
             <h3 className="font-display mt-0.5 text-[20px] font-semibold leading-[28px]">
@@ -101,7 +101,7 @@ function ChapterPanel({
         </div>
       </div>
       {open && (
-        <div className="animate-in fade-in-0 slide-in-from-top-1 border-t border-white/[0.06] duration-[144ms]">
+        <div className="border-border animate-in fade-in-0 slide-in-from-top-1 border-t duration-[144ms] dark:border-white/[0.06]">
           {chapter.materialKind && (
             <div className="p-5 pb-0">
               <MaterialViewer

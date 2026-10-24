@@ -201,7 +201,9 @@ export function FeatureGrid() {
       </div>
       <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
         <div className="mx-auto max-w-[760px] text-center">
-          <p className="text-eyebrow uppercase text-[#4D94FF]">Why CloudVidya Academy</p>
+          <p className="text-eyebrow uppercase text-[#0052CC] dark:text-[#4D94FF]">
+            Why CloudVidya Academy
+          </p>
           <h2
             className="font-display mt-3"
             style={{ fontSize: "clamp(36px, 4vw, 52px)", letterSpacing: "-0.035em" }}
@@ -209,12 +211,12 @@ export function FeatureGrid() {
             Everything you need to go from learning to{" "}
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(90deg, #4D94FF, #00F0FF)" }}
+              style={{ backgroundImage: "var(--cv-gradient-headline)" }}
             >
               doing
             </span>
           </h2>
-          <p className="mt-3 text-[18px] leading-[28px] text-[#A1A1AA]">
+          <p className="mt-3 text-[18px] leading-[28px] text-[#52525B] dark:text-[#A1A1AA]">
             Video courses, notes and quizzes. All in one place, built around hands-on AWS and DevOps
             training.
           </p>

@@ -61,7 +61,10 @@ export default function ForgotPasswordPage() {
       )}
 
       <p className="text-center text-sm">
-        <Link href="/auth" className="text-[#4D94FF] underline hover:text-[#4D94FF]/80">
+        <Link
+          href="/auth"
+          className="text-[#0052CC] underline hover:text-[#0052CC]/80 dark:text-[#4D94FF] dark:hover:text-[#4D94FF]/80"
+        >
           Back to sign in
         </Link>
       </p>

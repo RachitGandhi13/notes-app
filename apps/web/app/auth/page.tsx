@@ -155,16 +155,16 @@ function AuthPageInner() {
       {/* Tab switcher — Phase 3 segmented-pill treatment (same visual language
           as the shared Radix Tabs primitive, kept as plain buttons here since
           this component already owns the ?tab= sync and default-tab logic). */}
-      <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+      <div className="border-border bg-muted flex gap-1 rounded-full border p-1 dark:border-white/10 dark:bg-white/5">
         <button
           onClick={() => setTab("signin")}
-          className={`h-10 flex-1 rounded-full text-sm font-medium transition-all duration-[144ms] ${tab === "signin" ? "bg-[#FAFAFA] text-[#09090B]" : "text-zinc-400 hover:text-zinc-100"}`}
+          className={`h-10 flex-1 rounded-full text-sm font-medium transition-all duration-[144ms] ${tab === "signin" ? "bg-[#FAFAFA] text-[#09090B]" : "text-[#52525B] hover:text-[#09090B] dark:text-zinc-400 dark:hover:text-zinc-100"}`}
         >
           Sign In
         </button>
         <button
           onClick={() => setTab("register")}
-          className={`h-10 flex-1 rounded-full text-sm font-medium transition-all duration-[144ms] ${tab === "register" ? "bg-[#FAFAFA] text-[#09090B]" : "text-zinc-400 hover:text-zinc-100"}`}
+          className={`h-10 flex-1 rounded-full text-sm font-medium transition-all duration-[144ms] ${tab === "register" ? "bg-[#FAFAFA] text-[#09090B]" : "text-[#52525B] hover:text-[#09090B] dark:text-zinc-400 dark:hover:text-zinc-100"}`}
         >
           Register
         </button>
@@ -182,7 +182,7 @@ function AuthPageInner() {
             type="button"
             onClick={handleResend}
             disabled={resend.status === "sending"}
-            className="inline-flex min-h-11 items-center text-sm font-medium text-[#4D94FF] underline underline-offset-4 hover:text-[#4D94FF]/80 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-[#0052CC] underline underline-offset-4 hover:text-[#0052CC]/80 disabled:opacity-50 dark:text-[#4D94FF] dark:hover:text-[#4D94FF]/80"
           >
             {resend.status === "sending"
               ? "Sending a new link…"
@@ -191,7 +191,7 @@ function AuthPageInner() {
           <p
             role="status"
             aria-live="polite"
-            className={`text-sm ${resend.status === "error" ? "text-red-400" : "text-zinc-400"}`}
+            className={`text-sm ${resend.status === "error" ? "text-red-400" : "text-[#52525B] dark:text-zinc-400"}`}
           >
             {resend.message}
           </p>
@@ -227,7 +227,7 @@ function AuthPageInner() {
               </label>
               <Link
                 href="/auth/forgot-password"
-                className="inline-flex min-h-11 items-center text-xs text-[#4D94FF] underline hover:text-[#4D94FF]/80"
+                className="inline-flex min-h-11 items-center text-xs text-[#0052CC] underline hover:text-[#0052CC]/80 dark:text-[#4D94FF] dark:hover:text-[#4D94FF]/80"
               >
                 Forgot password?
               </Link>
@@ -300,18 +300,18 @@ function AuthPageInner() {
       {hasSocial && (
         <>
           <div className="flex items-center gap-3">
-            <hr className="flex-1 border-white/10" />
-            <span className="text-xs text-zinc-500">or sign in with</span>
-            <hr className="flex-1 border-white/10" />
+            <hr className="border-border flex-1 dark:border-white/10" />
+            <span className="text-xs text-[#71717A] dark:text-zinc-500">or sign in with</span>
+            <hr className="border-border flex-1 dark:border-white/10" />
           </div>
 
           <div className="space-y-3">
             {oauth.github && (
               <button
                 onClick={() => signIn("github", { callbackUrl })}
-                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
+                className="border-border group flex min-h-11 w-full items-center justify-center gap-3 rounded-full border bg-white px-4 py-2.5 text-sm font-medium text-[#09090B] transition-all hover:border-blue-500/30 hover:bg-blue-50 active:scale-[0.98] dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-zinc-300 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
+                <span className="bg-muted flex h-6 w-6 items-center justify-center rounded-md text-[#3F3F46] transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400 dark:bg-white/10 dark:text-zinc-300">
                   <GitHubIcon />
                 </span>
                 Continue with GitHub
@@ -320,9 +320,9 @@ function AuthPageInner() {
             {oauth.google && (
               <button
                 onClick={() => signIn("google", { callbackUrl })}
-                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
+                className="border-border group flex min-h-11 w-full items-center justify-center gap-3 rounded-full border bg-white px-4 py-2.5 text-sm font-medium text-[#09090B] transition-all hover:border-blue-500/30 hover:bg-blue-50 active:scale-[0.98] dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-zinc-300 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
+                <span className="bg-muted flex h-6 w-6 items-center justify-center rounded-md text-[#3F3F46] transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400 dark:bg-white/10 dark:text-zinc-300">
                   <GoogleIcon />
                 </span>
                 Continue with Google

@@ -53,13 +53,15 @@ export function WindowCard({
   return (
     <div
       className={cn(
-        "group rounded-[24px] border border-white/[0.08] bg-[#161618] p-5 transition-[transform,border-color] duration-[144ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:border-white/[0.16] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        "bg-card border-border group rounded-2xl border p-5 shadow-[0_20px_40px_-20px_rgb(0_0_0_/_0.15)] transition-[transform,border-color] duration-[144ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:rounded-[24px] dark:border-white/[0.08] dark:bg-[#161618] dark:shadow-none dark:hover:border-white/[0.16]",
         className
       )}
     >
       <WindowChrome>{children}</WindowChrome>
       <h3 className="font-display mt-5 text-xl font-semibold leading-7">{title}</h3>
-      <p className="mt-2 text-base leading-[26px] text-[#A1A1AA]">{description}</p>
+      <p className="mt-2 text-base leading-[26px] text-[#52525B] dark:text-[#A1A1AA]">
+        {description}
+      </p>
     </div>
   );
 }

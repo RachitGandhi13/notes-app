@@ -114,11 +114,11 @@ export function Footer({
           )}
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/[0.08] pt-6 sm:flex-row">
+        <div className="border-border mt-8 flex flex-col items-center justify-between gap-3 border-t pt-6 sm:flex-row dark:border-white/[0.08]">
           <p className="text-muted-foreground text-small">
             © {year} {brand}. All rights reserved.
           </p>
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[#71717A]">
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[#52525B] dark:text-[#71717A]">
             Learn &middot; Build &middot; Grow
           </p>
         </div>

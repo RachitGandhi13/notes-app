@@ -31,7 +31,7 @@ export interface NavLink {
 }
 
 const glowClass =
-  "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse";
+  "border border-[#A7F3D0] bg-[#ECFDF5] text-[#047857] animate-pulse dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:shadow-[0_0_12px_rgba(16,185,129,0.3)]";
 
 interface NavbarProps {
   /** Brand name shown on the left — ignored once `logo` is given. */
@@ -276,11 +276,11 @@ export function Navbar({
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "flex h-14 items-center gap-4 border-b border-white/[0.08] text-left",
+                        "border-border flex h-14 items-center gap-4 border-b text-left dark:border-white/[0.08]",
                         link.glow && `${glowClass} rounded-lg px-3`
                       )}
                     >
-                      <span className="font-mono text-sm text-[#4D94FF]">
+                      <span className="font-mono text-sm text-[#0052CC] dark:text-[#4D94FF]">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <span className="font-display text-[22px] font-semibold leading-[28px]">
@@ -291,7 +291,7 @@ export function Navbar({
                 </nav>
               )}
 
-              <div className="flex min-h-11 items-center justify-between border-b border-white/[0.08] pb-3">
+              <div className="border-border flex min-h-11 items-center justify-between border-b pb-3 dark:border-white/[0.08]">
                 <span className="text-muted-foreground text-sm">Theme</span>
                 <ThemeToggle />
               </div>

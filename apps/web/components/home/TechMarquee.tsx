@@ -17,14 +17,17 @@ const TOPICS = [
 const EMPHASIS = new Set(["DevOps", "Kubernetes"]);
 const SERIF_EMPHASIS = new Set(["Terraform", "Linux"]);
 
+// Light mode: every word reads at full opacity in #3F3F46, no dim/emphasis
+// distinction (that only exists against the dark background). Dark mode
+// keeps the original emphasis (FAFAFA) / dim (71717A) treatment.
 function Word({ label }: { label: string }) {
   if (EMPHASIS.has(label)) {
-    return <span className="text-[#FAFAFA]">{label}</span>;
+    return <span className="text-[#3F3F46] dark:text-[#FAFAFA]">{label}</span>;
   }
   if (SERIF_EMPHASIS.has(label)) {
-    return <span className="serif-accent text-[#FAFAFA]">{label}</span>;
+    return <span className="serif-accent text-[#3F3F46] dark:text-[#FAFAFA]">{label}</span>;
   }
-  return <span className="text-[#71717A]">{label}</span>;
+  return <span className="text-[#3F3F46] dark:text-[#71717A]">{label}</span>;
 }
 
 function Row() {
@@ -33,7 +36,7 @@ function Row() {
       {TOPICS.map((label, i) => (
         <span key={i} className="font-display flex items-center gap-6 text-[32px] font-semibold">
           <Word label={label} />
-          {<span className="text-[#00F0FF]">&rsaquo;</span>}
+          {<span className="text-[#0052CC] dark:text-[#00F0FF]">&rsaquo;</span>}
         </span>
       ))}
     </div>
@@ -41,7 +44,10 @@ function Row() {
 }
 
 export function TechMarquee() {
-  const mask = "linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent)";
+  // Fixed-pixel fade zone (not a percentage) so exactly 64px fades at each
+  // edge regardless of the marquee's rendered width.
+  const mask =
+    "linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent)";
   return (
     <section aria-label="Topics you will learn" className="overflow-hidden pb-[52px] pt-[84px]">
       <div className="group overflow-hidden" style={{ maskImage: mask, WebkitMaskImage: mask }}>

@@ -102,7 +102,7 @@ export default async function NotesPage() {
               <span className="from-primary relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br to-cyan-400 text-white shadow-lg transition-transform group-hover:scale-110">
                 <Icon className="h-5 w-5" />
               </span>
-              <h3 className="relative mt-4 font-bold">{title}</h3>
+              <h2 className="relative mt-4 font-bold">{title}</h2>
               <p className="text-muted-foreground relative mt-1.5 text-sm leading-relaxed">
                 {text}
               </p>

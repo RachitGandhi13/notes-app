@@ -5,7 +5,7 @@ import { AscendButton, Aurora, Grain, ThemedLogo } from "@repo/ui";
 export function JoinBanner({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="sm:py-21 px-5 py-16 sm:px-8">
-      <div className="border-white/12 bg-card relative mx-auto max-w-7xl overflow-hidden rounded-[40px] border px-5 py-16 text-center sm:px-8 sm:py-[116px]">
+      <div className="bg-card border-border dark:border-white/12 relative mx-auto max-w-7xl overflow-hidden rounded-[40px] border px-5 py-16 text-center shadow-[0_20px_40px_-20px_rgb(0_0_0_/_0.15)] sm:px-8 sm:py-[116px] dark:shadow-none">
         <Aurora variant="panel" accent="#0066FF" accent2="#00F0FF" />
         <Grain opacity={0.9} />
         <div className="relative mx-auto max-w-2xl">
@@ -27,7 +27,7 @@ export function JoinBanner({ signedIn }: { signedIn: boolean }) {
               </>
             )}
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-[#A1A1AA]">
+          <p className="mx-auto mt-4 max-w-xl text-[#52525B] dark:text-[#A1A1AA]">
             {signedIn
               ? "Jump back into your courses and notes where you left off."
               : "Create a free account to enrol in courses, practise with quizzes and track your progress."}

@@ -54,7 +54,7 @@ function ResetPasswordPageInner() {
       <AuthCard title="Invalid link" subtitle="This reset link is missing required information.">
         <Link
           href="/auth/forgot-password"
-          className="inline-block text-sm text-[#4D94FF] underline hover:text-[#4D94FF]/80"
+          className="inline-block text-sm text-[#0052CC] underline hover:text-[#0052CC]/80 dark:text-[#4D94FF] dark:hover:text-[#4D94FF]/80"
         >
           Request a new link
         </Link>

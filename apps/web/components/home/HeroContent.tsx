@@ -97,9 +97,7 @@ export function HeroContent({ courseCount }: { courseCount?: number }) {
             <br />
             <span
               className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage: "linear-gradient(100deg, #4D94FF 0%, #00F0FF 55%, #B4A7FF 100%)",
-              }}
+              style={{ backgroundImage: "var(--cv-gradient-headline)" }}
             >
               Cloud &amp; DevOps
             </span>{" "}
@@ -114,7 +112,7 @@ export function HeroContent({ courseCount }: { courseCount?: number }) {
       </div>
 
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-8 text-center">
-        <p className="max-w-[34em] text-[20px] leading-[30px] text-[#A1A1AA]">
+        <p className="max-w-[34em] text-[20px] leading-[30px] text-[#52525B] dark:text-[#A1A1AA]">
           Hands-on video courses by CloudVidya Academy, with notes, practice quizzes and progress
           tracking. Learn at your own pace.
         </p>

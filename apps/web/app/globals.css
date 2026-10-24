@@ -25,6 +25,11 @@
     --input: 220 15% 88%;
     --ring: 217 91% 55%;
     --radius: 0.75rem;
+
+    /* Pre-launch polish, Step 5: light-mode headline gradient — darker, no
+       cyan/lilac stops (those read too light on white). Dark mode's own
+       value is set in .dark below and is unchanged. */
+    --cv-gradient-headline: linear-gradient(100deg, #0052cc 0%, #007a99 100%);
   }
   .dark {
     /* Ascend design system — neutral zinc-black + saturated blue/cyan.
@@ -78,6 +83,9 @@
     --cv-violet-ink: #b4a7ff;
     --cv-amber: #ffb547;
     --cv-green: #34d399;
+
+    /* Pre-launch polish, Step 5: unchanged from the original hardcoded value. */
+    --cv-gradient-headline: linear-gradient(100deg, #4d94ff 0%, #00f0ff 55%, #b4a7ff 100%);
   }
 }
 
