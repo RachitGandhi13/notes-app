@@ -45,23 +45,45 @@ const DEFAULT_SIZE: Size = { w: 1440, h: 900 };
 const DEFAULT_COPY_RECT: Rect = { left: 112, top: 96, right: 752, bottom: 797 };
 const MAX_CONTAINER_WIDTH = 1440;
 
-const START_FRAC: Point = { x: 0.5, y: 1.0 };
+// Climbs-only-upward points: every y strictly smaller than the previous
+// (asserted below), x shifted into 0.56-0.90 so the whole path, including
+// dot 1, clears the copy column with real margin instead of grazing it.
+const START_FRAC: Point = { x: 0.56, y: 1.0 };
 const DOTS_FRAC: Point[] = [
-  // x nudged from the spec's 0.528 to 0.60: at that fraction dot 1 sits
-  // inside the copy column's own measured width at every required desktop
-  // size, so its card (and, via the hide-on-residual-collision rule,
-  // STEP02/03 with it) never had anywhere to render. 0.60 clears the
-  // column with margin at 1366/1440/1536/1920 while keeping the dot left
-  // of dot 2 (0.625), preserving the path's left-to-right shape.
-  { x: 0.6, y: 0.711 },
-  { x: 0.625, y: 0.778 },
-  { x: 0.75, y: 0.522 },
-  { x: 0.8125, y: 0.578 },
+  { x: 0.595, y: 0.78 },
+  { x: 0.675, y: 0.72 },
+  { x: 0.745, y: 0.53 },
+  { x: 0.83, y: 0.47 },
 ];
-const SUMMIT_FRAC: Point = { x: 0.9028, y: 0.256 };
+const SUMMIT_FRAC: Point = { x: 0.9, y: 0.28 };
+
+const ASCEND_FRAC_ORDER = [START_FRAC, ...DOTS_FRAC, SUMMIT_FRAC];
+for (let i = 1; i < ASCEND_FRAC_ORDER.length; i++) {
+  if (!(ASCEND_FRAC_ORDER[i]!.y < ASCEND_FRAC_ORDER[i - 1]!.y)) {
+    throw new Error(
+      `Ascend path must climb only upward: point ${i} (y=${ASCEND_FRAC_ORDER[i]!.y}) is not above point ${i - 1} (y=${ASCEND_FRAC_ORDER[i - 1]!.y})`
+    );
+  }
+}
+
+// Navbar is `sticky top-5` with a 64px (h-16) pill; once scrolled it visually
+// pins over the hero's own top edge, so (matching the same approximation
+// AscendHero.tsx's own `lg:pt-[96px]` padding already uses for the copy
+// column) its bottom edge relative to the hero is treated as 64px from the
+// hero's own top (y=0) -- the worst-case overlap zone once stuck.
+const NAVBAR_BOTTOM = 64;
+const SUMMIT_LOGO_GAP = 24;
+const MIN_DOT4_SUMMIT_GAP = 60;
 
 const FULL_CARD_W = 250;
 const COMPACT_CARD_W = 200;
+// Card 0's dot sits closest to the copy column with the line climbing away
+// steeply above it; at the shared 200px compact width, no position clears
+// both the column and the line within less than 70px of the dot (confirmed
+// by exhaustive search). Narrowing just this card lets it sit as close as
+// the others -- its 2-word title wraps to two lines at this width, already
+// covered by the card-height estimate below.
+const CARD0_COMPACT_W = 160;
 // Content-height estimates (no layout measurement pass): generous enough
 // (worst-case 2-line title) to err toward compacting/hiding rather than
 // missing a real overlap.
@@ -104,7 +126,8 @@ function anyCollision(
   dots: Point[],
   lineSamples: Point[],
   logoRect: Rect,
-  copyRect: Rect | null
+  copyRect: Rect | null,
+  navbarRect: Rect
 ): boolean {
   for (let i = 0; i < rects.length; i++) {
     const r = rects[i]!;
@@ -115,6 +138,7 @@ function anyCollision(
     if (lineSamples.some((s) => pointNearRect(s, r, 10))) return true;
     if (rectsIntersect(r, logoRect)) return true;
     if (copyRect && rectsIntersect(r, copyRect)) return true;
+    if (rectsIntersect(r, navbarRect)) return true;
   }
   return false;
 }
@@ -128,18 +152,23 @@ function anchorRect(
 ): Rect {
   switch (index) {
     case 0: {
-      const left = d.x - cardW / 2 - 4;
-      const bottom = d.y - 44;
+      if (cardW === COMPACT_CARD_W) {
+        const left = d.x - CARD0_COMPACT_W / 2 - 16;
+        const bottom = d.y - 48;
+        return { left, top: bottom - cardH, right: left + CARD0_COMPACT_W, bottom };
+      }
+      const left = d.x - cardW / 2 + 3;
+      const bottom = d.y - 70;
       return { left, top: bottom - cardH, right: left + cardW, bottom };
     }
     case 1: {
-      const left = d.x - 40;
-      const top = d.y + 30;
+      const left = d.x + 20;
+      const top = d.y + 24;
       return { left, top, right: left + cardW, bottom: top + cardH };
     }
     case 2: {
-      const right = d.x + 24;
-      const bottom = d.y - 20;
+      const right = d.x - 20;
+      const bottom = d.y - 24;
       return { left: right - cardW, top: bottom - cardH, right, bottom };
     }
     default: {
@@ -168,8 +197,37 @@ function computeLayout(size: Size, copyRect: Rect | null) {
   });
 
   const start = toPoint(START_FRAC);
-  const dots = DOTS_FRAC.map(toPoint);
-  const summit = toPoint(SUMMIT_FRAC);
+  const rawDots = DOTS_FRAC.map(toPoint);
+  const rawSummit = toPoint(SUMMIT_FRAC);
+
+  // Clear the floating navbar: if the raw fraction-derived summit would
+  // put the logo tile's top above the navbar's bottom edge (plus the
+  // required 24px gap), push the summit down just enough to clear it,
+  // then rescale dots 1-4 proportionally into the now-shorter start-to-
+  // summit span so the climb stays smooth instead of bunching near the
+  // top. A dot-4 floor on top of that guards the one case proportional
+  // scaling alone can't: an extreme push collapsing dot 4 back toward
+  // the summit.
+  const tileSize = H < 760 ? 104 : 128;
+  const minSummitY = NAVBAR_BOTTOM + SUMMIT_LOGO_GAP + tileSize;
+  const summitY = Math.max(rawSummit.y, minSummitY);
+  const summit: Point = { x: rawSummit.x, y: summitY };
+  const pushed = summitY > rawSummit.y;
+
+  let dots = rawDots;
+  if (pushed) {
+    const oldSpan = start.y - rawSummit.y;
+    const newSpan = start.y - summitY;
+    dots = rawDots.map((d) => {
+      const t = oldSpan > 0 ? (start.y - d.y) / oldSpan : 0;
+      return { x: d.x, y: start.y - t * newSpan };
+    });
+    const lastIndex = dots.length - 1;
+    const minDot4Y = summitY + MIN_DOT4_SUMMIT_GAP;
+    const last = dots[lastIndex]!;
+    if (last.y < minDot4Y) dots[lastIndex] = { x: last.x, y: minDot4Y };
+  }
+
   const pathPoints = [start, ...dots, summit];
 
   const cumLengths: number[] = [0];
@@ -179,7 +237,6 @@ function computeLayout(size: Size, copyRect: Rect | null) {
   const totalLength = cumLengths[cumLengths.length - 1]! || 1;
   const dotFractions = dots.map((_, i) => cumLengths[i + 1]! / totalLength);
 
-  const tileSize = H < 760 ? 104 : 128;
   const logoRect: Rect = {
     left: summit.x - tileSize / 2,
     top: summit.y - tileSize,
@@ -188,6 +245,12 @@ function computeLayout(size: Size, copyRect: Rect | null) {
   };
   const labelRight = logoRect.left - 16;
   const labelCenterY = logoRect.top + tileSize / 2;
+  const navbarRect: Rect = {
+    left: -Infinity,
+    top: -Infinity,
+    right: Infinity,
+    bottom: NAVBAR_BOTTOM,
+  };
 
   const lineSamples = sampleSegments(pathPoints, 8);
   const fullRects = dots.map((d, i) => anchorRect(i, d, FULL_CARD_W, FULL_CARD_H, containerRight));
@@ -195,10 +258,10 @@ function computeLayout(size: Size, copyRect: Rect | null) {
     anchorRect(i, d, COMPACT_CARD_W, COMPACT_CARD_H, containerRight)
   );
 
-  const needsCompact = anyCollision(fullRects, dots, lineSamples, logoRect, copyRect);
+  const needsCompact = anyCollision(fullRects, dots, lineSamples, logoRect, copyRect, navbarRect);
   const rects = needsCompact ? compactRects : fullRects;
   const forceHide2and3 =
-    needsCompact && anyCollision(compactRects, dots, lineSamples, logoRect, copyRect);
+    needsCompact && anyCollision(compactRects, dots, lineSamples, logoRect, copyRect, navbarRect);
 
   let hidden = dots.map((_, i) => forceHide2and3 && (i === 1 || i === 2));
   // Generalized safety net beyond the spec's explicit STEP02/03 fallback:
@@ -219,6 +282,7 @@ function computeLayout(size: Size, copyRect: Rect | null) {
     if (lineSamples.some((s) => pointNearRect(s, r, 10))) return true;
     if (rectsIntersect(r, logoRect)) return true;
     if (copyRect && rectsIntersect(r, copyRect)) return true;
+    if (rectsIntersect(r, navbarRect)) return true;
     return false;
   });
   // Card-vs-card: if two still-visible cards overlap, drop the higher
