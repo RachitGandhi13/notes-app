@@ -184,6 +184,22 @@ async function main() {
         "An integrated learning journey covering cloud infrastructure, automation, application deployment, CI/CD, and AI-enabled cloud projects.",
       courseSlugs: [] as string[],
     },
+    {
+      id: "seed-internship-bigdata",
+      title: "Big Data Engineering Internship",
+      duration: "4 Weeks",
+      description:
+        "Learn to collect, process, transform, store, and analyze large volumes of data using Python, SQL, Apache Spark, data pipelines, and cloud-based data engineering services.",
+      courseSlugs: [] as string[],
+    },
+    {
+      id: "seed-internship-powerbi",
+      title: "Power BI & Business Intelligence Internship",
+      duration: "4 Weeks",
+      description:
+        "Learn to transform raw data into business insights using Microsoft Power BI, Excel, SQL, data modeling, and interactive dashboards.",
+      courseSlugs: [] as string[],
+    },
   ];
 
   for (const t of internshipTrackSeeds) {

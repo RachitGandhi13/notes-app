@@ -61,6 +61,7 @@ export function MaterialViewer({ contentId, kind, label, locked }: MaterialViewe
           <iframe
             src={`${src}#toolbar=0`}
             title={label}
+            loading="lazy"
             onLoad={() => setLoaded(true)}
             className="relative h-full w-full"
           />
@@ -69,6 +70,7 @@ export function MaterialViewer({ contentId, kind, label, locked }: MaterialViewe
           <img
             src={src}
             alt={label}
+            loading="lazy"
             onLoad={() => setLoaded(true)}
             onError={() => setFailed(true)}
             className={`relative h-full w-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}

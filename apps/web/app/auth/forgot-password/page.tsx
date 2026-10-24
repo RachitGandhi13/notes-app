@@ -32,7 +32,10 @@ export default function ForgotPasswordPage() {
       subtitle="Enter your email and we'll send you a reset link."
     >
       {sent ? (
-        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-400">
+        <p
+          role="status"
+          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-400"
+        >
           If an account exists for that email, a reset link is on its way.
         </p>
       ) : (
@@ -58,7 +61,10 @@ export default function ForgotPasswordPage() {
       )}
 
       <p className="text-center text-sm">
-        <Link href="/auth" className="text-zinc-400 underline hover:text-blue-400">
+        <Link
+          href="/auth"
+          className="text-[#0052CC] underline hover:text-[#0052CC]/80 dark:text-[#4D94FF] dark:hover:text-[#4D94FF]/80"
+        >
           Back to sign in
         </Link>
       </p>

@@ -23,8 +23,8 @@ function CourseSearchBarInner({ compact }: { compact?: boolean }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={compact ? "Search courses" : "Search courses, topics, technologies…"}
-        className={`bg-muted/60 border-input focus:ring-ring w-full rounded-lg border pl-10 pr-3 text-sm focus:outline-none focus:ring-2 ${
-          compact ? "h-10" : "h-12 text-base"
+        className={`bg-muted/60 border-input focus:ring-ring w-full rounded-lg border pl-10 pr-3 text-sm focus:outline-none focus:ring-2 dark:border-white/[0.14] dark:bg-white/5 dark:text-white dark:backdrop-blur-[12px] dark:placeholder:text-[#A1A1AA] ${
+          compact ? "h-10 dark:rounded-full" : "h-12 text-base"
         }`}
       />
     </form>

@@ -9,9 +9,9 @@ import { getCourse, getUserPurchases } from "@/lib/actions";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import { CurriculumAccordion } from "@/components/CurriculumAccordion";
 import { needsUnoptimized } from "@/lib/images";
-import { instructor } from "@/lib/instructor";
 import { absoluteUrl, DEFAULT_OG_IMAGE, jsonLd, truncate } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 
 // Rendered per request (same reasoning as app/notes/page.tsx) — getSession() already
 // forces this dynamically, but this makes it explicit. The course itself is still
@@ -86,7 +86,6 @@ function courseJsonLd(
     url: absoluteUrl(path),
     image: absoluteUrl(course.imageUrl || DEFAULT_OG_IMAGE),
     provider: { "@type": "Organization", name: "CloudVidya Academy", url: SITE_URL },
-    instructor: { "@type": "Person", name: instructor.name },
     offers: {
       "@type": "Offer",
       price: course.price,
@@ -167,7 +166,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <main className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {!course.hidden && (
         <script
           type="application/ld+json"
@@ -176,6 +175,14 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
           }}
         />
       )}
+
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Courses", href: "/#browse" },
+          { label: course.title },
+        ]}
+      />
 
       {/* Payment status banner */}
       {searchParams.payment === "success" && (
@@ -239,7 +246,9 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
               </span>
             </h2>
             {chapters.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No content yet.</p>
+              <div className="border-white/12 rounded-[24px] border border-dashed p-6 text-center">
+                <p className="text-muted-foreground text-sm">No content yet.</p>
+              </div>
             ) : (
               <CurriculumAccordion chapters={chapters} purchased={purchased} />
             )}
@@ -313,6 +322,6 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

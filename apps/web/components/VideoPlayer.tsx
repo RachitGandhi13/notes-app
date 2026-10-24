@@ -34,6 +34,7 @@ export function VideoPlayer({
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture
           disableRemotePlayback
+          preload="none"
           onContextMenu={(e) => e.preventDefault()}
           poster={thumbnail ?? undefined}
           onEnded={onEnded}

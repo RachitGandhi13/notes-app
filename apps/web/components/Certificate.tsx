@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dancing_Script } from "next/font/google";
 import { Download, Loader2 } from "lucide-react";
 import QRCode from "qrcode";
+import { CloudVidyaLogo } from "@repo/ui";
 import { SITE_URL } from "@/lib/site";
 
 const cursive = Dancing_Script({ subsets: ["latin"], weight: "700" });
@@ -68,17 +69,11 @@ export function Certificate({
         ref={ref}
         className="relative mx-auto aspect-[1.6/1] w-full max-w-3xl overflow-hidden rounded-2xl border bg-white p-6 text-slate-900 sm:p-10"
       >
-        <div className="from-primary pointer-events-none absolute -right-12 -top-12 h-40 w-40 rotate-45 bg-gradient-to-br to-violet-500 opacity-90" />
-        <div className="from-primary pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rotate-45 bg-gradient-to-br to-violet-500 opacity-90" />
+        <div className="from-primary pointer-events-none absolute -right-12 -top-12 h-40 w-40 rotate-45 bg-gradient-to-br to-cyan-400 opacity-90" />
+        <div className="from-primary pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rotate-45 bg-gradient-to-br to-cyan-400 opacity-90" />
 
         <div className="relative flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cloudvidya.png" alt="" className="h-10 w-10 rounded-full object-cover" />
-            <span className="text-primary text-sm font-extrabold tracking-tight">
-              CloudVidya Academy
-            </span>
-          </div>
+          <CloudVidyaLogo layout="inline" theme="light" height={28} />
           <span className="text-right text-[10px] italic leading-tight text-slate-400">
             Learn · Practice
             <br />

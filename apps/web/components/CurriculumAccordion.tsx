@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Circle, FileText, PlayCircle } from "lucide-react";
+import { ChevronDown, FileText, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { needsUnoptimized } from "@/lib/images";
@@ -22,37 +22,20 @@ interface ChapterGroup {
   lessons: LessonItem[];
 }
 
-function LessonRow({ lesson, index }: { lesson: LessonItem; index: number }) {
+function LessonRow({ lesson }: { lesson: LessonItem }) {
   const Icon = lesson.type === "NOTION" ? FileText : PlayCircle;
 
   return (
-    <li className="hover:bg-muted/40 flex items-center gap-4 px-5 py-4 transition-colors">
-      <div className="bg-muted relative h-12 w-16 shrink-0 overflow-hidden rounded-lg">
-        {lesson.thumbnail ? (
-          <Image
-            src={lesson.thumbnail}
-            alt=""
-            fill
-            unoptimized={needsUnoptimized(lesson.thumbnail)}
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Icon className="text-muted-foreground/50 h-5 w-5" />
-          </div>
-        )}
-      </div>
+    <li className="border-border flex items-center gap-3 border-t px-5 py-3 first:border-t-0 dark:border-white/[0.06]">
+      <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium leading-snug">
-          Lesson {index + 1}: {lesson.title}
-        </p>
+        <p className="text-sm leading-5">{lesson.title}</p>
         {lesson.description && (
           <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs leading-relaxed">
             {lesson.description}
           </p>
         )}
       </div>
-      <Circle className="text-muted-foreground/40 h-4 w-4 shrink-0" />
     </li>
   );
 }
@@ -69,8 +52,12 @@ function ChapterPanel({
   const [open, setOpen] = useState(index === 0);
 
   return (
-    <div className="bg-card overflow-hidden rounded-2xl border">
-      <div className="flex w-full items-center justify-between gap-3 px-5 py-4">
+    <div
+      className={`bg-card dark:border-white/8 overflow-hidden rounded-[24px] border transition-colors dark:bg-[#111113] ${
+        open ? "dark:border-white/14 dark:[box-shadow:inset_0_1px_0_rgb(0_240_255_/_0.25)]" : ""
+      }`}
+    >
+      <div className="flex w-full items-center justify-between gap-3 px-5 py-5">
         <button
           onClick={() => setOpen((o) => !o)}
           className="flex min-w-0 flex-1 items-center gap-4 text-left"
@@ -88,25 +75,33 @@ function ChapterPanel({
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              Chapter {index + 1}
-            </p>
-            <h3 className="mt-0.5 text-lg font-bold">{chapter.title}</h3>
+            <span className="font-mono text-xs text-[#0052CC] dark:text-[#00F0FF]">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h3 className="font-display mt-0.5 text-[20px] font-semibold leading-[28px]">
+              {chapter.title}
+            </h3>
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="text-muted-foreground text-xs">
-            {chapter.lessons.length} {chapter.lessons.length === 1 ? "lesson" : "lessons"}
-          </span>
-          <button onClick={() => setOpen((o) => !o)} aria-label={open ? "Collapse" : "Expand"}>
+          {chapter.lessons.length > 0 && (
+            <span className="text-muted-foreground rounded-full bg-white/5 px-2.5 py-1 font-mono text-xs">
+              {chapter.lessons.length} {chapter.lessons.length === 1 ? "lesson" : "lessons"}
+            </span>
+          )}
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Collapse" : "Expand"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.06]"
+          >
             <ChevronDown
-              className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+              className={`h-4 w-4 shrink-0 transition-transform duration-[144ms] ${open ? "rotate-180" : ""}`}
             />
           </button>
         </div>
       </div>
       {open && (
-        <div className="border-t">
+        <div className="border-border animate-in fade-in-0 slide-in-from-top-1 border-t duration-[144ms] dark:border-white/[0.06]">
           {chapter.materialKind && (
             <div className="p-5 pb-0">
               <MaterialViewer
@@ -117,9 +112,9 @@ function ChapterPanel({
               />
             </div>
           )}
-          <ul className="divide-y">
-            {chapter.lessons.map((lesson, i) => (
-              <LessonRow key={lesson.id} lesson={lesson} index={i} />
+          <ul>
+            {chapter.lessons.map((lesson) => (
+              <LessonRow key={lesson.id} lesson={lesson} />
             ))}
           </ul>
         </div>
@@ -136,7 +131,7 @@ export function CurriculumAccordion({
   purchased: boolean;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {chapters.map((chapter, i) => (
         <ChapterPanel key={chapter.id} chapter={chapter} index={i} purchased={purchased} />
       ))}

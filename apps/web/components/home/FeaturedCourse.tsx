@@ -37,7 +37,6 @@ export function FeaturedCourse({
               unoptimized={needsUnoptimized(imageUrl)}
               alt={title}
               fill
-              priority
               sizes="(max-width: 1024px) 100vw, 60vw"
               className="object-cover transition-transform duration-700 group-hover:scale-105"
             />

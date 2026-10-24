@@ -38,5 +38,8 @@
     "*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "framer-motion": "^14.6.0"
   }
 }

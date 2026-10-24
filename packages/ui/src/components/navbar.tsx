@@ -1,11 +1,13 @@
 "use client";
 
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { LogOut, Mail, Menu, Phone, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "./button";
+import { AscendButton } from "./ascend/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,15 +32,20 @@ export interface NavLink {
 }
 
 const glowClass =
-  "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse";
+  "border border-[#A7F3D0] bg-[#ECFDF5] text-[#047857] animate-pulse dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:shadow-[0_0_12px_rgba(16,185,129,0.3)]";
 
 interface NavbarProps {
-  /** Brand name shown on the left */
+  /** Brand name shown on the left — ignored once `logo` is given. */
   brand?: string;
   /** Brand href */
   brandHref?: string;
   /** Optional small circular logo image shown before the brand name */
   brandLogo?: string;
+  /**
+   * Full brand mark, e.g. a responsive pair of `<CloudVidyaLogo>` elements.
+   * Takes over the whole brand slot — `brand`/`brandLogo` are ignored when set.
+   */
+  logo?: React.ReactNode;
   /** Extra nav links rendered before the auth buttons — e.g. a cross-app link */
   links?: NavLink[];
   /** Rendered in the center of the bar — typically a search input */
@@ -49,6 +56,7 @@ export function Navbar({
   brand = "Platform",
   brandHref = "/",
   brandLogo,
+  logo,
   links = [],
   search,
 }: NavbarProps) {
@@ -62,20 +70,29 @@ export function Navbar({
   }, [pathname]);
 
   return (
-    <header className="bg-background/95 safe-top sticky top-0 z-40 w-full border-b backdrop-blur">
-      <div className="container flex h-16 items-center gap-3 sm:gap-4">
+    <header className="safe-top sticky top-5 z-40 w-full px-5 sm:px-8">
+      <div className="nav-pill mx-auto flex h-16 max-w-[1120px] items-center gap-3 rounded-full px-4 sm:gap-4 sm:px-6">
         {/* Brand */}
         <Link
           href={brandHref}
+          aria-label={logo ? `${brand}, home` : undefined}
           className="ring-offset-background focus-visible:ring-ring flex min-h-11 min-w-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
-          {brandLogo && (
-            // eslint-disable-next-line
-            <img src={brandLogo} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+          {logo ?? (
+            <>
+              {brandLogo && (
+                // eslint-disable-next-line
+                <img
+                  src={brandLogo}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                />
+              )}
+              <span className="text-primary text-sm font-extrabold leading-tight tracking-tight sm:text-lg">
+                {brand}
+              </span>
+            </>
           )}
-          <span className="text-primary text-sm font-extrabold leading-tight tracking-tight sm:text-lg">
-            {brand}
-          </span>
         </Link>
 
         {/* Search (desktop). On phones it lives in the menu panel instead. */}
@@ -85,15 +102,17 @@ export function Navbar({
           {links.length > 0 && (
             <nav className="hidden items-center gap-1 lg:flex">
               {links.map((link) => (
-                <Button
+                <Link
                   key={link.href}
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className={cn(link.glow && `${glowClass} rounded-full`)}
+                  href={link.href}
+                  aria-current={pathname === link.href ? "page" : undefined}
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground aria-[current=page]:text-foreground flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-medium normal-case tracking-normal transition-colors dark:text-[#D4D4D8] dark:hover:text-[#FAFAFA] dark:aria-[current=page]:text-[#FAFAFA]",
+                    link.glow && `${glowClass} rounded-full`
+                  )}
                 >
-                  <Link href={link.href}>{link.label}</Link>
-                </Button>
+                  {link.label}
+                </Link>
               ))}
             </nav>
           )}
@@ -120,7 +139,7 @@ export function Navbar({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-60 rounded-xl border border-white/10 bg-zinc-900/95 p-2 shadow-2xl backdrop-blur-md"
+                className="w-60 rounded-[20px] border border-white/10 bg-[#161618] p-2 shadow-[0_24px_64px_-16px_rgb(0_0_0_/_0.6)]"
               >
                 <div className="px-3 py-2 text-sm">
                   <p className="font-bold text-white">{session.user.name ?? "User"}</p>
@@ -134,7 +153,7 @@ export function Navbar({
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem
                   asChild
-                  className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/5 focus:bg-white/5"
+                  className="group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                 >
                   <Link href="/profile">
                     <User className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-white" />
@@ -144,7 +163,7 @@ export function Navbar({
                 {session.user.admin && (
                   <DropdownMenuItem
                     asChild
-                    className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/5 focus:bg-white/5"
+                    className="group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                   >
                     <Link href="/admin">
                       <Shield className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-white" />
@@ -153,7 +172,7 @@ export function Navbar({
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border-t border-white/10 px-3 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/10 hover:text-blue-300 focus:bg-blue-500/10 focus:text-blue-300"
+                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-xl border-t border-white/10 px-3 py-2.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/10 hover:text-blue-300 focus:bg-blue-500/10 focus:text-blue-300"
                   onSelect={() => signOut()}
                 >
                   <LogOut className="h-4 w-4" />
@@ -163,20 +182,19 @@ export function Navbar({
             </DropdownMenu>
           ) : (
             <div className="hidden items-center gap-2 lg:flex">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/auth">Login</Link>
-              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm">Contact us</Button>
+                  <AscendButton variant="secondary" size="sm">
+                    Contact us
+                  </AscendButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-80 rounded-xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur-md"
+                  className="w-80 rounded-[20px] border border-white/10 bg-[#161618] p-3 shadow-[0_24px_64px_-16px_rgb(0_0_0_/_0.6)]"
                 >
                   <DropdownMenuItem
                     asChild
-                    className="group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 text-sm transition-colors hover:bg-white/5 focus:bg-white/5"
+                    className="group flex cursor-pointer items-start gap-3 rounded-xl p-2.5 text-sm transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                   >
                     <a href={CONTACT.phoneHref}>
                       <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 transition-all group-hover:bg-blue-500 group-hover:text-white">
@@ -192,7 +210,7 @@ export function Navbar({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     asChild
-                    className="group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 text-sm transition-colors hover:bg-white/5 focus:bg-white/5"
+                    className="group flex cursor-pointer items-start gap-3 rounded-xl p-2.5 text-sm transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                   >
                     <a href={`mailto:${CONTACT.email}`}>
                       <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 transition-all group-hover:bg-blue-500 group-hover:text-white">
@@ -208,6 +226,9 @@ export function Navbar({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <AscendButton asChild variant="default" size="sm">
+                <Link href="/auth">Login</Link>
+              </AscendButton>
             </div>
           )}
 
@@ -226,85 +247,101 @@ export function Navbar({
         </div>
       </div>
 
-      {/* Phone menu panel */}
-      {menuOpen && (
-        <div id="mobile-menu" className="bg-background border-t lg:hidden">
-          <div className="container space-y-4 py-4">
-            {search && <div>{search}</div>}
+      {/* Phone menu — a fixed, full-height right-side sheet, now a real Radix
+          Dialog (owner-approved exception, Phase 4 Step 0a) so Esc, focus
+          trap and backdrop-close come from Radix instead of being hand-rolled.
+          Wired to the existing menuOpen/setMenuOpen state only — no new
+          state, effects, refs or handlers were added. */}
+      <DialogPrimitive.Root open={menuOpen} onOpenChange={setMenuOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="animate-in fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fixed inset-0 z-40 bg-black/60 duration-[233ms] ease-[var(--cv-ease)] lg:hidden dark:backdrop-blur-sm" />
+          <DialogPrimitive.Content
+            id="mobile-menu"
+            className="sheet-panel bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto rounded-l-[32px] border-l duration-[233ms] ease-[var(--cv-ease)] focus:outline-none lg:hidden"
+          >
+            <DialogPrimitive.Title className="sr-only">Menu</DialogPrimitive.Title>
+            <div className="flex flex-col gap-4 p-6">
+              {search && <div>{search}</div>}
 
-            {links.length > 0 && (
-              <nav className="flex flex-col gap-1">
-                {links.map((link) => (
+              {links.length > 0 && (
+                <nav className="flex flex-col">
+                  {links.map((link, i) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "border-border flex h-14 items-center gap-4 border-b text-left dark:border-white/[0.08]",
+                        link.glow && `${glowClass} rounded-lg px-3`
+                      )}
+                    >
+                      <span className="font-mono text-sm text-[#0052CC] dark:text-[#4D94FF]">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="font-display text-[22px] font-semibold leading-[28px]">
+                        {link.label}
+                      </span>
+                    </Link>
+                  ))}
+                </nav>
+              )}
+
+              <div className="border-border flex min-h-11 items-center justify-between border-b pb-3 dark:border-white/[0.08]">
+                <span className="text-muted-foreground text-sm">Theme</span>
+                <ThemeToggle />
+              </div>
+
+              {session?.user ? (
+                <div className="grid gap-1 pb-3">
                   <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium",
-                      link.glow && glowClass
-                    )}
+                    href="/profile"
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
                   >
-                    {link.label}
+                    <User className="h-4 w-4" />
+                    Profile
                   </Link>
-                ))}
-              </nav>
-            )}
-
-            <div className="flex min-h-11 items-center justify-between border-t pt-3">
-              <span className="text-muted-foreground text-sm">Theme</span>
-              <ThemeToggle />
+                  {session.user.admin && (
+                    <Link
+                      href="/admin"
+                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-left text-base font-medium text-blue-600 hover:bg-white/[0.06] dark:text-blue-400"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-2 pb-3">
+                  <AscendButton asChild variant="default" className="w-full rounded-full">
+                    <Link href="/auth">Login</Link>
+                  </AscendButton>
+                  <a
+                    href={CONTACT.phoneHref}
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
+                  >
+                    <Phone className="h-4 w-4 shrink-0" />
+                    {CONTACT.phone}
+                  </a>
+                  <a
+                    href={`mailto:${CONTACT.email}`}
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
+                  >
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className="break-all">{CONTACT.email}</span>
+                  </a>
+                </div>
+              )}
             </div>
-
-            {session?.user ? (
-              <div className="grid gap-1 border-t pt-3">
-                <Link
-                  href="/profile"
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                >
-                  <User className="h-4 w-4" />
-                  Profile
-                </Link>
-                {session.user.admin && (
-                  <Link
-                    href="/admin"
-                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                  >
-                    <Shield className="h-4 w-4" />
-                    Admin
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={() => signOut()}
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium text-blue-600 dark:text-blue-400"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <div className="grid gap-2 border-t pt-3">
-                <Button asChild variant="outline">
-                  <Link href="/auth">Login</Link>
-                </Button>
-                <a
-                  href={CONTACT.phoneHref}
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                >
-                  <Phone className="h-4 w-4 shrink-0" />
-                  {CONTACT.phone}
-                </a>
-                <a
-                  href={`mailto:${CONTACT.email}`}
-                  className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
-                >
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span className="break-all">{CONTACT.email}</span>
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </header>
   );
 }

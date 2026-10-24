@@ -18,7 +18,7 @@ export const FormSelect = forwardRef<
         ref={ref}
         {...props}
         className={cn(
-          "border-input bg-background w-full appearance-none rounded-md border pl-2.5 pr-7 transition-colors focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30",
+          "border-input bg-background h-11 w-full appearance-none rounded-xl border pl-3.5 pr-7 transition-colors focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/10 dark:bg-white/5",
           className
         )}
       />

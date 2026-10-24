@@ -12,6 +12,7 @@ import { MCQQuiz } from "@/components/MCQQuiz";
 import { TrackPaywall } from "@/components/TrackPaywall";
 import { CourseNotesLocked } from "@/components/CourseNotesLocked";
 import { SectionAdminPanel } from "@/components/admin/SectionAdminPanel";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 
 // Depends on who is looking (admins see editing tools) and is edited live by
 // the admin, so it is always rendered on request rather than pre-built.
@@ -128,10 +129,14 @@ export default async function TrackPage({ params }: Props) {
           isAdmin={isAdmin}
           bundleAdmin={bundleAdmin}
         />
-        <div className="text-muted-foreground flex flex-1 items-center justify-center px-6 py-16 text-center">
-          {isAdmin
-            ? "This track has no sections yet. Use “Add section” in the sidebar."
-            : "This track has no sections yet."}
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <Breadcrumbs items={[{ label: "Notes", href: "/notes" }, { label: track.title }]} />
+          <h1 className="text-xl font-bold">{track.title}</h1>
+          <p className="text-muted-foreground">
+            {isAdmin
+              ? "This track has no sections yet. Use “Add section” in the sidebar."
+              : "This track has no sections yet."}
+          </p>
         </div>
       </div>
     );
@@ -159,7 +164,14 @@ export default async function TrackPage({ params }: Props) {
 
       <div className="flex-1 md:overflow-y-auto">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-          <h1 className="text-2xl font-bold">{problem.title}</h1>
+          <Breadcrumbs
+            items={[
+              { label: "Notes", href: "/notes" },
+              { label: track.title, href: `/tracks/${trackId}` },
+              { label: problem.title },
+            ]}
+          />
+          <h1 className="mt-2 text-2xl font-bold">{problem.title}</h1>
           {problem.description && (
             <p className="text-muted-foreground mt-2 leading-relaxed">{problem.description}</p>
           )}

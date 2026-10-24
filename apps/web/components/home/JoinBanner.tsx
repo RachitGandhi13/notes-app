@@ -1,36 +1,46 @@
-import { ArrowRight, GraduationCap } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { AscendButton, Aurora, Grain, ThemedLogo } from "@repo/ui";
 
 export function JoinBanner({ signedIn }: { signedIn: boolean }) {
   return (
-    <section className="container pb-20">
-      <div className="from-primary relative overflow-hidden rounded-3xl bg-gradient-to-r via-blue-600 to-violet-600 px-8 py-14 text-center text-white shadow-2xl sm:px-14">
-        <div className="animate-blob absolute -left-10 -top-10 h-56 w-56 rounded-full bg-white/15 blur-2xl motion-reduce:animate-none" />
-        <div className="animate-blob absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-cyan-300/25 blur-2xl [animation-delay:-9s] motion-reduce:animate-none" />
-        <div className="relative">
-          <GraduationCap className="mx-auto h-10 w-10 text-white/90" />
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {signedIn ? "Keep the momentum going" : "Start your cloud journey today"}
+    <section className="sm:py-21 px-5 py-16 sm:px-8">
+      <div className="bg-card border-border dark:border-white/12 relative mx-auto max-w-7xl overflow-hidden rounded-[40px] border px-5 py-16 text-center shadow-[0_20px_40px_-20px_rgb(0_0_0_/_0.15)] sm:px-8 sm:py-[116px] dark:shadow-none">
+        <Aurora variant="panel" accent="#0066FF" accent2="#00F0FF" />
+        <Grain opacity={0.9} />
+        <div className="relative mx-auto max-w-2xl">
+          <ThemedLogo
+            layout="mark"
+            height={120}
+            title=""
+            className="mx-auto dark:[filter:drop-shadow(0_0_40px_rgb(0_240_255_/_0.6))]"
+          />
+          <h2
+            className="font-display mt-6"
+            style={{ fontSize: "clamp(42px, 6vw, 88px)", lineHeight: 1.02 }}
+          >
+            {signedIn ? (
+              "Keep the momentum going"
+            ) : (
+              <>
+                Start your cloud journey <span className="serif-accent">today</span>
+              </>
+            )}
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/85">
+          <p className="mx-auto mt-4 max-w-xl text-[#52525B] dark:text-[#A1A1AA]">
             {signedIn
               ? "Jump back into your courses and notes where you left off."
               : "Create a free account to enrol in courses, practise with quizzes and track your progress."}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={signedIn ? "/profile" : "/auth?tab=register"}
-              className="text-primary inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold shadow-lg transition-all hover:gap-3"
-            >
-              {signedIn ? "Go to my profile" : "Join now, it's free"}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/#browse"
-              className="rounded-lg border border-white/40 px-6 py-3 text-sm font-semibold transition-colors hover:bg-white/10"
-            >
-              Browse courses
-            </Link>
+            <AscendButton asChild size="lg" icon={<ArrowRight className="h-4 w-4" />}>
+              <Link href={signedIn ? "/profile" : "/auth?tab=register"}>
+                {signedIn ? "Go to my profile" : "Join now, it's free"}
+              </Link>
+            </AscendButton>
+            <AscendButton asChild variant="secondary" size="lg">
+              <Link href="/#browse">Browse courses</Link>
+            </AscendButton>
           </div>
         </div>
       </div>

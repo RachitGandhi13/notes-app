@@ -44,7 +44,10 @@ export function TrackPaywall({
               <BadgeCheck className="text-primary h-4 w-4 shrink-0" />
               {course.title}
             </span>
-            <Link href={`/courses/${course.slug}`} className="text-primary text-xs hover:underline">
+            <Link
+              href={`/courses/${course.slug}`}
+              className="text-primary-ink text-xs hover:underline"
+            >
               View course
             </Link>
           </li>

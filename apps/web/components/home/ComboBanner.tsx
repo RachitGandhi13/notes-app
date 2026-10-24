@@ -43,10 +43,17 @@ export function ComboBanner({ bundles, prefill }: ComboBannerProps) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-5 py-2.5 text-sm font-semibold text-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.25)] transition-all hover:scale-[1.02] hover:bg-orange-500/15 active:scale-[0.99] dark:text-orange-400"
+          className="relative inline-flex items-center gap-2 rounded-full p-[1.5px] transition-transform hover:scale-[1.02] active:scale-[0.99] dark:[background:linear-gradient(90deg,#0066FF,#00F0FF,#B4A7FF)]"
         >
-          <Flame className="h-4 w-4" />
-          Get Special Combo Deal
+          <span className="bg-background flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-5 py-2.5 text-sm font-semibold text-orange-500 dark:border-0 dark:bg-[#111113] dark:text-[#FAFAFA]">
+            <span
+              aria-hidden="true"
+              className="hidden h-2 w-2 rounded-full dark:block"
+              style={{ backgroundColor: "#00F0FF", boxShadow: "0 0 8px #00F0FF" }}
+            />
+            <Flame className="h-4 w-4 dark:hidden" />
+            Get Special Combo Deal
+          </span>
         </button>
       </div>
 
@@ -62,7 +69,10 @@ export function ComboBanner({ bundles, prefill }: ComboBannerProps) {
               const originalTotal = bundle.courses.reduce((sum, c) => sum + c.price, 0);
               const savings = originalTotal - bundle.bundlePrice;
               return (
-                <div key={bundle.id} className="space-y-3 rounded-xl border p-4">
+                <div
+                  key={bundle.id}
+                  className="bg-muted space-y-3 rounded-[20px] border p-4 dark:border-white/10 dark:bg-[#161618]"
+                >
                   <h4 className="font-semibold">{bundle.title}</h4>
                   <ul className="space-y-1.5">
                     {bundle.courses.map((course) => (

@@ -25,35 +25,243 @@
     --input: 220 15% 88%;
     --ring: 217 91% 55%;
     --radius: 0.75rem;
+
+    /* Pre-launch polish, Step 5: light-mode headline gradient — darker, no
+       cyan/lilac stops (those read too light on white). Dark mode's own
+       value is set in .dark below and is unchanged. */
+    --cv-gradient-headline: linear-gradient(100deg, #0052cc 0%, #007a99 100%);
+
+    /* Ascend path hero: its own 2-stop gradient for "Cloud & DevOps" — close
+       to --cv-gradient-headline but not an alias (this spec's dark endpoint
+       is #00E0FF, not the headline gradient's #00F0FF/violet 3-stop), so it
+       gets its own token rather than reusing/changing the existing one. */
+    --ascend-hero-gradient: linear-gradient(100deg, #0052cc, #007a99);
+
+    /* Release prep, Step 1: a text/icon-safe primary color, separate from
+       --primary (which stays untouched — see the Phase-1 note in .dark
+       below; changing it directly caused a cascading regression). Used only
+       for primary-coloured TEXT and ICONS on neutral surfaces, never as a
+       background fill — a filled button keeps --primary + white text. */
+    --primary-ink: 216 100% 40%; /* #0052CC, ~6.8:1 on white */
   }
   .dark {
-    /* 100xDevs-style dark navy + vivid blue */
-    --background: 224 45% 5%;
-    --foreground: 210 40% 98%;
-    --card: 224 32% 9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 224 32% 9%;
-    --popover-foreground: 210 40% 98%;
+    /* Ascend design system — neutral zinc-black + saturated blue/cyan.
+       Replaces the previous navy-tinted dark theme; light mode (below) is
+       intentionally untouched, it's out of scope for the Ascend restyle. */
+    --background: 240 10% 4%; /* cv-bg #09090B */
+    --foreground: 0 0% 98%; /* cv-text #FAFAFA */
+    --card: 240 6% 10%; /* cv-surface #18181B */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 98%;
+    /* --primary/--ring stay at their pre-Ascend value: sitewide `text-primary`
+       (eyebrow labels, footer link, etc. — all out of scope for this restyle)
+       measured at 4.11:1 against the new, darker cv-bg with the Ascend blue —
+       under the 4.5:1 AA floor. Reverted per the Phase-1 review sweep; the new
+       #0066FF/#00F0FF pair is applied only via the raw --cv-* tokens below,
+       scoped to the shell + hero components themselves. */
     --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 222 25% 14%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 222 25% 13%;
-    --muted-foreground: 217 15% 65%;
-    --accent: 222 25% 16%;
-    --accent-foreground: 210 40% 98%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4% 16%; /* cv-raised #27272A */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 14%;
+    --muted-foreground: 240 5% 65%; /* cv-text-2 #A1A1AA */
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 22% 18%;
-    --input: 222 22% 18%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3% 14%; /* reads as ~white/8% over cv-bg */
+    --input: 240 3% 14%;
     --ring: 217 91% 60%;
+
+    /* Raw Ascend tokens — for the new primitives (gradients, glows, glass)
+       where an exact hex/alpha is needed beyond the HSL aliases above. */
+    --cv-bg: #09090b;
+    --cv-surface: #18181b;
+    --cv-raised: #27272a;
+    --cv-border: rgb(255 255 255 / 0.08);
+    --cv-border-strong: rgb(255 255 255 / 0.14);
+    --cv-text: #fafafa;
+    --cv-text-2: #a1a1aa;
+    --cv-blue: #0066ff;
+    --cv-cyan: #00f0ff;
+    --cv-link: #4d94ff;
+    --cv-gradient: linear-gradient(45deg, #0066ff, #00f0ff);
+
+    /* Ascend v2 (Phase 2) accent set — additive, same dark-only/--cv-* scoping
+       as the Phase 1 tokens above. Not routed through --primary/--accent etc.,
+       for the same reason those were reverted in Phase 1: avoid shifting
+       sitewide semantic-token contrast outside this restyle's scope. */
+    --cv-violet: #7c5cff;
+    --cv-violet-ink: #b4a7ff;
+    --cv-amber: #ffb547;
+    --cv-green: #34d399;
+
+    /* Pre-launch polish, Step 5: unchanged from the original hardcoded value. */
+    --cv-gradient-headline: linear-gradient(100deg, #4d94ff 0%, #00f0ff 55%, #b4a7ff 100%);
+
+    /* Ascend path hero: see the :root definition above for why this isn't
+       an alias of --cv-gradient-headline. */
+    --ascend-hero-gradient: linear-gradient(100deg, #4d94ff, #00e0ff);
+
+    /* Release prep, Step 1: same #4D94FF already used as --cv-link above. */
+    --primary-ink: 216 100% 65%; /* #4D94FF, ~5.9:1 on cv-surface */
+  }
+}
+
+:root {
+  --cv-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --cv-dur-hover: 144ms;
+  --cv-dur-enter: 233ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Navbar, modals and the hero spotlight card only — per Ascend spec.
+   Dark-only look; light mode (out of scope for the restyle) falls back to
+   the original navbar treatment via the `:not(.dark)` override below, so
+   light-mode pages render unchanged from before Phase 1. */
+.glass {
+  background-color: rgb(9 9 11 / 0.7);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background-color: rgb(9 9 11 / 0.95);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
+}
+:root:not(.dark) .glass {
+  background-color: hsl(var(--background) / 0.95);
+  backdrop-filter: blur(12px);
+  border-color: hsl(var(--border));
+}
+
+/* Navbar's floating-pill glass (Ascend v2 Step 2) — a distinct recipe from
+   .glass (different alpha/blur/saturate/shadow), so it's its own utility
+   rather than overloading .glass, which GlassCard elsewhere still depends
+   on with its own values. Same fallback pattern throughout. */
+.nav-pill {
+  background-color: rgb(20 20 24 / 0.6);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 20px 50px -20px rgb(0 0 0 / 0.6);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .nav-pill {
+    background-color: var(--cv-surface, #18181b);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nav-pill {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
+}
+:root:not(.dark) .nav-pill {
+  background-color: hsl(var(--background) / 0.95);
+  backdrop-filter: blur(12px);
+  border-color: hsl(var(--border));
+  box-shadow: none;
+}
+
+.serif-accent {
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.08em;
+  letter-spacing: -0.02em;
+}
+
+/* GlassCard (Ascend v2) — lighter, more translucent tint than the navbar's
+   .glass (which is a near-opaque frosted panel). Dark mode only — in light
+   mode the GlassCard component uses plain bg-card/border-border instead
+   (set via Tailwind classes), so this rule is scoped under .dark and never
+   fires there. Same fallback pattern as .glass otherwise: solid background
+   when backdrop-filter is unsupported or the OS has reduced transparency on. */
+.dark .glass-card {
+  background-color: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  backdrop-filter: blur(24px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .dark .glass-card {
+    background-color: var(--cv-surface, #18181b);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dark .glass-card {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
+}
+
+/* Dialog's own dark-mode glass background is applied as plain Tailwind
+   utility classes directly in dialog.tsx (not a class here) — it needs to
+   stay overridable by a consumer's own bg, border and shadow className
+   (e.g. the gallery lightbox wants a fully transparent dialog), and
+   tailwind-merge only de-dupes conflicting Tailwind utilities, never a
+   plain custom CSS class like the ones below. */
+
+/* DropdownMenu / Select-trigger-content panel (Ascend v2 Phase 3) — solid,
+   no blur, per spec (menus sit above short-lived content, not full pages). */
+.dark .menu-panel {
+  background-color: #161618;
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.6);
+}
+
+/* Sheet (mobile nav drawer, Ascend v2 Phase 3) — same recipe as dialog-panel,
+   full height instead of a centered/bottom-sheet card. */
+.dark .sheet-panel {
+  background-color: rgb(20 20 24 / 0.86);
+  border-color: rgb(255 255 255 / 0.12);
+  box-shadow: 0 40px 120px -30px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(24px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .dark .sheet-panel {
+    background-color: var(--cv-surface, #18181b);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dark .sheet-panel {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
   }
 }
 
 @layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
-  h1, h2, h3, h4, h5, h6 {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply tracking-tight;
   }
 }
@@ -85,5 +293,222 @@
   }
   .safe-bottom {
     padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Ascend path hero — the decorative SVG path/dots/cards/logo tile are
+   above the fold, so visibility can never depend on JS or an
+   IntersectionObserver (a prior version gated them behind a class an
+   observer toggled, which could leave them stuck invisible). The rules
+   below default every one of these elements to its fully-visible end
+   state; the @media block beneath only *adds* an `animation` (own
+   from/to keyframes, `both` fill mode) when the OS allows motion, so
+   nothing ever flashes in the wrong state and a browser with no
+   animation support, or prefers-reduced-motion, just sees the end
+   state immediately. Per-element stagger delay is set inline
+   (style.animationDelay) by AscendPathLayer, computed from each
+   element's array index/measured arc-length position — not nth-of-type,
+   which breaks if this markup's sibling shape ever changes.
+
+   The dot ring, card border and logo glow each have a resting and an
+   "active" (pulse-passing) value that differ dark/light — kept as custom
+   properties here (light in :root, dark override in .dark) so the single
+   shared keyframe below can reference var() instead of needing a
+   dark/light-duplicated keyframe pair. */
+:root {
+  --ascend-dot-ring-rest: 0 0 0 6px rgba(0, 102, 255, 0.1);
+  --ascend-dot-ring-active: 0 0 0 8px rgba(0, 102, 255, 0.35);
+  --ascend-card-border-rest: #e4e4e7;
+  --ascend-card-border-active: rgba(0, 82, 204, 0.35);
+  --ascend-logo-glow-rest: 0 0 0 1px #e4e4e7, 0 24px 50px -18px rgba(0, 82, 204, 0.35);
+  --ascend-logo-glow-active: 0 0 0 1px #e4e4e7, 0 24px 60px -10px rgba(0, 82, 204, 0.65);
+}
+.dark {
+  --ascend-dot-ring-rest: 0 0 0 6px rgba(0, 240, 255, 0.12);
+  --ascend-dot-ring-active: 0 0 0 8px rgba(0, 240, 255, 0.35);
+  --ascend-card-border-rest: rgba(255, 255, 255, 0.12);
+  --ascend-card-border-active: rgba(0, 240, 255, 0.45);
+  --ascend-logo-glow-rest:
+    0 0 0 1px rgba(255, 255, 255, 0.4), 0 30px 80px -14px rgba(0, 180, 255, 0.85);
+  --ascend-logo-glow-active:
+    0 0 0 1px rgba(255, 255, 255, 0.4), 0 30px 90px -6px rgba(0, 220, 255, 1);
+}
+
+.ascend-path-main {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+/* The flowing pulse is a pure motion effect with no static equivalent, so
+   (unlike the elements above) it's hidden by default and only exists at
+   all inside the no-preference block — "no pulse" under reduced motion
+   means exactly that, not just "no longer moving". */
+.ascend-pulse {
+  opacity: 0;
+}
+.ascend-dot {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: var(--ascend-dot-ring-rest);
+}
+.ascend-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ascend-logo-tile {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ascend-path-main {
+    animation: ascend-draw-path 1.2s ease-out both;
+  }
+  .ascend-pulse {
+    opacity: 1;
+    animation: ascend-pulse-flow 3.2s linear infinite both;
+    animation-delay: 1.6s;
+  }
+  .ascend-dot {
+    animation-name: ascend-pop-dot, ascend-dot-pulse-bump;
+    animation-duration: 0.4s, 3.2s;
+    animation-timing-function: ease-out, linear;
+    animation-iteration-count: 1, infinite;
+    animation-fill-mode: both, both;
+    /* animation-delay is set inline per dot: "<pop-in delay>s, <pulse-arrival delay>s" */
+  }
+  .ascend-card {
+    animation: ascend-fade-card 0.5s ease-out both;
+  }
+  /* Desktop cards carry both .ascend-card and .ascend-card-pulse; the
+     mobile timeline card only carries .ascend-card (it has no
+     pulse-arrival delay to sync against). A compound selector is used
+     (rather than a second animation on .ascend-card-pulse alone) because
+     the `animation` shorthand on two separate same-specificity classes
+     would override, not combine — this compound rule's higher
+     specificity cleanly replaces the single-animation rule above only on
+     elements that carry both classes. */
+  .ascend-card.ascend-card-pulse {
+    animation-name: ascend-fade-card, ascend-card-pulse-border;
+    animation-duration: 0.5s, 3.2s;
+    animation-timing-function: ease-out, linear;
+    animation-iteration-count: 1, infinite;
+    animation-fill-mode: both, both;
+    /* animation-delay is set inline: "<pop-in delay>s, <pulse-arrival delay>s" */
+  }
+  .ascend-logo-tile {
+    animation: ascend-pop-logo 0.5s ease-out both;
+    animation-delay: 1.4s;
+  }
+  /* Same reasoning as .ascend-card-pulse above — desktop's logo tile
+     carries both classes, mobile's only .ascend-logo-tile. Both delays
+     are fixed (no per-index value needed), so they're hardcoded here
+     rather than inline. */
+  .ascend-logo-tile.ascend-logo-pulse {
+    animation-name: ascend-pop-logo, ascend-logo-glow-pulse;
+    animation-duration: 0.5s, 3.2s;
+    animation-timing-function: ease-out, linear;
+    animation-iteration-count: 1, infinite;
+    animation-fill-mode: both, both;
+    animation-delay: 1.4s, 1.6s;
+  }
+}
+
+@keyframes ascend-draw-path {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+/* pathLength=1000 on this layer (not 1 like the main stroke above) just for
+   round-number convenience in the dash/gap split below. */
+@keyframes ascend-pulse-flow {
+  from {
+    stroke-dashoffset: 90;
+  }
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+@keyframes ascend-pop-dot {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+/* 0% is the moment the traveling pulse reaches this dot (animation-delay
+   places that instant correctly in the shared 3.2s loop); it decays back
+   to resting over the next 10% of the loop, i.e. ~320ms. */
+@keyframes ascend-dot-pulse-bump {
+  0% {
+    transform: scale(1.25);
+    box-shadow: var(--ascend-dot-ring-active);
+  }
+  10%,
+  100% {
+    transform: scale(1);
+    box-shadow: var(--ascend-dot-ring-rest);
+  }
+}
+@keyframes ascend-fade-card {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ascend-card-pulse-border {
+  0% {
+    border-color: var(--ascend-card-border-active);
+  }
+  10%,
+  100% {
+    border-color: var(--ascend-card-border-rest);
+  }
+}
+@keyframes ascend-pop-logo {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+/* ~400ms of the 3.2s loop, timed (via animation-delay) to the instant the
+   pulse reaches the summit. */
+@keyframes ascend-logo-glow-pulse {
+  0% {
+    box-shadow: var(--ascend-logo-glow-active);
+  }
+  12.5%,
+  100% {
+    box-shadow: var(--ascend-logo-glow-rest);
+  }
+}
+
+/* Ascend hero, Step 3: the hero is exactly the first screen at lg+ (below
+   lg it keeps its normal stacked, natural-height flow — see AscendHero.tsx).
+   100svh accounts for mobile browser chrome; 100vh is the fallback for
+   browsers without svh support (a plain repeated declaration, not a
+   feature query, so the later line simply wins where both are understood). */
+@media (min-width: 1024px) {
+  .ascend-hero-section {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+}
+
+/* Short-viewport shrink (Step 3): below 760px of height, pull the h1's
+   clamp floor, lead size and stat-number size down a notch so the first
+   screen still fits without scrolling on short laptop windows. */
+.ascend-h1 {
+  font-size: clamp(var(--ascend-h1-min, 48px), 5.8vw, 84px);
+}
+@media (max-height: 759px) {
+  .ascend-h1 {
+    --ascend-h1-min: 44px;
+  }
+  .ascend-lead {
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .ascend-stat-value {
+    font-size: 24px;
+    line-height: 28px;
   }
 }

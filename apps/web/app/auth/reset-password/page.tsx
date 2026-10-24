@@ -54,7 +54,7 @@ function ResetPasswordPageInner() {
       <AuthCard title="Invalid link" subtitle="This reset link is missing required information.">
         <Link
           href="/auth/forgot-password"
-          className="inline-block text-sm text-blue-400 underline hover:text-blue-300"
+          className="inline-block text-sm text-[#0052CC] underline hover:text-[#0052CC]/80 dark:text-[#4D94FF] dark:hover:text-[#4D94FF]/80"
         >
           Request a new link
         </Link>
@@ -65,12 +65,19 @@ function ResetPasswordPageInner() {
   return (
     <AuthCard title="Choose a new password" subtitle={`for ${email}`}>
       {success ? (
-        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-400">
+        <p
+          role="status"
+          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-400"
+        >
           Password updated. Redirecting to sign in…
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-red-400">
+              {error}
+            </p>
+          )}
           <div className="space-y-1.5">
             <label className={authLabelClass} htmlFor="password">
               New password

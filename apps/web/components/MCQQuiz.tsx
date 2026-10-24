@@ -146,7 +146,7 @@ export function MCQQuiz({ problemId, questions }: MCQQuizProps) {
           </div>
           {!scoreSaved && (
             <p className="text-muted-foreground text-sm">
-              <Link href="/auth" className="text-primary underline">
+              <Link href="/auth" className="text-primary-ink underline">
                 Sign in
               </Link>{" "}
               to save your scores to your profile.
