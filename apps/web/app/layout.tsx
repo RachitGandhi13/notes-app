@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "CloudVidya Academy - Master Cloud & DevOps",
-    template: "%s | CloudVidya Academy",
+    template: "%s · CloudVidya Academy",
   },
   description: "Master Cloud Computing, DevOps, and Software Engineering.",
   openGraph: {
@@ -94,6 +94,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
+        {/* Organization identity for rich results (knowledge panel logo, etc.). No `sameAs` —
+            there's no official CloudVidya Academy social profile to point at yet. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLd({
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              name: "CloudVidya Academy",
+              url: SITE_URL,
+              logo: `${SITE_URL}/cloudvidya.png`,
+              email: "admin@cloudvidyaacademy.com",
+            }),
+          }}
+        />
         <Providers>
           <div className="flex min-h-screen flex-col">
             <NextTopLoader showSpinner={false} color="hsl(var(--primary))" />
@@ -101,10 +116,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               brand="CloudVidya Academy"
               brandHref="/"
               logo={
-                <>
-                  <ThemedLogo layout="inline" height={26} title="" className="hidden sm:block" />
-                  <ThemedLogo layout="mark" height={26} title="" className="sm:hidden" />
-                </>
+                <span className="flex min-w-0 shrink-0 items-center gap-2">
+                  <ThemedLogo layout="mark" height={26} title="" />
+                  <span className="font-display text-foreground text-[15px] font-bold leading-[18px] tracking-tight sm:text-base">
+                    CloudVidya<span className="text-muted-foreground font-medium"> Academy</span>
+                  </span>
+                </span>
               }
               links={[
                 { label: "Courses", href: "/#browse" },
@@ -116,11 +133,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex-1">{children}</div>
             <Footer
               brand="CloudVidya Academy"
-              logo={<ThemedLogo layout="inline" height={28} title="" />}
+              logo={
+                <span className="flex min-w-0 items-center gap-2">
+                  <ThemedLogo layout="mark" height={28} title="" />
+                  <span className="font-display text-foreground text-base font-bold leading-5 tracking-tight">
+                    CloudVidya<span className="text-muted-foreground font-medium"> Academy</span>
+                  </span>
+                </span>
+              }
               wordmarkLogo={
                 <ThemedLogo layout="horizontal" height={88} title="" className="h-auto w-full" />
               }
-              description="Learn AWS, DevOps, and Cloud through hands-on, project-based courses and mentorship from Dr. Veeranna Gatate."
+              description="Learn AWS, DevOps, and Cloud through hands-on, project-based courses taught by our industry experts."
               linkColumns={[
                 {
                   title: "Explore",
@@ -138,8 +162,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     { label: "Profile", href: "/profile" },
                   ],
                 },
+                {
+                  title: "Legal",
+                  links: [
+                    { label: "Contact", href: "/contact" },
+                    { label: "Privacy", href: "/privacy" },
+                  ],
+                },
               ]}
-              linkedinUrl="https://linkedin.com/in/drveerannagatate"
               email="admin@cloudvidyaacademy.com"
               wordmark="CloudVidya Academy"
             />

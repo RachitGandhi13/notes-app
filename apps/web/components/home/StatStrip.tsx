@@ -1,7 +1,6 @@
 // Real, publicly-safe numbers only — no enrollment/student counts here (see
 // the comment on the homepage's own `stats` array: that's deliberate, an
-// admin-only metric). Years of experience is the same "7+" already shown in
-// the instructor bio (lib/instructor.ts).
+// admin-only metric).
 export function StatStrip({
   courseCount,
   trackCount,

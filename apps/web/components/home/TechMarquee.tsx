@@ -1,6 +1,5 @@
-// Topics taken from what the instructor actually teaches (see lib/instructor.ts
-// and his bio) — same real list as before, now a flowing text marquee instead
-// of icon pills.
+// Topics actually taught on the platform — same real list as before, now a
+// flowing text marquee instead of icon pills.
 const TOPICS = [
   "AWS Cloud",
   "DevOps",

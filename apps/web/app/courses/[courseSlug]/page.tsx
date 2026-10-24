@@ -9,7 +9,6 @@ import { getCourse, getUserPurchases } from "@/lib/actions";
 import { PurchaseButton } from "@/components/PurchaseButton";
 import { CurriculumAccordion } from "@/components/CurriculumAccordion";
 import { needsUnoptimized } from "@/lib/images";
-import { instructor } from "@/lib/instructor";
 import { absoluteUrl, DEFAULT_OG_IMAGE, jsonLd, truncate } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
 
@@ -86,7 +85,6 @@ function courseJsonLd(
     url: absoluteUrl(path),
     image: absoluteUrl(course.imageUrl || DEFAULT_OG_IMAGE),
     provider: { "@type": "Organization", name: "CloudVidya Academy", url: SITE_URL },
-    instructor: { "@type": "Person", name: instructor.name },
     offers: {
       "@type": "Offer",
       price: course.price,
