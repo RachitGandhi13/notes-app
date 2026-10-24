@@ -52,7 +52,7 @@ export default async function HomePage({ searchParams }: Props) {
         <Grain opacity={0.9} lightOpacity={0.05} />
         <HeroGrid />
         <div className="relative mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
-          <HeroContent />
+          <HeroContent courseCount={courses.length} />
         </div>
       </section>
 
