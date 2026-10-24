@@ -6,6 +6,7 @@ import { getCourses, getUserPurchases } from "@/lib/actions";
 import { TrackCard } from "@/components/TrackCard";
 import { CourseNoteCard } from "@/components/CourseNoteCard";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
+import { Reveal } from "@/components/Reveal";
 import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 // Rendered per request. Prerendering at build time would need the database and
@@ -88,115 +89,123 @@ export default async function NotesPage() {
       </section>
 
       {/* How it works */}
-      <section aria-label="How notes work" className="grid gap-5 sm:grid-cols-3">
-        {STEPS.map(({ Icon, title, text }, i) => (
-          <div
-            key={title}
-            className="bg-card hover:border-primary/40 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-          >
-            <span className="text-primary/15 absolute right-4 top-2 text-6xl font-extrabold">
-              {i + 1}
-            </span>
-            <span className="from-primary relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br to-cyan-400 text-white shadow-lg transition-transform group-hover:scale-110">
-              <Icon className="h-5 w-5" />
-            </span>
-            <h3 className="relative mt-4 font-bold">{title}</h3>
-            <p className="text-muted-foreground relative mt-1.5 text-sm leading-relaxed">{text}</p>
-          </div>
-        ))}
-      </section>
+      <Reveal>
+        <section aria-label="How notes work" className="grid gap-5 sm:grid-cols-3">
+          {STEPS.map(({ Icon, title, text }, i) => (
+            <div
+              key={title}
+              className="bg-card hover:border-primary/40 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+            >
+              <span className="text-primary/15 absolute right-4 top-2 text-6xl font-extrabold">
+                {i + 1}
+              </span>
+              <span className="from-primary relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br to-cyan-400 text-white shadow-lg transition-transform group-hover:scale-110">
+                <Icon className="h-5 w-5" />
+              </span>
+              <h3 className="relative mt-4 font-bold">{title}</h3>
+              <p className="text-muted-foreground relative mt-1.5 text-sm leading-relaxed">
+                {text}
+              </p>
+            </div>
+          ))}
+        </section>
+      </Reveal>
 
       {/* Course + track grid */}
-      <div id="browse" className="scroll-mt-20 space-y-16">
-        {courses.length === 0 && tracks.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed py-16 text-center sm:py-20">
-            <span className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
-              <BookOpen className="h-5 w-5" />
-            </span>
-            <p className="text-muted-foreground">
-              No courses or tracks yet. Ask an admin to add one.
-            </p>
-          </div>
-        ) : (
-          <>
-            {courses.length > 0 && (
-              <div>
-                <div className="mb-8 text-center">
-                  <SectionEyebrow>Courses</SectionEyebrow>
-                  <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-                    Notes from your <span className="text-primary">courses</span>
-                  </h2>
+      <Reveal>
+        <div id="browse" className="scroll-mt-20 space-y-16">
+          {courses.length === 0 && tracks.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed py-16 text-center sm:py-20">
+              <span className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
+                <BookOpen className="h-5 w-5" />
+              </span>
+              <p className="text-muted-foreground">
+                No courses or tracks yet. Ask an admin to add one.
+              </p>
+            </div>
+          ) : (
+            <>
+              {courses.length > 0 && (
+                <div>
+                  <div className="mb-8 text-center">
+                    <SectionEyebrow>Courses</SectionEyebrow>
+                    <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
+                      Notes from your <span className="text-primary">courses</span>
+                    </h2>
+                  </div>
+                  {/* A single card in a three-column grid would leave two thirds of the row empty */}
+                  <div
+                    className={`grid gap-6 sm:grid-cols-2 ${
+                      courses.length > 2
+                        ? "lg:grid-cols-3"
+                        : courses.length === 1
+                          ? "mx-auto max-w-md sm:grid-cols-1"
+                          : "mx-auto max-w-3xl"
+                    }`}
+                  >
+                    {courses
+                      .filter((course) => course.linkedTrack)
+                      .map((course) => (
+                        <CourseNoteCard
+                          key={course.id}
+                          trackId={course.linkedTrack!.id}
+                          title={course.title}
+                          description={course.description}
+                          image={course.imageUrl}
+                          owned={purchasedCourseIds.has(course.id)}
+                          isAdmin={isAdmin}
+                        />
+                      ))}
+                  </div>
                 </div>
-                {/* A single card in a three-column grid would leave two thirds of the row empty */}
-                <div
-                  className={`grid gap-6 sm:grid-cols-2 ${
-                    courses.length > 2
-                      ? "lg:grid-cols-3"
-                      : courses.length === 1
-                        ? "mx-auto max-w-md sm:grid-cols-1"
-                        : "mx-auto max-w-3xl"
-                  }`}
-                >
-                  {courses
-                    .filter((course) => course.linkedTrack)
-                    .map((course) => (
-                      <CourseNoteCard
-                        key={course.id}
-                        trackId={course.linkedTrack!.id}
-                        title={course.title}
-                        description={course.description}
-                        image={course.imageUrl}
-                        owned={purchasedCourseIds.has(course.id)}
+              )}
+
+              {tracks.length > 0 && (
+                <div>
+                  <div className="mb-8 text-center">
+                    <SectionEyebrow>Tracks</SectionEyebrow>
+                    <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
+                      Choose what to <span className="text-primary">study</span>
+                    </h2>
+                  </div>
+                  <div
+                    className={`grid gap-6 sm:grid-cols-2 ${
+                      tracks.length > 2
+                        ? "lg:grid-cols-3"
+                        : tracks.length === 1
+                          ? "mx-auto max-w-md sm:grid-cols-1"
+                          : "mx-auto max-w-3xl"
+                    }`}
+                  >
+                    {tracks.map((track) => (
+                      <TrackCard
+                        key={track.id}
+                        id={track.id}
+                        title={track.title}
+                        description={track.description}
+                        image={track.image}
+                        categories={track.categories}
+                        problemCount={track.problems.length}
+                        bundle={
+                          track.courses.length > 0
+                            ? {
+                                price: track.bundlePrice ?? 0,
+                                owned: track.courses.some((c) =>
+                                  purchasedCourseIds.has(c.course.id)
+                                ),
+                              }
+                            : null
+                        }
                         isAdmin={isAdmin}
                       />
                     ))}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {tracks.length > 0 && (
-              <div>
-                <div className="mb-8 text-center">
-                  <SectionEyebrow>Tracks</SectionEyebrow>
-                  <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-                    Choose what to <span className="text-primary">study</span>
-                  </h2>
-                </div>
-                <div
-                  className={`grid gap-6 sm:grid-cols-2 ${
-                    tracks.length > 2
-                      ? "lg:grid-cols-3"
-                      : tracks.length === 1
-                        ? "mx-auto max-w-md sm:grid-cols-1"
-                        : "mx-auto max-w-3xl"
-                  }`}
-                >
-                  {tracks.map((track) => (
-                    <TrackCard
-                      key={track.id}
-                      id={track.id}
-                      title={track.title}
-                      description={track.description}
-                      image={track.image}
-                      categories={track.categories}
-                      problemCount={track.problems.length}
-                      bundle={
-                        track.courses.length > 0
-                          ? {
-                              price: track.bundlePrice ?? 0,
-                              owned: track.courses.some((c) => purchasedCourseIds.has(c.course.id)),
-                            }
-                          : null
-                      }
-                      isAdmin={isAdmin}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+              )}
+            </>
+          )}
+        </div>
+      </Reveal>
     </div>
   );
 }
