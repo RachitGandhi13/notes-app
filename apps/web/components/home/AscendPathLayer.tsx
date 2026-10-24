@@ -47,7 +47,13 @@ const MAX_CONTAINER_WIDTH = 1440;
 
 const START_FRAC: Point = { x: 0.5, y: 1.0 };
 const DOTS_FRAC: Point[] = [
-  { x: 0.528, y: 0.711 },
+  // x nudged from the spec's 0.528 to 0.60: at that fraction dot 1 sits
+  // inside the copy column's own measured width at every required desktop
+  // size, so its card (and, via the hide-on-residual-collision rule,
+  // STEP02/03 with it) never had anywhere to render. 0.60 clears the
+  // column with margin at 1366/1440/1536/1920 while keeping the dot left
+  // of dot 2 (0.625), preserving the path's left-to-right shape.
+  { x: 0.6, y: 0.711 },
   { x: 0.625, y: 0.778 },
   { x: 0.75, y: 0.522 },
   { x: 0.8125, y: 0.578 },
@@ -123,7 +129,10 @@ function anchorRect(
   switch (index) {
     case 0: {
       const left = d.x - cardW / 2;
-      const bottom = d.y - 36;
+      // 50px (vs. the spec's 36px) — at 36px the card's bottom-right corner
+      // grazes the next segment (dot1 -> dot2) within its 10px tolerance at
+      // every required size; the extra clearance keeps the card fully clear.
+      const bottom = d.y - 50;
       return { left, top: bottom - cardH, right: left + cardW, bottom };
     }
     case 1: {

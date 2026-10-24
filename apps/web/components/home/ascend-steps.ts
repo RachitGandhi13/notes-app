@@ -5,12 +5,12 @@
 // even though it can appear to work in dev — so this stays its own module
 // rather than being exported from AscendPathLayer.
 export const STEPS = [
-  { n: "STEP 01", title: "Learn the foundations", description: "Video lessons, notes and slides" },
+  { n: "01", title: "Learn the foundations", description: "Video lessons, notes and slides" },
   {
-    n: "STEP 02",
+    n: "02",
     title: "Build real projects",
     description: "Learn by building, not just watching",
   },
-  { n: "STEP 03", title: "Test yourself", description: "Section reviews and quizzes" },
-  { n: "STEP 04", title: "Get certified on AWS", description: "With cloud experts" },
+  { n: "03", title: "Test yourself", description: "Section reviews and quizzes" },
+  { n: "04", title: "Get certified on AWS", description: "With cloud experts" },
 ] as const;
