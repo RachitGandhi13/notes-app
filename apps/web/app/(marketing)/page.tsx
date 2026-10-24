@@ -130,7 +130,6 @@ export default async function HomePage({ searchParams }: Props) {
                 description={course.description}
                 imageUrl={course.imageUrl}
                 price={course.price}
-                priority={i < 3}
                 purchased={purchasedIds.has(course.id)}
                 isAdmin={isAdmin}
                 accentIndex={i}

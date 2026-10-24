@@ -58,7 +58,7 @@ export function GalleryGrid() {
               fill
               sizes="(min-width: 1024px) 23vw, (min-width: 640px) 31vw, 47vw"
               className="object-cover transition-transform duration-500 group-hover:scale-110"
-              loading={i < 4 ? "eager" : "lazy"}
+              loading="lazy"
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-3 pt-10 dark:hidden" />
             <div

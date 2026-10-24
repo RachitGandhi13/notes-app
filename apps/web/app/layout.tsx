@@ -12,16 +12,22 @@ import "./globals.css";
 // system-font stack sitewide (see tailwind.config.ts); --font-display,
 // --font-serif and --font-mono are scoped to specific accent usages.
 //
-// Inter Tight 700 is preloaded explicitly (kept default `preload: true`)
-// since the hero h1 — set in that weight — is the page's LCP element;
-// JetBrains Mono and Instrument Serif are both small accent-only usages
-// below the fold's first paint, so they're not preloaded, keeping preload
-// priority on the one font that actually gates LCP.
+// Inter Tight 700 is preloaded (the hero h1 — the LCP element — is set in
+// that weight); Inter 400 is preloaded too (the default body-text weight,
+// visible immediately). A split, per-weight preload (only 700 of Inter
+// Tight's 600/700 pair, only 400 of Inter's 400/500 pair) was tried first
+// via a second, dummy-variable-only font instantiation per family, but
+// next/font only emits a <link rel=preload> for a variable it can see
+// referenced by actual rendered CSS — an unused variable's preload was
+// silently dropped, confirmed by inspecting the built page's <head> (zero
+// font preloads, worse than this combined form). JetBrains Mono and
+// Instrument Serif stay on preload: false (accent-only, below the fold).
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-sans",
   display: "swap",
+  preload: true,
 });
 const interTight = Inter_Tight({
   subsets: ["latin"],

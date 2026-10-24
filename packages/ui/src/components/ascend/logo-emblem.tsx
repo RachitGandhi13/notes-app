@@ -146,7 +146,7 @@ export function LogoEmblem() {
       {/* Tile */}
       <div
         aria-hidden="true"
-        className="border-border relative flex h-[104px] w-[104px] items-center justify-center rounded-[28px] border bg-white shadow-md sm:h-[168px] sm:w-[168px] sm:rounded-[44px] dark:border-white/20 dark:bg-[linear-gradient(160deg,rgb(255_255_255_/_0.16),rgb(255_255_255_/_0.03)_60%)] dark:shadow-[inset_0_1px_0_rgb(255_255_255_/_0.3),inset_0_-24px_48px_rgb(0_102_255_/_0.18),0_30px_80px_-20px_rgb(0_102_255_/_0.75)] dark:backdrop-blur-[20px]"
+        className="border-border relative flex h-[104px] w-[104px] items-center justify-center rounded-[28px] border bg-white shadow-md sm:h-[168px] sm:w-[168px] sm:rounded-[44px] dark:border-white/20 dark:bg-[linear-gradient(160deg,rgb(255_255_255_/_0.16),rgb(255_255_255_/_0.03)_60%)] dark:shadow-[inset_0_1px_0_rgb(255_255_255_/_0.3),inset_0_-24px_48px_rgb(0_102_255_/_0.18),0_30px_80px_-20px_rgb(0_102_255_/_0.75)]"
       >
         <ThemedLogo
           layout="mark"
