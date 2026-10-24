@@ -4,15 +4,14 @@ import Link from "next/link";
 import { getCourses, getUserPurchases } from "@/lib/actions";
 import { getActiveBundles } from "@/lib/track-actions";
 import { getActiveInternshipTracks } from "@/lib/internship-actions";
-import { Aurora, Grain, HeroGrid } from "@repo/ui";
 import { CourseCard } from "@/components/CourseCard";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { Reveal } from "@/components/Reveal";
 import { SectionEyebrow } from "@/components/SectionEyebrow";
+import { AscendHero } from "@/components/home/AscendHero";
 import { ComboBanner } from "@/components/home/ComboBanner";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
-import { HeroContent } from "@/components/home/HeroContent";
 import { InternshipTeaser } from "@/components/home/InternshipTeaser";
 import { JoinBanner } from "@/components/home/JoinBanner";
 import { TechMarquee } from "@/components/home/TechMarquee";
@@ -47,14 +46,7 @@ export default async function HomePage({ searchParams }: Props) {
   return (
     <>
       {/* Hero */}
-      <section className="relative isolate overflow-hidden border-b">
-        <Aurora variant="hero" />
-        <Grain opacity={0.9} lightOpacity={0.05} />
-        <HeroGrid />
-        <div className="relative mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
-          <HeroContent courseCount={courses.length} />
-        </div>
-      </section>
+      <AscendHero courseCount={courses.length} internshipTrackCount={internshipTracks.length} />
 
       {!query && (
         <Reveal>

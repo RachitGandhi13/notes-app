@@ -31,6 +31,12 @@
        value is set in .dark below and is unchanged. */
     --cv-gradient-headline: linear-gradient(100deg, #0052cc 0%, #007a99 100%);
 
+    /* Ascend path hero: its own 2-stop gradient for "Cloud & DevOps" — close
+       to --cv-gradient-headline but not an alias (this spec's dark endpoint
+       is #00E0FF, not the headline gradient's #00F0FF/violet 3-stop), so it
+       gets its own token rather than reusing/changing the existing one. */
+    --ascend-hero-gradient: linear-gradient(100deg, #0052cc, #007a99);
+
     /* Release prep, Step 1: a text/icon-safe primary color, separate from
        --primary (which stays untouched — see the Phase-1 note in .dark
        below; changing it directly caused a cascading regression). Used only
@@ -93,6 +99,10 @@
 
     /* Pre-launch polish, Step 5: unchanged from the original hardcoded value. */
     --cv-gradient-headline: linear-gradient(100deg, #4d94ff 0%, #00f0ff 55%, #b4a7ff 100%);
+
+    /* Ascend path hero: see the :root definition above for why this isn't
+       an alias of --cv-gradient-headline. */
+    --ascend-hero-gradient: linear-gradient(100deg, #4d94ff, #00e0ff);
 
     /* Release prep, Step 1: same #4D94FF already used as --cv-link above. */
     --primary-ink: 216 100% 65%; /* #4D94FF, ~5.9:1 on cv-surface */
@@ -289,5 +299,75 @@ body:has(#mobile-menu) {
   }
   .safe-bottom {
     padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Ascend path hero (Step 2 motion) — draw-in on first view, gated by the
+   .is-in-view class AscendPathReveal toggles via IntersectionObserver (see
+   components/home/AscendPathReveal.tsx). The h1/lead/buttons live outside
+   this wrapper entirely and are never animated, so LCP paint never waits
+   on it. Only the main 6px gradient stroke draws in — the 22px halo glow
+   renders immediately as a static backdrop. */
+.ascend-path .ascend-path-main {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ascend-path.is-in-view .ascend-path-main {
+  stroke-dashoffset: 0;
+}
+
+/* Per-dot/per-card stagger delay is set inline (style.transitionDelay) by
+   AscendHero/AscendPathReveal's callers, computed from each element's
+   array index — not nth-of-type, which would silently stop matching the
+   intended element if this markup's sibling shape ever changes (e.g. the
+   dot's centering-transform wrapper, which must stay a separate element
+   from the one this class scales — see AscendHero.tsx). */
+.ascend-path .ascend-dot {
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.4s ease-out;
+}
+.ascend-path.is-in-view .ascend-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ascend-path .ascend-card {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+.ascend-path.is-in-view .ascend-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ascend-path .ascend-logo-tile {
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+  transition-delay: 1.4s;
+}
+.ascend-path.is-in-view .ascend-logo-tile {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ascend-path .ascend-path-main,
+  .ascend-path .ascend-dot,
+  .ascend-path .ascend-card,
+  .ascend-path .ascend-logo-tile {
+    transition: none !important;
+    stroke-dashoffset: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

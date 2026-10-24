@@ -51,3 +51,6 @@ packages/db/node_modules/.prisma
 # IDE
 .vscode
 .idea
+
+# Local design reference mockups (not for git)
+docs/design/*.reference.html
