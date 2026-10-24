@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { m, useReducedMotion, type Variants } from "framer-motion";
 
 // Avra-style scroll reveal — words brighten in sequence, staggered, the first
 // time the paragraph scrolls into view (once only, not on every scroll pass).
@@ -25,7 +25,7 @@ export function ScrollReveal({ text, className }: { text: string; className?: st
   }
 
   return (
-    <motion.p
+    <m.p
       className={className}
       initial="hidden"
       whileInView="visible"
@@ -33,10 +33,10 @@ export function ScrollReveal({ text, className }: { text: string; className?: st
       variants={container}
     >
       {words.map((w, i) => (
-        <motion.span key={i} variants={word} className="text-muted-foreground">
+        <m.span key={i} variants={word} className="text-muted-foreground">
           {w}{" "}
-        </motion.span>
+        </m.span>
       ))}
-    </motion.p>
+    </m.p>
   );
 }

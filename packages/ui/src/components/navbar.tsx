@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { LogOut, Mail, Menu, Phone, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -250,7 +250,7 @@ export function Navbar({
       {/* Phone menu panel */}
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
+          <m.div
             id="mobile-menu"
             className="glass overflow-hidden border-t lg:hidden"
             initial={{ height: 0, opacity: 0 }}
@@ -332,7 +332,7 @@ export function Navbar({
                 </div>
               )}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </header>

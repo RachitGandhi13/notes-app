@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { m, type Variants } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { AscendButton, BadgePill, LogoEmblem } from "@repo/ui";
@@ -15,15 +15,15 @@ const item: Variants = {
 export function HeroContent() {
   return (
     <div className="pt-21 mx-auto flex max-w-4xl flex-col items-center gap-8 text-center">
-      <motion.div initial="hidden" animate="visible" variants={item}>
+      <m.div initial="hidden" animate="visible" variants={item}>
         <LogoEmblem />
-      </motion.div>
+      </m.div>
 
-      <motion.div initial="hidden" animate="visible" variants={item}>
+      <m.div initial="hidden" animate="visible" variants={item}>
         <BadgePill chip="AWS">
           <span className="inline-flex items-center gap-2">Programs by CloudVidya Academy</span>
         </BadgePill>
-      </motion.div>
+      </m.div>
 
       <h1
         className="font-display"
@@ -52,7 +52,7 @@ export function HeroContent() {
         Learn at your own pace.
       </p>
 
-      <motion.div
+      <m.div
         initial="hidden"
         animate="visible"
         variants={item}
@@ -67,7 +67,7 @@ export function HeroContent() {
             Explore notes
           </Link>
         </AscendButton>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

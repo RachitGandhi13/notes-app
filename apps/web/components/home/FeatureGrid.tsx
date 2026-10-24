@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { m, type Variants } from "framer-motion";
 import { CheckCircle2, Circle, Play, XCircle } from "lucide-react";
 import { HeroGrid, WindowCard } from "@repo/ui";
 
@@ -220,7 +220,7 @@ export function FeatureGrid() {
           </p>
         </div>
 
-        <motion.div
+        <m.div
           className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
           initial="hidden"
           whileInView="visible"
@@ -228,13 +228,13 @@ export function FeatureGrid() {
           variants={gridVariants}
         >
           {FEATURES.map(({ title, text, Mockup }) => (
-            <motion.div key={title} variants={cardVariants}>
+            <m.div key={title} variants={cardVariants}>
               <WindowCard title={title} description={text}>
                 <Mockup />
               </WindowCard>
-            </motion.div>
+            </m.div>
           ))}
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

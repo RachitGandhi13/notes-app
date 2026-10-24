@@ -109,28 +109,37 @@ export function LogoEmblem() {
       aria-label="CloudVidya Academy logo"
       className="relative mx-auto flex h-[120px] w-[120px] items-center justify-center sm:h-[200px] sm:w-[200px]"
     >
-      {/* Dark-mode orbit system. Each RingEl/NodeEl is itself position:absolute
-          and positions relative to this component's outer role="img" div (the
-          nearest positioned ancestor) — these wrapper divs are plain static
-          elements purely for responsive show/hide, not positioning contexts.
-          Each wrapper has exactly one non-default visibility rule (stacked
-          dark:+breakpoint variant), so there's no cascade-order ambiguity
-          between competing classes. */}
+      {/* Dark-mode orbit system. The outer wrapper divs are plain static
+          elements purely for responsive show/hide, not positioning contexts
+          (each has exactly one non-default visibility rule, stacked
+          dark:+breakpoint variant, so there's no cascade-order ambiguity
+          between competing classes). The inner `inset-0` div is what actually
+          rotates: `animate-spin-slow` is a pure-CSS, GPU-composited transform
+          (reuses the existing spin-slow keyframe, already shipped in the CSS
+          bundle for the pre-redesign hero — zero added bytes), so the orbit
+          costs no main-thread JS. It's also what RingEl/NodeEl position
+          against: being `absolute inset-0`, it matches the outer role="img"
+          box exactly, so adding the rotating layer doesn't shift anything —
+          it just makes the whole ring+node group spin as one rigid disc. */}
       <div aria-hidden="true" className="hidden dark:max-sm:block">
-        {MOBILE_RINGS.map((ring) => (
-          <RingEl key={ring.size} ring={ring} />
-        ))}
-        {MOBILE_NODES.map((node, i) => (
-          <NodeEl key={i} node={node} />
-        ))}
+        <div className="animate-spin-slow absolute inset-0 motion-reduce:animate-none">
+          {MOBILE_RINGS.map((ring) => (
+            <RingEl key={ring.size} ring={ring} />
+          ))}
+          {MOBILE_NODES.map((node, i) => (
+            <NodeEl key={i} node={node} />
+          ))}
+        </div>
       </div>
       <div aria-hidden="true" className="hidden dark:sm:block">
-        {RINGS.map((ring) => (
-          <RingEl key={ring.size} ring={ring} />
-        ))}
-        {NODES.map((node, i) => (
-          <NodeEl key={i} node={node} />
-        ))}
+        <div className="animate-spin-slow absolute inset-0 motion-reduce:animate-none">
+          {RINGS.map((ring) => (
+            <RingEl key={ring.size} ring={ring} />
+          ))}
+          {NODES.map((node, i) => (
+            <NodeEl key={i} node={node} />
+          ))}
+        </div>
       </div>
 
       {/* Glow */}
