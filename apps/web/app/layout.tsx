@@ -174,9 +174,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   links: [
                     { label: "Contact", href: "/contact" },
                     { label: "Privacy", href: "/privacy" },
-                    { label: "Terms", href: "/terms" },
-                    { label: "Refund Policy", href: "/refund-policy" },
-                    { label: "Shipping Policy", href: "/shipping-policy" },
                   ],
                 },
               ]}
