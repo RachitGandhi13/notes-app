@@ -118,7 +118,7 @@ export function Footer({
           <p className="text-muted-foreground text-small">
             © {year} {brand}. All rights reserved.
           </p>
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[#52525B] dark:text-[#71717A]">
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[#52525B] dark:text-[#A1A1AA]">
             Learn &middot; Build &middot; Grow
           </p>
         </div>

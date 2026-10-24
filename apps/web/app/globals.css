@@ -296,72 +296,104 @@
   }
 }
 
-/* Ascend path hero (Step 2 motion) — draw-in on first view, gated by the
-   .is-in-view class AscendPathReveal toggles via IntersectionObserver (see
-   components/home/AscendPathReveal.tsx). The h1/lead/buttons live outside
-   this wrapper entirely and are never animated, so LCP paint never waits
-   on it. Only the main 6px gradient stroke draws in — the 22px halo glow
-   renders immediately as a static backdrop. */
-.ascend-path .ascend-path-main {
+/* Ascend path hero — the decorative SVG path/dots/cards/logo tile are
+   above the fold, so visibility can never depend on JS or an
+   IntersectionObserver (a prior version gated them behind a class an
+   observer toggled, which could leave them stuck invisible). The rules
+   below default every one of these elements to its fully-visible end
+   state; the @media block beneath only *adds* an `animation` (own
+   from/to keyframes, `both` fill mode) when the OS allows motion, so
+   nothing ever flashes in the wrong state and a browser with no
+   animation support, or prefers-reduced-motion, just sees the end
+   state immediately. Per-element stagger delay is set inline
+   (style.animationDelay) by AscendHero, computed from each element's
+   array index — not nth-of-type, which breaks if this markup's sibling
+   shape ever changes. */
+.ascend-path-main {
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ascend-path.is-in-view .ascend-path-main {
   stroke-dashoffset: 0;
 }
-
-/* Per-dot/per-card stagger delay is set inline (style.transitionDelay) by
-   AscendHero/AscendPathReveal's callers, computed from each element's
-   array index — not nth-of-type, which would silently stop matching the
-   intended element if this markup's sibling shape ever changes (e.g. the
-   dot's centering-transform wrapper, which must stay a separate element
-   from the one this class scales — see AscendHero.tsx). */
-.ascend-path .ascend-dot {
-  opacity: 0;
-  transform: scale(0.8);
-  transition:
-    opacity 0.4s ease-out,
-    transform 0.4s ease-out;
-}
-.ascend-path.is-in-view .ascend-dot {
+.ascend-dot {
   opacity: 1;
   transform: scale(1);
 }
-
-.ascend-path .ascend-card {
-  opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity 0.5s ease-out,
-    transform 0.5s ease-out;
-}
-.ascend-path.is-in-view .ascend-card {
+.ascend-card {
   opacity: 1;
   transform: translateY(0);
 }
-
-.ascend-path .ascend-logo-tile {
-  opacity: 0;
-  transform: scale(0.92);
-  transition:
-    opacity 0.5s ease-out,
-    transform 0.5s ease-out;
-  transition-delay: 1.4s;
-}
-.ascend-path.is-in-view .ascend-logo-tile {
+.ascend-logo-tile {
   opacity: 1;
   transform: scale(1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ascend-path .ascend-path-main,
-  .ascend-path .ascend-dot,
-  .ascend-path .ascend-card,
-  .ascend-path .ascend-logo-tile {
-    transition: none !important;
-    stroke-dashoffset: 0 !important;
-    opacity: 1 !important;
-    transform: none !important;
+@media (prefers-reduced-motion: no-preference) {
+  .ascend-path-main {
+    animation: ascend-draw-path 1.2s ease-out both;
+  }
+  .ascend-dot {
+    animation: ascend-pop-dot 0.4s ease-out both;
+  }
+  .ascend-card {
+    animation: ascend-fade-card 0.5s ease-out both;
+  }
+  .ascend-logo-tile {
+    animation: ascend-pop-logo 0.5s ease-out both;
+    animation-delay: 1.4s;
+  }
+}
+
+@keyframes ascend-draw-path {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes ascend-pop-dot {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@keyframes ascend-fade-card {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ascend-pop-logo {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* Ascend hero, Step 3: the hero is exactly the first screen at lg+ (below
+   lg it keeps its normal stacked, natural-height flow — see AscendHero.tsx).
+   100svh accounts for mobile browser chrome; 100vh is the fallback for
+   browsers without svh support (a plain repeated declaration, not a
+   feature query, so the later line simply wins where both are understood). */
+@media (min-width: 1024px) {
+  .ascend-hero-section {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+}
+
+/* Short-viewport shrink (Step 3): below 760px of height, pull the h1's
+   clamp floor, lead size and stat-number size down a notch so the first
+   screen still fits without scrolling on short laptop windows. */
+.ascend-h1 {
+  font-size: clamp(var(--ascend-h1-min, 48px), 5.8vw, 84px);
+}
+@media (max-height: 759px) {
+  .ascend-h1 {
+    --ascend-h1-min: 44px;
+  }
+  .ascend-lead {
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .ascend-stat-value {
+    font-size: 24px;
+    line-height: 28px;
   }
 }

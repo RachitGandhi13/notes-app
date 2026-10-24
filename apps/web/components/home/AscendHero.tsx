@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { AscendButton, CloudVidyaLogo, Grain } from "@repo/ui";
-import { AscendPathReveal } from "./AscendPathReveal";
 
 // New Ascend-path hero, replacing HeroContent (orbit callouts + stat row —
 // kept on disk, just no longer rendered; see app/(marketing)/page.tsx).
-// Server component: the eyebrow/h1/lead/buttons/stats below render as plain
-// markup with no client wrapper, so LCP paint never waits on anything. Only
-// the decorative SVG path + cards + logo tile (desktop) / timeline card
-// (mobile) are wrapped in AscendPathReveal for the CSS draw-in (Step 2).
+// Server component throughout, no client wrapper: the decorative path's
+// draw-in motion is pure CSS (animation-fill-mode: both, see globals.css),
+// so visibility never depends on JS/hydration/IntersectionObserver timing
+// — the hero is above the fold, and nothing here may stay invisible while
+// JS is still loading.
 //
-// Positions below are percentages of a 1440x900 design canvas (the two
-// docs/design/*.reference.html mockups), not literal pixels, because the
-// decorative layer's box is kept at that exact aspect ratio via
-// `lg:aspect-[1440/900]` on the section — so a point at (x,y) in the
-// mockup maps to (x/1440, y/900) of the box at any width from 1024px up.
+// Dot/card/logo positions are percentages of an 840x900 box (the decorative
+// path's own box, independent of the hero's overall width) — see
+// `.ascend-path-box` below, which is sized to that exact ratio via
+// `aspect-ratio` plus a dual width/height cap, so the SVG's
+// `viewBox="600 0 840 900"` and these percentages always stay in sync at
+// any box size.
 const BROWSE_HREF = "/#browse";
 const NOTES_HREF = "/notes";
 
@@ -23,13 +24,13 @@ interface Step {
   description: string;
   /** Anchors the card's left edge at this % of the box, unless rightPct is set. */
   leftPct?: number;
-  /** STEP 04 only: anchored from the right instead of the left. The card's
-   * width (220/250px) doesn't shrink in proportion to the box the way its
-   * position does, so a left-anchored card nearest the right edge would
-   * push past the box (clipped by the section's overflow-hidden, not an
-   * actual scrollbar, but a visible edge-clip) right around 1024-1131px —
-   * exactly the 1024px width the release gate checks. Right-anchoring this
-   * one card keeps its right edge inside the box at any width >= 220px. */
+  /** STEP 04 only: anchored from the right instead of the left. At the
+   * container's capped max-width (max-w-7xl), the box the right column
+   * gets is narrower than 840px even at the widest viewports the gate
+   * checks (1920px included — the container itself caps out), so a
+   * left-anchored card nearest the right edge would push past the box
+   * (clipped by overflow-hidden) at every width from 1024px up. Right-
+   * anchoring this one card keeps its right edge inside the box always. */
   rightPct?: number;
   topPct: number;
   /** STEP 02 only, per spec: hidden at 1024-1279px first if cards crowd the h1. */
@@ -41,55 +42,50 @@ const STEPS: Step[] = [
     n: "STEP 01",
     title: "Learn the foundations",
     description: "Video lessons, notes and slides",
-    leftPct: (640 / 1440) * 100,
-    topPct: (520 / 900) * 100,
+    leftPct: 4.76,
+    topPct: 57.78,
   },
   {
     n: "STEP 02",
     title: "Build real projects",
     description: "Learn by building, not just watching",
-    leftPct: (860 / 1440) * 100,
-    topPct: (730 / 900) * 100,
+    leftPct: 30.95,
+    topPct: 81.11,
     hideBodyAtLg: true,
   },
   {
     n: "STEP 03",
     title: "Test yourself",
     description: "Section reviews and quizzes",
-    leftPct: (830 / 1440) * 100,
-    topPct: (350 / 900) * 100,
+    leftPct: 27.38,
+    topPct: 38.89,
   },
   {
     n: "STEP 04",
     title: "Get certified on AWS",
     description: "With cloud experts",
-    rightPct: ((1440 - 1160 - 250) / 1440) * 100,
-    topPct: (548 / 900) * 100,
+    rightPct: 2,
+    topPct: 60.89,
   },
 ];
 
 const DOTS: { leftPct: number; topPct: number }[] = [
-  { leftPct: (760 / 1440) * 100, topPct: (640 / 900) * 100 },
-  { leftPct: (900 / 1440) * 100, topPct: (700 / 900) * 100 },
-  { leftPct: (1080 / 1440) * 100, topPct: (470 / 900) * 100 },
-  { leftPct: (1170 / 1440) * 100, topPct: (520 / 900) * 100 },
+  { leftPct: 19.05, topPct: 71.11 },
+  { leftPct: 35.71, topPct: 77.78 },
+  { leftPct: 57.14, topPct: 52.22 },
+  { leftPct: 67.86, topPct: 57.78 },
 ];
 
-const LOGO_LEFT_PCT = (1236 / 1440) * 100;
-const LOGO_TOP_PCT = (104 / 900) * 100;
-const LABEL_LEFT_PCT = (1206 / 1440) * 100;
-const LABEL_TOP_PCT = (246 / 900) * 100;
-const LABEL_WIDTH_PCT = (190 / 1440) * 100;
+const LOGO_LEFT_PCT = 75.71;
+const LOGO_TOP_PCT = 11.56;
+const LOGO_WIDTH_PCT = 15.24;
+const LABEL_TOP_PCT = 27.33;
 
 function H1() {
   return (
     <h1
-      className="font-display text-foreground font-bold"
-      style={{
-        fontSize: "clamp(48px, 5.8vw, 84px)",
-        lineHeight: 0.98,
-        letterSpacing: "-0.045em",
-      }}
+      className="ascend-h1 font-display text-foreground font-bold"
+      style={{ lineHeight: 0.98, letterSpacing: "-0.045em" }}
     >
       Level up your
       <br />
@@ -106,7 +102,42 @@ function H1() {
   );
 }
 
-function CopyColumn({
+function CopyColumnTop() {
+  return (
+    <div className="relative z-10 flex max-w-[640px] flex-col gap-6">
+      <span className="text-primary-ink font-mono text-xs uppercase tracking-[0.14em]">
+        Programs by CloudVidya Academy
+      </span>
+      <H1 />
+      <p className="ascend-lead hidden max-w-[500px] text-[18px] leading-[29px] text-[#52525B] sm:block dark:text-[#A1A1AA]">
+        Hands-on video courses with notes, practice quizzes and progress tracking. Learn at your own
+        pace; we&apos;ll show you every step to the top.
+      </p>
+      <p className="ascend-lead max-w-[500px] text-[18px] leading-[29px] text-[#52525B] sm:hidden dark:text-[#A1A1AA]">
+        Hands-on video courses with notes, practice quizzes, and progress tracking.
+      </p>
+      <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap">
+        <AscendButton
+          asChild
+          size="lg"
+          className="h-[54px] w-full justify-center px-[26px] lg:w-auto"
+        >
+          <Link href={BROWSE_HREF}>Start climbing →</Link>
+        </AscendButton>
+        <AscendButton
+          asChild
+          variant="secondary"
+          size="lg"
+          className="h-[54px] w-full justify-center px-[26px] lg:w-auto"
+        >
+          <Link href={NOTES_HREF}>Explore notes</Link>
+        </AscendButton>
+      </div>
+    </div>
+  );
+}
+
+function StatsRow({
   courseCount,
   internshipTrackCount,
 }: {
@@ -126,53 +157,35 @@ function CopyColumn({
   ];
 
   return (
-    <div className="relative z-10 flex max-w-[640px] flex-col gap-6">
-      <span className="text-primary-ink font-mono text-xs uppercase tracking-[0.14em]">
-        Programs by CloudVidya Academy
-      </span>
-      <H1 />
-      <p className="max-w-[500px] text-[18px] leading-[29px] text-[#52525B] dark:text-[#A1A1AA]">
-        Hands-on video courses with notes, practice quizzes and progress tracking. Learn at your own
-        pace; we&apos;ll show you every step to the top.
-      </p>
-      <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap">
-        <AscendButton
-          asChild
-          size="lg"
-          className="h-[54px] w-full justify-center px-[26px] lg:w-auto"
-        >
-          <Link href={BROWSE_HREF}>Start climbing →</Link>
-        </AscendButton>
-        <AscendButton
-          asChild
-          variant="secondary"
-          size="lg"
-          className="h-[54px] w-full justify-center px-[26px] lg:w-auto"
-        >
-          <Link href={NOTES_HREF}>Explore notes</Link>
-        </AscendButton>
-      </div>
-      <div className="hidden gap-9 text-sm text-[#52525B] lg:flex dark:text-[#A1A1AA]">
-        {stats.map((s) => (
-          <span key={s.label}>
-            <b className="font-display text-foreground block text-[30px] leading-[34px]">
-              {s.value}
-            </b>
-            {s.label}
-          </span>
-        ))}
-      </div>
+    <div className="relative z-10 hidden gap-9 text-sm text-[#52525B] lg:flex dark:text-[#A1A1AA]">
+      {stats.map((s) => (
+        <span key={s.label}>
+          <b className="ascend-stat-value font-display text-foreground block text-[30px] leading-[34px]">
+            {s.value}
+          </b>
+          {s.label}
+        </span>
+      ))}
     </div>
   );
 }
 
 function DesktopPath() {
   return (
-    <AscendPathReveal className="absolute inset-0 hidden lg:block">
+    <div
+      className="absolute bottom-0 right-0 hidden lg:block"
+      style={{
+        aspectRatio: "840 / 900",
+        width: "100%",
+        maxWidth: "840px",
+        height: "auto",
+        maxHeight: "100%",
+      }}
+    >
       <svg
         aria-hidden="true"
-        viewBox="0 0 1440 900"
-        preserveAspectRatio="xMidYMid slice"
+        viewBox="600 0 840 900"
+        preserveAspectRatio="none"
         className="absolute inset-0 h-full w-full"
       >
         <defs>
@@ -252,15 +265,16 @@ function DesktopPath() {
           style={{ left: `${d.leftPct}%`, top: `${d.topPct}%`, transform: "translate(-50%, -50%)" }}
         >
           {/* Centering transform lives on the (unanimated) outer span — the
-              inner span is the one the .ascend-dot CSS scales, since an
+              inner span is the one the .ascend-dot CSS animates, since an
               inline style="transform" would otherwise clobber the class's
-              animated transform (inline always wins over a stylesheet rule
-              for the same property; the two can't layer from separate
-              sources). Delay is inline, not nth-of-type, so it can't drift
-              out of sync if this markup's sibling shape ever changes. */}
+              keyframe-animated transform (inline always wins over a
+              stylesheet rule for the same property; the two can't layer
+              from separate sources). Delay is inline, not nth-of-type, so
+              it can't drift out of sync if this markup's sibling shape
+              ever changes. */}
           <span
             className="ascend-dot bg-background block h-[18px] w-[18px] rounded-full border-[3px] border-[#0099CC] shadow-[0_0_0_6px_rgba(0,102,255,0.10)] dark:border-[#00F0FF] dark:shadow-[0_0_0_6px_rgba(0,240,255,0.12)]"
-            style={{ transitionDelay: `${0.3 + i * 0.12}s` }}
+            style={{ animationDelay: `${0.6 + i * 0.12}s` }}
           />
         </span>
       ))}
@@ -269,12 +283,13 @@ function DesktopPath() {
         {STEPS.map((s, i) => (
           <li
             key={s.n}
-            className="ascend-card absolute w-[220px] rounded-[18px] border border-[#E4E4E7] bg-white p-4 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.45)] xl:w-[250px] dark:border-white/[0.12] dark:bg-[rgba(20,20,24,0.78)] dark:backdrop-blur-[14px]"
+            className="ascend-card absolute rounded-[18px] border border-[#E4E4E7] bg-white p-4 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.45)] dark:border-white/[0.12] dark:bg-[rgba(20,20,24,0.78)] dark:backdrop-blur-[14px]"
             style={{
               left: s.leftPct !== undefined ? `${s.leftPct}%` : undefined,
               right: s.rightPct !== undefined ? `${s.rightPct}%` : undefined,
               top: `${s.topPct}%`,
-              transitionDelay: `${0.45 + i * 0.12}s`,
+              width: "clamp(200px, 29.76%, 250px)",
+              animationDelay: `${0.75 + i * 0.12}s`,
             }}
           >
             <span className="font-mono text-xs tracking-[0.1em] text-[#007A99] dark:text-[#00F0FF]">
@@ -297,29 +312,29 @@ function DesktopPath() {
       <div
         role="img"
         aria-label="CloudVidya Academy logo"
-        className="ascend-logo-tile absolute flex h-[128px] w-[128px] items-center justify-center rounded-[34px] bg-white shadow-[0_0_0_1px_#E4E4E7,0_24px_50px_-18px_rgba(0,82,204,0.35)] dark:bg-[linear-gradient(160deg,#FFFFFF,#E6F0FF)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.4),0_30px_80px_-14px_rgba(0,180,255,0.85)]"
-        style={{ left: `${LOGO_LEFT_PCT}%`, top: `${LOGO_TOP_PCT}%` }}
+        className="ascend-logo-tile absolute flex aspect-square items-center justify-center rounded-[34px] bg-white shadow-[0_0_0_1px_#E4E4E7,0_24px_50px_-18px_rgba(0,82,204,0.35)] dark:bg-[linear-gradient(160deg,#FFFFFF,#E6F0FF)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.4),0_30px_80px_-14px_rgba(0,180,255,0.85)]"
+        style={{ left: `${LOGO_LEFT_PCT}%`, top: `${LOGO_TOP_PCT}%`, width: `${LOGO_WIDTH_PCT}%` }}
       >
         <CloudVidyaLogo layout="mark" theme="light" height={84} title="" />
       </div>
       <span
         aria-hidden="true"
-        className="absolute text-center font-mono text-xs tracking-[0.1em] text-[#007A99] dark:text-[#00F0FF]"
+        className="absolute whitespace-nowrap text-center font-mono text-xs tracking-[0.1em] text-[#007A99] dark:text-[#00F0FF]"
         style={{
-          left: `${LABEL_LEFT_PCT}%`,
+          left: `${LOGO_LEFT_PCT + LOGO_WIDTH_PCT / 2}%`,
           top: `${LABEL_TOP_PCT}%`,
-          width: `${LABEL_WIDTH_PCT}%`,
+          transform: "translateX(-50%)",
         }}
       >
         YOU, CLOUD-READY
       </span>
-    </AscendPathReveal>
+    </div>
   );
 }
 
 function MobilePath() {
   return (
-    <AscendPathReveal className="lg:hidden">
+    <div className="lg:hidden">
       <div className="relative mt-2 flex flex-col gap-4 rounded-[22px] border border-[#E4E4E7] bg-white p-[18px] dark:border-white/[0.12] dark:bg-[rgba(20,20,24,0.78)]">
         <span
           aria-hidden="true"
@@ -348,7 +363,7 @@ function MobilePath() {
             <li
               key={s.n}
               className="ascend-card relative flex items-start gap-3"
-              style={{ transitionDelay: `${0.45 + i * 0.12}s` }}
+              style={{ animationDelay: `${0.45 + i * 0.12}s` }}
             >
               <span className="bg-background absolute -left-10 top-0.5 h-4 w-4 rounded-full border-[3px] border-[#0099CC] dark:border-[#00F0FF]" />
               <span>
@@ -366,7 +381,7 @@ function MobilePath() {
           ))}
         </ol>
       </div>
-    </AscendPathReveal>
+    </div>
   );
 }
 
@@ -378,7 +393,7 @@ export function AscendHero({
   internshipTrackCount: number;
 }) {
   return (
-    <section className="relative isolate overflow-hidden border-b lg:aspect-[1440/900] lg:min-h-[640px]">
+    <section className="ascend-hero-section relative isolate flex flex-col overflow-hidden border-b">
       {/* Aurora */}
       <div
         aria-hidden="true"
@@ -417,12 +432,23 @@ export function AscendHero({
         }}
       />
 
-      <Grain opacity={0.55} lightOpacity={0.05} />
+      <Grain opacity={0.55} lightOpacity={0.05} blend="overlay" />
 
-      <DesktopPath />
-
-      <div className="relative mx-auto flex max-w-7xl flex-col justify-center gap-6 px-5 py-16 sm:px-8 sm:py-20 lg:h-full lg:py-0">
-        <CopyColumn courseCount={courseCount} internshipTrackCount={internshipTrackCount} />
+      {/* lg+: top padding clears the floating sticky navbar (h-16 = 64px)
+          plus the 32px the spec asks for, so the eyebrow is never covered
+          once the navbar sticks and the hero scrolls underneath it. */}
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-5 py-16 sm:px-8 sm:py-20 lg:min-h-0 lg:flex-1 lg:gap-0 lg:px-8 lg:py-0 lg:pt-[96px]">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,640px)_minmax(0,1fr)] lg:grid-rows-[1fr] lg:items-stretch lg:gap-6">
+          <div className="flex flex-col justify-center gap-6 lg:h-full">
+            <CopyColumnTop />
+          </div>
+          <div className="relative hidden lg:block">
+            <DesktopPath />
+          </div>
+        </div>
+        <div className="hidden lg:block lg:pb-12">
+          <StatsRow courseCount={courseCount} internshipTrackCount={internshipTrackCount} />
+        </div>
         <MobilePath />
       </div>
     </section>

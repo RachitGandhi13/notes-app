@@ -11,12 +11,17 @@ import { cn } from "../../lib/utils";
 export function Grain({
   opacity = 0.6,
   lightOpacity,
+  blend,
   className,
 }: {
   /** 0.6-0.9 per spec. */
   opacity?: number;
   /** Opt-in light-mode layer, multiply-blended. ~0.05 per spec. */
   lightOpacity?: number;
+  /** Dark-mode layer's blend mode. Default (unset) keeps every existing
+   * consumer's plain-overlay look unchanged; AscendHero passes "overlay"
+   * per its reference design. */
+  blend?: "overlay";
   className?: string;
 }) {
   return (
@@ -28,6 +33,7 @@ export function Grain({
           backgroundImage: "url(/textures/grain.png)",
           backgroundSize: "200px",
           opacity,
+          mixBlendMode: blend,
         }}
       />
       {lightOpacity !== undefined && (
