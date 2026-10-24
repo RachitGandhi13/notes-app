@@ -20,8 +20,8 @@ export default function ContactPage() {
       <div className="space-y-2">
         <h1 className="font-display text-4xl font-extrabold tracking-tight">Contact us</h1>
         <p className="text-muted-foreground text-base leading-relaxed">
-          Questions about a course, your account or an internship application? Reach us directly —
-          we read every message.
+          Questions about a course, your account or an internship application? Reach us directly. We
+          read every message.
         </p>
       </div>
 

@@ -4,7 +4,7 @@ import { GlassCard } from "@repo/ui";
 export const metadata: Metadata = {
   title: "Shipping Policy",
   description:
-    "CloudVidya Academy delivers every course and note set digitally — access is granted to your account right after payment, nothing is shipped.",
+    "CloudVidya Academy delivers every course and note set digitally. Access is granted to your account right after payment, nothing is shipped.",
   alternates: { canonical: "/shipping-policy" },
 };
 

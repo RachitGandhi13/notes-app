@@ -985,7 +985,7 @@ function CreateCourseForm() {
             className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
           />
           <p className="text-muted-foreground text-xs">
-            Auto-generated from the title — edit anytime before creating.
+            Auto-generated from the title. Edit anytime before creating.
           </p>
         </div>
       </div>

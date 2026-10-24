@@ -49,7 +49,7 @@ export default function PrivacyPage() {
         <Section title="Account data">
           <p>
             When you register, we store your name, email address and a securely hashed password (or,
-            if you sign in with Google, the profile information Google shares with us — your name,
+            if you sign in with Google, the profile information Google shares with us: your name,
             email and profile photo). We use this to create and secure your account, show your
             progress, and issue certificates in your name.
           </p>
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
         <Section title="Payments">
           <p>
             Course and internship payments are processed by Razorpay. We never see or store your
-            card, UPI or bank details — Razorpay handles payment data directly and shares with us
+            card, UPI or bank details. Razorpay handles payment data directly and shares with us
             only the order status, amount and the course or track you purchased, so we can grant
             access.
           </p>

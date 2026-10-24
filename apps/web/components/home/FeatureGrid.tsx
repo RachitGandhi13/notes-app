@@ -26,7 +26,7 @@ function CodeMockup() {
       </div>
       <div className="mt-auto flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1.5 text-emerald-700">
         <CheckCircle2 className="h-3 w-3 shrink-0" />
-        Apply complete — 3 resources
+        Apply complete: 3 resources
       </div>
     </div>
   );
