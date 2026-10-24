@@ -110,7 +110,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex-1">{children}</div>
             <Footer
               brand="CloudVidya Academy"
-              logo={<ThemedLogo layout="horizontal" height={88} />}
+              logo={<ThemedLogo layout="inline" height={28} title="" />}
+              wordmarkLogo={
+                <ThemedLogo layout="horizontal" height={88} title="" className="h-auto w-full" />
+              }
               description="Learn AWS, DevOps, and Cloud through hands-on, project-based courses and mentorship from Dr. Veeranna Gatate."
               linkColumns={[
                 {

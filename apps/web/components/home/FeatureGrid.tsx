@@ -1,48 +1,8 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { CheckCircle2, Circle, Copy, Download, Play, Share2, XCircle } from "lucide-react";
-import { ScrollReveal } from "@/components/ScrollReveal";
-import { SectionEyebrow } from "@/components/SectionEyebrow";
-import { HeroGlow } from "@/components/home/HeroGlow";
-
-// Decorative "browser window" chrome around each card's mockup — traffic-light
-// dots + generic toolbar icons, same treatment regardless of what's inside.
-function WindowChrome({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg">
-      <div className="flex items-center justify-between border-b border-black/5 bg-white px-3 py-2">
-        <div className="flex gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-          <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-        </div>
-        <div className="flex items-center gap-2 text-zinc-400">
-          <Download className="h-3 w-3" />
-          <Share2 className="h-3 w-3" />
-          <Plus className="h-3 w-3" />
-          <Copy className="h-3 w-3" />
-        </div>
-      </div>
-      <div className="aspect-[4/3]">{children}</div>
-    </div>
-  );
-}
-
-// Plus isn't used elsewhere in this file, imported alongside the other toolbar icons.
-function Plus({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-    >
-      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { CheckCircle2, Circle, Play, XCircle } from "lucide-react";
+import { HeroGrid, WindowCard } from "@repo/ui";
 
 function CodeMockup() {
   return (
@@ -228,18 +188,36 @@ const cardVariants: Variants = {
 
 export function FeatureGrid() {
   return (
-    <section className="relative isolate overflow-hidden py-12 sm:py-20">
-      <HeroGlow />
-      <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <SectionEyebrow>Why CloudVidya Academy</SectionEyebrow>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Everything you need to go from learning to <span className="text-primary">doing</span>
+    <section className="sm:py-21 relative isolate overflow-hidden py-16">
+      <div className="pointer-events-none absolute left-1/2 top-0 hidden h-[500px] w-[900px] -translate-x-1/2 dark:block">
+        <HeroGrid />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(45% 50% at 50% 0%, rgb(0 102 255 / 0.18), transparent 70%)",
+          }}
+        />
+      </div>
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
+        <div className="mx-auto max-w-[760px] text-center">
+          <p className="text-eyebrow uppercase text-[#4D94FF]">Why CloudVidya Academy</p>
+          <h2
+            className="font-display mt-3"
+            style={{ fontSize: "clamp(36px, 4vw, 52px)", letterSpacing: "-0.035em" }}
+          >
+            Everything you need to go from learning to{" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(90deg, #4D94FF, #00F0FF)" }}
+            >
+              doing
+            </span>
           </h2>
-          <ScrollReveal
-            text="Video courses, notes and quizzes. All in one place, built around hands-on AWS and DevOps training."
-            className="mt-3 leading-relaxed"
-          />
+          <p className="mt-3 text-[18px] leading-[28px] text-[#A1A1AA]">
+            Video courses, notes and quizzes. All in one place, built around hands-on AWS and DevOps
+            training.
+          </p>
         </div>
 
         <motion.div
@@ -250,19 +228,10 @@ export function FeatureGrid() {
           variants={gridVariants}
         >
           {FEATURES.map(({ title, text, Mockup }) => (
-            <motion.div
-              key={title}
-              variants={cardVariants}
-              whileHover={{ y: -6 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 300, damping: 24 }}
-              className="bg-card group rounded-2xl border p-5 transition-colors duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5"
-            >
-              <WindowChrome>
+            <motion.div key={title} variants={cardVariants}>
+              <WindowCard title={title} description={text}>
                 <Mockup />
-              </WindowChrome>
-              <h3 className="mt-5 text-lg font-bold">{title}</h3>
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{text}</p>
+              </WindowCard>
             </motion.div>
           ))}
         </motion.div>

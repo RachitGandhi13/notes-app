@@ -4,21 +4,16 @@ import Link from "next/link";
 import { getCourses, getUserPurchases } from "@/lib/actions";
 import { getActiveBundles } from "@/lib/track-actions";
 import { getActiveInternshipTracks } from "@/lib/internship-actions";
+import { Aurora, Grain, HeroGrid } from "@repo/ui";
 import { CourseCard } from "@/components/CourseCard";
-// import { InstructorSection, SupportSection } from "@/components/InstructorSection";
-import { SupportSection } from "@/components/InstructorSection";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { SectionEyebrow } from "@/components/SectionEyebrow";
-import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 import { ComboBanner } from "@/components/home/ComboBanner";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 import { FeaturedCourse } from "@/components/home/FeaturedCourse";
-import { HeroArt } from "@/components/home/HeroArt";
 import { HeroContent } from "@/components/home/HeroContent";
-import { HeroGlow } from "@/components/home/HeroGlow";
+import { InternshipTeaser } from "@/components/home/InternshipTeaser";
 import { JoinBanner } from "@/components/home/JoinBanner";
-import { NotesShowcase } from "@/components/home/NotesShowcase";
-import { StatStrip } from "@/components/home/StatStrip";
 import { TechMarquee } from "@/components/home/TechMarquee";
 
 // Rendered per request (same reasoning as app/notes/page.tsx) — getSession() already
@@ -52,35 +47,29 @@ export default async function HomePage({ searchParams }: Props) {
     <>
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b">
-        <HeroGlow />
-        <AnimatedBackdrop />
-        <div className="pt-21 lg:gap-13 lg:pt-34 mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 sm:px-8 sm:pb-16 lg:grid-cols-[1.618fr_1fr] lg:pb-24">
-          <HeroContent courseCount={courses.length} />
-
-          <div className="hidden lg:block">
-            <HeroArt />
-          </div>
+        <Aurora variant="hero" />
+        <Grain opacity={0.6} />
+        <HeroGrid />
+        <div className="relative mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
+          <HeroContent />
         </div>
       </section>
 
       {!query && <TechMarquee />}
       {!query && <FeatureGrid />}
-      {!query && courses.length > 0 && (
-        <StatStrip courseCount={courses.length} trackCount={internshipTracks.length} />
-      )}
 
       {/* Courses */}
       <section id="browse" className="container scroll-mt-20 py-10 sm:py-16">
         <div className="mb-10 text-center">
           <SectionEyebrow>{query ? "Search results" : "Courses"}</SectionEyebrow>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="font-display mt-2 text-3xl tracking-tight sm:text-4xl">
             {query ? (
               <>
                 Results for <span className="text-primary">&ldquo;{query}&rdquo;</span>
               </>
             ) : (
               <>
-                Explore our <span className="text-primary">courses</span>
+                Explore our <span className="serif-accent">courses</span>
               </>
             )}
           </h2>
@@ -140,31 +129,22 @@ export default async function HomePage({ searchParams }: Props) {
                 title={course.title}
                 description={course.description}
                 imageUrl={course.imageUrl}
+                price={course.price}
                 priority={i < 3}
                 purchased={purchasedIds.has(course.id)}
                 isAdmin={isAdmin}
+                accentIndex={i}
               />
             ))}
           </div>
         )}
       </section>
 
-      {!query && <NotesShowcase />}
-
-      {/* Instructor "About" section (photo, bio and mailto contact), hidden for now. To restore,
-          delete these comment markers and put InstructorSection back in the import on line 9.
-      <div className="container pb-16">
-        <InstructorSection />
-      </div>
-      */}
+      {!query && <InternshipTeaser tracks={internshipTracks} />}
 
       {!query && <GalleryGrid />}
 
       {!query && <JoinBanner signedIn={!!session?.user} />}
-
-      <div className="container">
-        <SupportSection />
-      </div>
     </>
   );
 }

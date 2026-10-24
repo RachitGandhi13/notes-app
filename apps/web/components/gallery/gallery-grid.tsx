@@ -34,14 +34,23 @@ export function GalleryGrid() {
         </p>
       </div>
 
-      <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div
+        className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-4"
+        style={{ gridAutoRows: "220px" }}
+      >
         {galleryItems.map((item, i) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setSelected(item)}
             aria-label={`View photo: ${item.title}`}
-            className="bg-card focus-visible:ring-ring group relative aspect-square overflow-hidden rounded-2xl border text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2"
+            className={`bg-card focus-visible:ring-ring group relative overflow-hidden rounded-[28px] border text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 ${
+              i === 0
+                ? "col-span-2 row-span-2"
+                : i === 1
+                  ? "col-span-2 row-span-1"
+                  : "col-span-1 row-span-1"
+            }`}
           >
             <Image
               src={photoSrc(item)}
@@ -51,9 +60,18 @@ export function GalleryGrid() {
               className="object-cover transition-transform duration-500 group-hover:scale-110"
               loading={i < 4 ? "eager" : "lazy"}
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-3 pt-10">
-              <p className="line-clamp-1 text-sm font-semibold text-white">{item.title}</p>
-              <p className="text-xs text-white/75">{item.category}</p>
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-3 pt-10 dark:hidden" />
+            <div
+              className={`absolute text-left ${i === 0 ? "bottom-3 left-3 right-3" : "bottom-2 left-2 right-2"}`}
+            >
+              <div className="hidden rounded-xl border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-md dark:block">
+                <p className="line-clamp-1 text-sm font-semibold text-white">{item.title}</p>
+                <p className="text-xs text-white/70">{item.category}</p>
+              </div>
+              <div className="dark:hidden">
+                <p className="line-clamp-1 text-sm font-semibold text-white">{item.title}</p>
+                <p className="text-xs text-white/75">{item.category}</p>
+              </div>
             </div>
           </button>
         ))}

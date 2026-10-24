@@ -1,62 +1,57 @@
-import {
-  Box,
-  Boxes,
-  Cloud,
-  Container,
-  GitBranch,
-  Layers,
-  Sparkles,
-  Terminal,
-  Workflow,
-  type LucideIcon,
-} from "lucide-react";
-
 // Topics taken from what the instructor actually teaches (see lib/instructor.ts
-// and his bio) — no logos, just names.
-const TOPICS: { Icon: LucideIcon; label: string }[] = [
-  { Icon: Cloud, label: "AWS Cloud" },
-  { Icon: Workflow, label: "DevOps" },
-  { Icon: GitBranch, label: "CI/CD" },
-  { Icon: Layers, label: "Terraform" },
-  { Icon: Container, label: "Docker" },
-  { Icon: Boxes, label: "Kubernetes" },
-  { Icon: Box, label: "Ansible" },
-  { Icon: Box, label: "Puppet" },
-  { Icon: Terminal, label: "Linux" },
-  { Icon: Workflow, label: "Infrastructure Automation" },
-  { Icon: Sparkles, label: "AWS AI" },
+// and his bio) — same real list as before, now a flowing text marquee instead
+// of icon pills.
+const TOPICS = [
+  "AWS Cloud",
+  "DevOps",
+  "CI/CD",
+  "Terraform",
+  "Docker",
+  "Kubernetes",
+  "Ansible",
+  "Puppet",
+  "Linux",
+  "Infrastructure Automation",
+  "AWS AI",
 ];
+
+const EMPHASIS = new Set(["DevOps", "Kubernetes"]);
+const SERIF_EMPHASIS = new Set(["Terraform", "Linux"]);
+
+function Word({ label }: { label: string }) {
+  if (EMPHASIS.has(label)) {
+    return <span className="text-[#FAFAFA]">{label}</span>;
+  }
+  if (SERIF_EMPHASIS.has(label)) {
+    return <span className="serif-accent text-[#FAFAFA]">{label}</span>;
+  }
+  return <span className="text-[#71717A]">{label}</span>;
+}
 
 function Row() {
   return (
-    <ul className="flex shrink-0 items-center gap-3 pr-3">
-      {TOPICS.map(({ Icon, label }) => (
-        <li
-          key={label}
-          className="bg-card flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium shadow-sm"
-        >
-          <Icon className="text-primary h-4 w-4" />
-          {label}
-        </li>
+    <div className="flex shrink-0 items-center gap-6 pr-6">
+      {TOPICS.map((label, i) => (
+        <span key={i} className="font-display flex items-center gap-6 text-[32px] font-semibold">
+          <Word label={label} />
+          {<span className="text-[#00F0FF]">&rsaquo;</span>}
+        </span>
       ))}
-    </ul>
+    </div>
   );
 }
 
 export function TechMarquee() {
+  const mask = "linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent)";
   return (
-    <section
-      aria-label="Topics you will learn"
-      className="from-primary/[0.06] via-primary/[0.02] to-primary/[0.06] border-b bg-gradient-to-b py-8"
-    >
-      <p className="text-muted-foreground mb-4 text-center text-xs font-semibold uppercase tracking-widest">
-        What you&apos;ll learn
-      </p>
-      <div className="group overflow-hidden [-webkit-mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
-        {/* the list twice, so the loop is seamless at -50% */}
+    <section aria-label="Topics you will learn" className="overflow-hidden pb-[52px] pt-[84px]">
+      <div className="group overflow-hidden" style={{ maskImage: mask, WebkitMaskImage: mask }}>
+        {/* the list twice, second copy aria-hidden, so the loop is seamless at -50% */}
         <div className="animate-marquee flex w-max group-hover:[animation-play-state:paused] motion-reduce:animate-none">
           <Row />
-          <Row />
+          <div aria-hidden="true" className="contents">
+            <Row />
+          </div>
         </div>
       </div>
     </section>

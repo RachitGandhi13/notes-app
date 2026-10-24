@@ -12,6 +12,8 @@ interface FooterProps {
   brandLogo?: string;
   /** Full brand mark, e.g. `<CloudVidyaLogo layout="horizontal" />`. Takes over the whole brand slot — `brand`/`brandLogo` are ignored when set. */
   logo?: React.ReactNode;
+  /** Large horizontal mark shown full-width below the link columns. Falls back to the plain `wordmark` text when omitted. */
+  wordmarkLogo?: React.ReactNode;
   description: string;
   linkColumns: { title: string; links: FooterLink[] }[];
   linkedinUrl?: string;
@@ -24,6 +26,7 @@ export function Footer({
   brandHref = "/",
   brandLogo,
   logo,
+  wordmarkLogo,
   description,
   linkColumns,
   linkedinUrl,
@@ -103,16 +106,21 @@ export function Footer({
               </div>
             )}
           </div>
-
-          <p className="text-muted-foreground text-small mt-8">
-            © {year} {brand}. All rights reserved.
-          </p>
         </div>
 
-        <div className="overflow-hidden pt-8 text-center" aria-hidden="true">
-          <span className="text-primary/10 select-none whitespace-nowrap text-[8vw] font-extrabold leading-none tracking-tight">
-            {wordmark}
-          </span>
+        <div className="mt-10 w-full">
+          {wordmarkLogo ?? (
+            <span className="text-primary text-2xl font-extrabold tracking-tight">{wordmark}</span>
+          )}
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/[0.08] pt-6 sm:flex-row">
+          <p className="text-muted-foreground text-small">
+            © {year} {brand}. All rights reserved.
+          </p>
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[#71717A]">
+            Learn &middot; Build &middot; Grow
+          </p>
         </div>
       </div>
     </footer>
