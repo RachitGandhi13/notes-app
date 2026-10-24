@@ -3,11 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { m, type Variants } from "framer-motion";
 
-const variants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
-};
-
 // Generic below-the-fold reveal: fades/slides a section in once, the first
 // time it scrolls into view. Deliberately NOT framer-motion's `whileInView`
 // — profiling on the home page showed it forces a synchronous layout read
@@ -21,9 +16,24 @@ const variants: Variants = {
 // (see providers.tsx) already skips the y-transform (keeps the opacity
 // crossfade) when the OS has reduced motion enabled, so this needs no
 // reduced-motion handling of its own.
-export function Reveal({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Reveal({
+  children,
+  className,
+  distance = 24,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  /** Initial y-offset in px, animated to 0. Defaults to 24 (below-the-fold
+   * sections); the auth-card mount reveal uses a subtler 8. */
+  distance?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
+
+  const variants: Variants = {
+    hidden: { opacity: 0, y: distance },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  };
 
   useEffect(() => {
     const el = ref.current;

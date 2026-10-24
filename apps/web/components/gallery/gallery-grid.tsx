@@ -79,7 +79,10 @@ export function GalleryGrid() {
 
       {/* Lightbox */}
       <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-4xl gap-0 overflow-hidden border-none bg-transparent p-0 shadow-none sm:rounded-2xl">
+        <DialogContent
+          hideChrome
+          className="max-w-4xl gap-0 overflow-hidden border-none bg-transparent p-0 shadow-none sm:rounded-2xl"
+        >
           {selected && (
             <div className="bg-card overflow-hidden rounded-2xl border">
               <div className="relative aspect-[4/3] w-full bg-black sm:aspect-video">

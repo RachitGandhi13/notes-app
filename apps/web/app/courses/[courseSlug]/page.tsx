@@ -239,7 +239,9 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
               </span>
             </h2>
             {chapters.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No content yet.</p>
+              <div className="border-white/12 rounded-[24px] border border-dashed p-6 text-center">
+                <p className="text-muted-foreground text-sm">No content yet.</p>
+              </div>
             ) : (
               <CurriculumAccordion chapters={chapters} purchased={purchased} />
             )}

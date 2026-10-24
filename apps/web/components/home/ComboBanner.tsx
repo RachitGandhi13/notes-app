@@ -69,7 +69,10 @@ export function ComboBanner({ bundles, prefill }: ComboBannerProps) {
               const originalTotal = bundle.courses.reduce((sum, c) => sum + c.price, 0);
               const savings = originalTotal - bundle.bundlePrice;
               return (
-                <div key={bundle.id} className="space-y-3 rounded-xl border p-4">
+                <div
+                  key={bundle.id}
+                  className="bg-muted space-y-3 rounded-[20px] border p-4 dark:border-white/10 dark:bg-[#161618]"
+                >
                   <h4 className="font-semibold">{bundle.title}</h4>
                   <ul className="space-y-1.5">
                     {bundle.courses.map((course) => (

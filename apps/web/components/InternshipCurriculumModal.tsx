@@ -43,7 +43,7 @@ function OverviewCard({
   text: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-zinc-900/60 p-4 shadow-sm backdrop-blur-md">
+    <div className="rounded-xl border border-white/10 bg-[#161618] p-4 shadow-sm">
       <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
         <Icon className="h-4 w-4" />
       </span>
@@ -69,7 +69,7 @@ export function InternshipCurriculumModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto border border-white/10 bg-zinc-950/90 p-0 shadow-2xl backdrop-blur-xl sm:rounded-2xl">
+      <DialogContent className="sm:rounded-shell max-h-[85vh] max-w-3xl overflow-y-auto p-0">
         {/* Header */}
         <div className="relative overflow-hidden border-b border-white/10 p-6 sm:p-8">
           <div className="pointer-events-none absolute -top-20 left-1/4 h-56 w-56 rounded-full bg-blue-500/20 blur-3xl" />
@@ -108,11 +108,11 @@ export function InternshipCurriculumModal({
               {curriculum.modules.map((m) => (
                 <details
                   key={m.title}
-                  className="group rounded-xl border border-white/10 bg-zinc-900/40 p-4 transition-all duration-150 open:border-l-2 open:border-l-blue-500 open:bg-zinc-900/80 hover:border-blue-500/30 hover:bg-zinc-800/50"
+                  className="group rounded-xl border border-white/10 bg-[#161618] p-4 transition-all duration-150 open:border-l-2 open:border-l-blue-500 hover:border-blue-500/30"
                 >
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-white marker:content-none">
                     <span>{m.title}</span>
-                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-200 group-open:rotate-180" />
+                    <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-[144ms] group-open:rotate-180" />
                   </summary>
                   <p className="mt-1 text-xs font-medium text-blue-400">{m.period}</p>
                   <ul className="mt-3 space-y-1.5">
@@ -135,7 +135,7 @@ export function InternshipCurriculumModal({
               {curriculum.labs.map((lab) => (
                 <div
                   key={lab.title}
-                  className="rounded-lg border border-white/10 bg-zinc-900/40 p-3.5 transition-all duration-150 hover:border-blue-500/30 hover:bg-zinc-800/50"
+                  className="rounded-lg border border-white/10 bg-[#161618] p-3.5 transition-all duration-150 hover:border-blue-500/30"
                 >
                   <p className="text-sm font-semibold text-white">{lab.title}</p>
                   <p className="mt-1 text-xs leading-relaxed text-zinc-400">{lab.description}</p>
@@ -151,7 +151,7 @@ export function InternshipCurriculumModal({
               {curriculum.capstoneProjects.map((project) => (
                 <div
                   key={project.title}
-                  className="rounded-xl border border-white/10 bg-zinc-900/40 p-4 transition-all duration-150 hover:border-blue-500/30 hover:bg-zinc-800/50"
+                  className="rounded-xl border border-white/10 bg-[#161618] p-4 transition-all duration-150 hover:border-blue-500/30"
                 >
                   <p className="text-sm font-semibold text-white">{project.title}</p>
                   <ul className="mt-2 space-y-1">

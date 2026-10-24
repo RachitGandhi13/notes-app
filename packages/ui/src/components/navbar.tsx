@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, m } from "framer-motion";
 import { LogOut, Mail, Menu, Phone, Shield, User, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -139,7 +138,7 @@ export function Navbar({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-60 rounded-xl border border-white/10 bg-zinc-900/95 p-2 shadow-2xl backdrop-blur-md"
+                className="w-60 rounded-[20px] border border-white/10 bg-[#161618] p-2 shadow-[0_24px_64px_-16px_rgb(0_0_0_/_0.6)]"
               >
                 <div className="px-3 py-2 text-sm">
                   <p className="font-bold text-white">{session.user.name ?? "User"}</p>
@@ -153,7 +152,7 @@ export function Navbar({
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem
                   asChild
-                  className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/5 focus:bg-white/5"
+                  className="group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                 >
                   <Link href="/profile">
                     <User className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-white" />
@@ -163,7 +162,7 @@ export function Navbar({
                 {session.user.admin && (
                   <DropdownMenuItem
                     asChild
-                    className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/5 focus:bg-white/5"
+                    className="group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                   >
                     <Link href="/admin">
                       <Shield className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-white" />
@@ -172,7 +171,7 @@ export function Navbar({
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border-t border-white/10 px-3 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/10 hover:text-blue-300 focus:bg-blue-500/10 focus:text-blue-300"
+                  className="mt-2 flex cursor-pointer items-center gap-2 rounded-xl border-t border-white/10 px-3 py-2.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/10 hover:text-blue-300 focus:bg-blue-500/10 focus:text-blue-300"
                   onSelect={() => signOut()}
                 >
                   <LogOut className="h-4 w-4" />
@@ -190,11 +189,11 @@ export function Navbar({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-80 rounded-xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur-md"
+                  className="w-80 rounded-[20px] border border-white/10 bg-[#161618] p-3 shadow-[0_24px_64px_-16px_rgb(0_0_0_/_0.6)]"
                 >
                   <DropdownMenuItem
                     asChild
-                    className="group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 text-sm transition-colors hover:bg-white/5 focus:bg-white/5"
+                    className="group flex cursor-pointer items-start gap-3 rounded-xl p-2.5 text-sm transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                   >
                     <a href={CONTACT.phoneHref}>
                       <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 transition-all group-hover:bg-blue-500 group-hover:text-white">
@@ -210,7 +209,7 @@ export function Navbar({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     asChild
-                    className="group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 text-sm transition-colors hover:bg-white/5 focus:bg-white/5"
+                    className="group flex cursor-pointer items-start gap-3 rounded-xl p-2.5 text-sm transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06]"
                   >
                     <a href={`mailto:${CONTACT.email}`}>
                       <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 transition-all group-hover:bg-blue-500 group-hover:text-white">
@@ -247,47 +246,61 @@ export function Navbar({
         </div>
       </div>
 
-      {/* Phone menu panel */}
-      <AnimatePresence>
-        {menuOpen && (
-          <m.div
+      {/* Phone menu — a fixed, full-height right-side sheet. CSS-only motion
+          (no AnimatePresence/motion.div): the backdrop+panel are only in the
+          DOM while menuOpen is true, so the slide/fade below is a plain CSS
+          mount animation (tailwindcss-animate's `animate-in`), and closing it
+          unmounts immediately rather than coordinating an exit animation —
+          deliberately, since adding exit-delay state would be a logic change. */}
+      {menuOpen && (
+        <>
+          {/* Backdrop is decorative only — no click-to-close handler added,
+              per the tripwire gate (that would be new logic, not a pure
+              restyle). Closing still works via the X toggle button and the
+              existing pathname-change effect. See NEEDS LOGIC CHANGE. */}
+          <div
+            aria-hidden="true"
+            className="animate-in fade-in-0 fixed inset-0 z-40 bg-black/60 duration-[233ms] ease-[var(--cv-ease)] lg:hidden dark:backdrop-blur-sm"
+          />
+          <div
             id="mobile-menu"
-            className="glass overflow-hidden border-t lg:hidden"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="sheet-panel bg-background animate-in slide-in-from-right fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto rounded-l-[32px] border-l duration-[233ms] ease-[var(--cv-ease)] lg:hidden"
           >
-            <div className="container space-y-4 py-4">
+            <div className="flex flex-col gap-4 p-6">
               {search && <div>{search}</div>}
 
               {links.length > 0 && (
-                <nav className="flex flex-col gap-1">
-                  {links.map((link) => (
+                <nav className="flex flex-col">
+                  {links.map((link, i) => (
                     <Link
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "hover:bg-accent flex min-h-11 items-center rounded-lg px-3 text-base font-medium",
-                        link.glow && glowClass
+                        "flex h-14 items-center gap-4 border-b border-white/[0.08] text-left",
+                        link.glow && `${glowClass} rounded-lg px-3`
                       )}
                     >
-                      {link.label}
+                      <span className="font-mono text-sm text-[#4D94FF]">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="font-display text-[22px] font-semibold leading-[28px]">
+                        {link.label}
+                      </span>
                     </Link>
                   ))}
                 </nav>
               )}
 
-              <div className="flex min-h-11 items-center justify-between border-t pt-3">
+              <div className="flex min-h-11 items-center justify-between border-b border-white/[0.08] pb-3">
                 <span className="text-muted-foreground text-sm">Theme</span>
                 <ThemeToggle />
               </div>
 
               {session?.user ? (
-                <div className="grid gap-1 border-t pt-3">
+                <div className="grid gap-1 pb-3">
                   <Link
                     href="/profile"
-                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
                   >
                     <User className="h-4 w-4" />
                     Profile
@@ -295,7 +308,7 @@ export function Navbar({
                   {session.user.admin && (
                     <Link
                       href="/admin"
-                      className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
                     >
                       <Shield className="h-4 w-4" />
                       Admin
@@ -304,27 +317,27 @@ export function Navbar({
                   <button
                     type="button"
                     onClick={() => signOut()}
-                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-left text-base font-medium text-blue-600 dark:text-blue-400"
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-left text-base font-medium text-blue-600 hover:bg-white/[0.06] dark:text-blue-400"
                   >
                     <LogOut className="h-4 w-4" />
                     Sign out
                   </button>
                 </div>
               ) : (
-                <div className="grid gap-2 border-t pt-3">
-                  <AscendButton asChild variant="default" className="w-full">
+                <div className="grid gap-2 pb-3">
+                  <AscendButton asChild variant="default" className="w-full rounded-full">
                     <Link href="/auth">Login</Link>
                   </AscendButton>
                   <a
                     href={CONTACT.phoneHref}
-                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
                   >
                     <Phone className="h-4 w-4 shrink-0" />
                     {CONTACT.phone}
                   </a>
                   <a
                     href={`mailto:${CONTACT.email}`}
-                    className="hover:bg-accent flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-medium"
+                    className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-medium hover:bg-white/[0.06]"
                   >
                     <Mail className="h-4 w-4 shrink-0" />
                     <span className="break-all">{CONTACT.email}</span>
@@ -332,9 +345,9 @@ export function Navbar({
                 </div>
               )}
             </div>
-          </m.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </>
+      )}
     </header>
   );
 }

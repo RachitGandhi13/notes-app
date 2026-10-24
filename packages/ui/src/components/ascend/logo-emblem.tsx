@@ -95,6 +95,14 @@ function NodeEl({ node }: { node: Node }) {
   );
 }
 
+// Compact variant (Ascend v2 Phase 3): a single 140px ring, a single node,
+// a 72px tile and a smaller glow — used atop the auth cards, where the full
+// hero-sized emblem would overwhelm a centered form.
+const COMPACT_RINGS: Ring[] = [{ size: 140, border: "1px solid rgb(255 255 255 / 0.12)" }];
+const COMPACT_NODES: Node[] = [
+  { ringSize: 140, angle: -48, dotSize: 7, color: "#00F0FF", glow: 12 },
+];
+
 /**
  * Hero logo emblem: orbiting rings/nodes + glow + a glass "tile" holding the
  * CloudVidya mark, with a soft floor reflection. Dark mode only — light mode
@@ -102,7 +110,49 @@ function NodeEl({ node }: { node: Node }) {
  * Purely decorative: role="img" with one aria-label, everything inside
  * aria-hidden and nothing focusable.
  */
-export function LogoEmblem() {
+export function LogoEmblem({ variant = "default" }: { variant?: "default" | "compact" }) {
+  if (variant === "compact") {
+    return (
+      <div
+        role="img"
+        aria-label="CloudVidya Academy logo"
+        className="relative mx-auto flex h-[72px] w-[72px] items-center justify-center"
+      >
+        <div aria-hidden="true" className="hidden dark:block">
+          <div className="animate-spin-slow absolute inset-0 motion-reduce:animate-none">
+            {COMPACT_RINGS.map((ring) => (
+              <RingEl key={ring.size} ring={ring} />
+            ))}
+            {COMPACT_NODES.map((node, i) => (
+              <NodeEl key={i} node={node} />
+            ))}
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="absolute left-1/2 top-1/2 hidden h-[160px] w-[160px] -translate-x-1/2 -translate-y-1/2 rounded-full dark:block"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgb(0 240 255 / 0.32), rgb(0 102 255 / 0.16) 40%, transparent 70%)",
+          }}
+        />
+
+        <div
+          aria-hidden="true"
+          className="border-border relative flex h-[72px] w-[72px] items-center justify-center rounded-[20px] border bg-white shadow-md dark:border-white/20 dark:bg-[linear-gradient(160deg,rgb(255_255_255_/_0.16),rgb(255_255_255_/_0.03)_60%)] dark:shadow-[inset_0_1px_0_rgb(255_255_255_/_0.3),inset_0_-12px_24px_rgb(0_102_255_/_0.18),0_16px_40px_-12px_rgb(0_102_255_/_0.75)]"
+        >
+          <ThemedLogo
+            layout="mark"
+            height={44}
+            title=""
+            className="dark:[filter:drop-shadow(0_0_16px_rgb(0_240_255_/_0.55))_drop-shadow(0_6px_12px_rgb(0_0_0_/_0.45))]"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       role="img"

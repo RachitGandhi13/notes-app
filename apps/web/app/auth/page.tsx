@@ -131,13 +131,19 @@ function AuthPageInner() {
   return (
     <AuthCard title="Sign in" subtitle="Continue with your preferred method">
       {verified && (
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+        <div
+          role="status"
+          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400"
+        >
           Email verified. You can now sign in.
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div
+          role="alert"
+          className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+        >
           {error === "OAuthAccountNotLinked"
             ? "This email is already used with a different provider."
             : error === "InvalidVerification"
@@ -146,23 +152,29 @@ function AuthPageInner() {
         </div>
       )}
 
-      {/* Tab switcher */}
-      <div className="flex rounded-lg border border-white/10 bg-white/5 p-1">
+      {/* Tab switcher — Phase 3 segmented-pill treatment (same visual language
+          as the shared Radix Tabs primitive, kept as plain buttons here since
+          this component already owns the ?tab= sync and default-tab logic). */}
+      <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
         <button
           onClick={() => setTab("signin")}
-          className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-all ${tab === "signin" ? "bg-blue-600 text-white shadow" : "text-zinc-400 hover:text-zinc-100"}`}
+          className={`h-10 flex-1 rounded-full text-sm font-medium transition-all duration-[144ms] ${tab === "signin" ? "bg-[#FAFAFA] text-[#09090B]" : "text-zinc-400 hover:text-zinc-100"}`}
         >
           Sign In
         </button>
         <button
           onClick={() => setTab("register")}
-          className={`min-h-11 flex-1 rounded-md py-1.5 text-sm font-medium transition-all ${tab === "register" ? "bg-blue-600 text-white shadow" : "text-zinc-400 hover:text-zinc-100"}`}
+          className={`h-10 flex-1 rounded-full text-sm font-medium transition-all duration-[144ms] ${tab === "register" ? "bg-[#FAFAFA] text-[#09090B]" : "text-zinc-400 hover:text-zinc-100"}`}
         >
           Register
         </button>
       </div>
 
-      {credError && <p className="text-sm text-red-400">{credError}</p>}
+      {credError && (
+        <p role="alert" className="text-sm text-red-400">
+          {credError}
+        </p>
+      )}
 
       {unverifiedEmail && tab === "signin" && (
         <div className="space-y-2">
@@ -170,7 +182,7 @@ function AuthPageInner() {
             type="button"
             onClick={handleResend}
             disabled={resend.status === "sending"}
-            className="inline-flex min-h-11 items-center text-sm font-medium text-blue-400 underline underline-offset-4 hover:text-blue-300 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-[#4D94FF] underline underline-offset-4 hover:text-[#4D94FF]/80 disabled:opacity-50"
           >
             {resend.status === "sending"
               ? "Sending a new link…"
@@ -187,7 +199,9 @@ function AuthPageInner() {
       )}
 
       {registerSuccess && (
-        <p className="text-sm text-emerald-400">Account created. Check your email to verify it.</p>
+        <p role="status" className="text-sm text-emerald-400">
+          Account created. Check your email to verify it.
+        </p>
       )}
 
       {tab === "signin" ? (
@@ -213,7 +227,7 @@ function AuthPageInner() {
               </label>
               <Link
                 href="/auth/forgot-password"
-                className="inline-flex min-h-11 items-center text-xs text-zinc-400 underline hover:text-blue-400"
+                className="inline-flex min-h-11 items-center text-xs text-[#4D94FF] underline hover:text-[#4D94FF]/80"
               >
                 Forgot password?
               </Link>
@@ -295,7 +309,7 @@ function AuthPageInner() {
             {oauth.github && (
               <button
                 onClick={() => signIn("github", { callbackUrl })}
-                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
+                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-zinc-300 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
                   <GitHubIcon />
@@ -306,7 +320,7 @@ function AuthPageInner() {
             {oauth.google && (
               <button
                 onClick={() => signIn("google", { callbackUrl })}
-                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
+                className="group flex min-h-11 w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-all hover:border-blue-500/30 hover:bg-white/10 active:scale-[0.98]"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-zinc-300 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
                   <GoogleIcon />

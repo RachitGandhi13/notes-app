@@ -186,6 +186,47 @@
   }
 }
 
+/* Dialog's own dark-mode glass background is applied as plain Tailwind
+   utility classes directly in dialog.tsx (not a class here) — it needs to
+   stay overridable by a consumer's own bg, border and shadow className
+   (e.g. the gallery lightbox wants a fully transparent dialog), and
+   tailwind-merge only de-dupes conflicting Tailwind utilities, never a
+   plain custom CSS class like the ones below. */
+
+/* DropdownMenu / Select-trigger-content panel (Ascend v2 Phase 3) — solid,
+   no blur, per spec (menus sit above short-lived content, not full pages). */
+.dark .menu-panel {
+  background-color: #161618;
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.6);
+}
+
+/* Mobile nav sheet is only in the DOM while open (plain conditional render,
+   no new JS state) — :has() locks background scroll without a JS listener. */
+body:has(#mobile-menu) {
+  overflow: hidden;
+}
+
+/* Sheet (mobile nav drawer, Ascend v2 Phase 3) — same recipe as dialog-panel,
+   full height instead of a centered/bottom-sheet card. */
+.dark .sheet-panel {
+  background-color: rgb(20 20 24 / 0.86);
+  border-color: rgb(255 255 255 / 0.12);
+  box-shadow: 0 40px 120px -30px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(24px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .dark .sheet-panel {
+    background-color: var(--cv-surface, #18181b);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dark .sheet-panel {
+    background-color: var(--cv-surface, #18181b);
+    backdrop-filter: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
