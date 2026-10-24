@@ -111,7 +111,7 @@ export default async function HomePage({ searchParams }: Props) {
               {query && (
                 <Link
                   href="/"
-                  className="text-primary text-sm font-medium underline underline-offset-4"
+                  className="text-primary-ink text-sm font-medium underline underline-offset-4"
                 >
                   Clear search
                 </Link>

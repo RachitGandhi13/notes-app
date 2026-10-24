@@ -36,7 +36,10 @@ export default function PrivacyPage() {
             CloudVidya Academy ({"[legal entity name]"}, registered at {"[registered address]"})
             operates this website and the courses, notes and internship programs offered on it. For
             any privacy question, contact us at{" "}
-            <a href="mailto:admin@cloudvidyaacademy.com" className="text-primary hover:underline">
+            <a
+              href="mailto:admin@cloudvidyaacademy.com"
+              className="text-primary-ink hover:underline"
+            >
               admin@cloudvidyaacademy.com
             </a>
             .

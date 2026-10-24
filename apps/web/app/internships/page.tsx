@@ -86,7 +86,7 @@ export default async function InternshipsPage() {
                   key={benefit}
                   className="bg-card flex items-center gap-3 rounded-xl border p-4 text-sm font-medium"
                 >
-                  <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
+                  <CheckCircle2 className="text-primary-ink h-5 w-5 shrink-0" />
                   {benefit}
                 </div>
               ))}
@@ -103,7 +103,7 @@ export default async function InternshipsPage() {
             <ul className="space-y-3">
               {PROGRAM_DELIVERABLES.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm leading-relaxed">
-                  <CheckCircle2 className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                  <CheckCircle2 className="text-primary-ink mt-0.5 h-4 w-4 shrink-0" />
                   {item}
                 </li>
               ))}
@@ -115,7 +115,7 @@ export default async function InternshipsPage() {
         <Reveal>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="bg-card space-y-3 rounded-2xl border p-6">
-              <ClipboardCheck className="text-primary h-6 w-6" />
+              <ClipboardCheck className="text-primary-ink h-6 w-6" />
               <h3 className="text-lg font-bold">Project assessment</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 In Week 4, your mentor reviews your mini-project against the track&apos;s rubric and
@@ -124,7 +124,7 @@ export default async function InternshipsPage() {
               </p>
             </div>
             <div className="bg-card space-y-3 rounded-2xl border p-6">
-              <Award className="text-primary h-6 w-6" />
+              <Award className="text-primary-ink h-6 w-6" />
               <h3 className="text-lg font-bold">Certificate eligibility</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Complete all 4 weeks, submit your project, and pass the final review to receive the

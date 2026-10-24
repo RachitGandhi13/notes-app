@@ -234,7 +234,7 @@ function QuestionItem({
             ) : (
               <button
                 onClick={() => setShowAnswerForm(true)}
-                className="text-primary text-sm hover:underline"
+                className="text-primary-ink text-sm hover:underline"
               >
                 + Write an answer
               </button>

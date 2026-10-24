@@ -30,6 +30,13 @@
        cyan/lilac stops (those read too light on white). Dark mode's own
        value is set in .dark below and is unchanged. */
     --cv-gradient-headline: linear-gradient(100deg, #0052cc 0%, #007a99 100%);
+
+    /* Release prep, Step 1: a text/icon-safe primary color, separate from
+       --primary (which stays untouched — see the Phase-1 note in .dark
+       below; changing it directly caused a cascading regression). Used only
+       for primary-coloured TEXT and ICONS on neutral surfaces, never as a
+       background fill — a filled button keeps --primary + white text. */
+    --primary-ink: 216 100% 40%; /* #0052CC, ~6.8:1 on white */
   }
   .dark {
     /* Ascend design system — neutral zinc-black + saturated blue/cyan.
@@ -86,6 +93,9 @@
 
     /* Pre-launch polish, Step 5: unchanged from the original hardcoded value. */
     --cv-gradient-headline: linear-gradient(100deg, #4d94ff 0%, #00f0ff 55%, #b4a7ff 100%);
+
+    /* Release prep, Step 1: same #4D94FF already used as --cv-link above. */
+    --primary-ink: 216 100% 65%; /* #4D94FF, ~5.9:1 on cv-surface */
   }
 }
 
