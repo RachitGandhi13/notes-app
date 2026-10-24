@@ -306,16 +306,49 @@
    nothing ever flashes in the wrong state and a browser with no
    animation support, or prefers-reduced-motion, just sees the end
    state immediately. Per-element stagger delay is set inline
-   (style.animationDelay) by AscendHero, computed from each element's
-   array index — not nth-of-type, which breaks if this markup's sibling
-   shape ever changes. */
+   (style.animationDelay) by AscendPathLayer, computed from each
+   element's array index/measured arc-length position — not nth-of-type,
+   which breaks if this markup's sibling shape ever changes.
+
+   The dot ring, card border and logo glow each have a resting and an
+   "active" (pulse-passing) value that differ dark/light — kept as custom
+   properties here (light in :root, dark override in .dark) so the single
+   shared keyframe below can reference var() instead of needing a
+   dark/light-duplicated keyframe pair. */
+:root {
+  --ascend-dot-ring-rest: 0 0 0 6px rgba(0, 102, 255, 0.1);
+  --ascend-dot-ring-active: 0 0 0 8px rgba(0, 102, 255, 0.35);
+  --ascend-card-border-rest: #e4e4e7;
+  --ascend-card-border-active: rgba(0, 82, 204, 0.35);
+  --ascend-logo-glow-rest: 0 0 0 1px #e4e4e7, 0 24px 50px -18px rgba(0, 82, 204, 0.35);
+  --ascend-logo-glow-active: 0 0 0 1px #e4e4e7, 0 24px 60px -10px rgba(0, 82, 204, 0.65);
+}
+.dark {
+  --ascend-dot-ring-rest: 0 0 0 6px rgba(0, 240, 255, 0.12);
+  --ascend-dot-ring-active: 0 0 0 8px rgba(0, 240, 255, 0.35);
+  --ascend-card-border-rest: rgba(255, 255, 255, 0.12);
+  --ascend-card-border-active: rgba(0, 240, 255, 0.45);
+  --ascend-logo-glow-rest:
+    0 0 0 1px rgba(255, 255, 255, 0.4), 0 30px 80px -14px rgba(0, 180, 255, 0.85);
+  --ascend-logo-glow-active:
+    0 0 0 1px rgba(255, 255, 255, 0.4), 0 30px 90px -6px rgba(0, 220, 255, 1);
+}
+
 .ascend-path-main {
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
 }
+/* The flowing pulse is a pure motion effect with no static equivalent, so
+   (unlike the elements above) it's hidden by default and only exists at
+   all inside the no-preference block — "no pulse" under reduced motion
+   means exactly that, not just "no longer moving". */
+.ascend-pulse {
+  opacity: 0;
+}
 .ascend-dot {
   opacity: 1;
   transform: scale(1);
+  box-shadow: var(--ascend-dot-ring-rest);
 }
 .ascend-card {
   opacity: 1;
@@ -330,15 +363,53 @@
   .ascend-path-main {
     animation: ascend-draw-path 1.2s ease-out both;
   }
+  .ascend-pulse {
+    opacity: 1;
+    animation: ascend-pulse-flow 3.2s linear infinite both;
+    animation-delay: 1.6s;
+  }
   .ascend-dot {
-    animation: ascend-pop-dot 0.4s ease-out both;
+    animation-name: ascend-pop-dot, ascend-dot-pulse-bump;
+    animation-duration: 0.4s, 3.2s;
+    animation-timing-function: ease-out, linear;
+    animation-iteration-count: 1, infinite;
+    animation-fill-mode: both, both;
+    /* animation-delay is set inline per dot: "<pop-in delay>s, <pulse-arrival delay>s" */
   }
   .ascend-card {
     animation: ascend-fade-card 0.5s ease-out both;
   }
+  /* Desktop cards carry both .ascend-card and .ascend-card-pulse; the
+     mobile timeline card only carries .ascend-card (it has no
+     pulse-arrival delay to sync against). A compound selector is used
+     (rather than a second animation on .ascend-card-pulse alone) because
+     the `animation` shorthand on two separate same-specificity classes
+     would override, not combine — this compound rule's higher
+     specificity cleanly replaces the single-animation rule above only on
+     elements that carry both classes. */
+  .ascend-card.ascend-card-pulse {
+    animation-name: ascend-fade-card, ascend-card-pulse-border;
+    animation-duration: 0.5s, 3.2s;
+    animation-timing-function: ease-out, linear;
+    animation-iteration-count: 1, infinite;
+    animation-fill-mode: both, both;
+    /* animation-delay is set inline: "<pop-in delay>s, <pulse-arrival delay>s" */
+  }
   .ascend-logo-tile {
     animation: ascend-pop-logo 0.5s ease-out both;
     animation-delay: 1.4s;
+  }
+  /* Same reasoning as .ascend-card-pulse above — desktop's logo tile
+     carries both classes, mobile's only .ascend-logo-tile. Both delays
+     are fixed (no per-index value needed), so they're hardcoded here
+     rather than inline. */
+  .ascend-logo-tile.ascend-logo-pulse {
+    animation-name: ascend-pop-logo, ascend-logo-glow-pulse;
+    animation-duration: 0.5s, 3.2s;
+    animation-timing-function: ease-out, linear;
+    animation-iteration-count: 1, infinite;
+    animation-fill-mode: both, both;
+    animation-delay: 1.4s, 1.6s;
   }
 }
 
@@ -347,10 +418,34 @@
     stroke-dashoffset: 1;
   }
 }
+/* pathLength=1000 on this layer (not 1 like the main stroke above) just for
+   round-number convenience in the dash/gap split below. */
+@keyframes ascend-pulse-flow {
+  from {
+    stroke-dashoffset: 90;
+  }
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
 @keyframes ascend-pop-dot {
   from {
     opacity: 0;
     transform: scale(0.8);
+  }
+}
+/* 0% is the moment the traveling pulse reaches this dot (animation-delay
+   places that instant correctly in the shared 3.2s loop); it decays back
+   to resting over the next 10% of the loop, i.e. ~320ms. */
+@keyframes ascend-dot-pulse-bump {
+  0% {
+    transform: scale(1.25);
+    box-shadow: var(--ascend-dot-ring-active);
+  }
+  10%,
+  100% {
+    transform: scale(1);
+    box-shadow: var(--ascend-dot-ring-rest);
   }
 }
 @keyframes ascend-fade-card {
@@ -359,10 +454,30 @@
     transform: translateY(8px);
   }
 }
+@keyframes ascend-card-pulse-border {
+  0% {
+    border-color: var(--ascend-card-border-active);
+  }
+  10%,
+  100% {
+    border-color: var(--ascend-card-border-rest);
+  }
+}
 @keyframes ascend-pop-logo {
   from {
     opacity: 0;
     transform: scale(0.92);
+  }
+}
+/* ~400ms of the 3.2s loop, timed (via animation-delay) to the instant the
+   pulse reaches the summit. */
+@keyframes ascend-logo-glow-pulse {
+  0% {
+    box-shadow: var(--ascend-logo-glow-active);
+  }
+  12.5%,
+  100% {
+    box-shadow: var(--ascend-logo-glow-rest);
   }
 }
 
