@@ -49,7 +49,7 @@ export default async function HomePage({ searchParams }: Props) {
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b">
         <Aurora variant="hero" />
-        <Grain opacity={0.6} />
+        <Grain opacity={0.9} lightOpacity={0.05} />
         <HeroGrid />
         <div className="relative mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
           <HeroContent />
