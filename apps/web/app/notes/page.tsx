@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { BookOpen, ClipboardCheck, Presentation } from "lucide-react";
 import { getSession } from "@repo/auth";
 import { ThemedLogo } from "@repo/ui";
@@ -8,6 +9,13 @@ import { CourseNoteCard } from "@/components/CourseNoteCard";
 import { AnimatedBackdrop } from "@/components/home/AnimatedBackdrop";
 import { Reveal } from "@/components/Reveal";
 import { SectionEyebrow } from "@/components/SectionEyebrow";
+
+export const metadata: Metadata = {
+  title: "Notes",
+  description:
+    "Browse structured notes for every CloudVidya Academy course and track, organised by section so you can revise without rewatching the videos.",
+  alternates: { canonical: "/notes" },
+};
 
 // Rendered per request. Prerendering at build time would need the database and
 // Redis during `next build`, which the Docker build doesn't have. The track list

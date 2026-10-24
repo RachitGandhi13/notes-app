@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Internship Program",
   description:
     "Hands-on internship tracks in Cloud, DevOps and AI application development, by CloudVidya Academy.",
+  alternates: { canonical: "/internships" },
 };
 
 // Rendered per request — the track list and application form are both
