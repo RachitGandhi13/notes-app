@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { AuthCard } from "@/components/AuthCard";
+
+// A transient error state (expired session / no access), not content —
+// kept out of search results like the other auth-flow pages.
+export const metadata: Metadata = {
+  title: "Access Denied",
+  robots: { index: false, follow: false },
+};
 
 export default function InvalidSessionPage() {
   return (
