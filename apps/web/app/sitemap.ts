@@ -11,7 +11,16 @@ const CACHE_KEY = "sitemap:entries:v1";
 const CACHE_SECONDS = 60 * 60;
 
 // Always listed, even when the database is unavailable.
-const STATIC_PATHS = ["/", "/notes", "/internships"];
+const STATIC_PATHS = [
+  "/",
+  "/notes",
+  "/internships",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/refund-policy",
+  "/shipping-policy",
+];
 
 interface DynamicEntry {
   path: string;
