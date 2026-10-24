@@ -5,6 +5,7 @@ import { INTERNSHIP_ROADMAP, PROGRAM_BENEFITS, PROGRAM_DELIVERABLES } from "@/li
 import { getActiveInternshipTracks } from "@/lib/internship-actions";
 import { HeroGlow } from "@/components/home/HeroGlow";
 import { Reveal } from "@/components/Reveal";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 
 export const metadata: Metadata = {
   title: "Internship Program",
@@ -22,6 +23,8 @@ export default async function InternshipsPage() {
 
   return (
     <main className="mx-auto max-w-5xl space-y-16 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Internship Program" }]} />
+
       {/* Hero */}
       <div className="relative isolate -mx-4 overflow-hidden px-4 py-6 text-center sm:-mx-6 sm:px-6">
         <HeroGlow />

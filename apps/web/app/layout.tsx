@@ -4,6 +4,7 @@ import NextTopLoader from "nextjs-toploader";
 import { Navbar, Footer, ThemedLogo, GlowCanvas } from "@repo/ui";
 import { Providers } from "./providers";
 import { CourseSearchBar } from "@/components/CourseSearchBar";
+import { Analytics } from "@/components/seo/Analytics";
 import { SITE_URL } from "@/lib/site";
 import { jsonLd } from "@/lib/seo";
 import "./globals.css";
@@ -63,6 +64,7 @@ export const metadata: Metadata = {
     template: "%s · CloudVidya Academy",
   },
   description: "Master Cloud Computing, DevOps, and Software Engineering.",
+  alternates: { canonical: "/" },
   openGraph: {
     siteName: "CloudVidya Academy",
     title: "CloudVidya Academy",
@@ -70,6 +72,11 @@ export const metadata: Metadata = {
     url: SITE_URL,
     type: "website",
   },
+  // Set NEXT_PUBLIC_GSC_VERIFICATION in the hosting dashboard to verify via
+  // meta tag; DNS TXT verification works too and needs no code change.
+  verification: process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION }
+    : undefined,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -175,6 +182,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
           </div>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );

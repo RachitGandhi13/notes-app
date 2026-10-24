@@ -11,6 +11,7 @@ import { CurriculumAccordion } from "@/components/CurriculumAccordion";
 import { needsUnoptimized } from "@/lib/images";
 import { absoluteUrl, DEFAULT_OG_IMAGE, jsonLd, truncate } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 
 // Rendered per request (same reasoning as app/notes/page.tsx) — getSession() already
 // forces this dynamically, but this makes it explicit. The course itself is still
@@ -174,6 +175,14 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
           }}
         />
       )}
+
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Courses", href: "/#browse" },
+          { label: course.title },
+        ]}
+      />
 
       {/* Payment status banner */}
       {searchParams.payment === "success" && (
