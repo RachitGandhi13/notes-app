@@ -20,7 +20,7 @@ export default async function InternshipsPage() {
   const tracks = await getActiveInternshipTracks();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-16 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+    <main className="mx-auto max-w-5xl space-y-16 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
       {/* Hero */}
       <div className="relative isolate -mx-4 overflow-hidden px-4 py-6 text-center sm:-mx-6 sm:px-6">
         <HeroGlow />
@@ -130,6 +130,6 @@ export default async function InternshipsPage() {
           </div>
         </Reveal>
       </InternshipTrackPicker>
-    </div>
+    </main>
   );
 }

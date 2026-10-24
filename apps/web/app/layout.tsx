@@ -130,7 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ]}
               search={<CourseSearchBar compact />}
             />
-            <main className="flex-1">{children}</main>
+            <div className="flex-1">{children}</div>
             <Footer
               brand="CloudVidya Academy"
               logo={

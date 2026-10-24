@@ -27,7 +27,7 @@ export function AuthCard({
   icon?: ReactNode;
 }) {
   return (
-    <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
+    <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
       {/* Light mode: unchanged pre-Ascend backdrop (out of scope for this
           restyle). Dark mode: the Phase 2 Aurora + Grain + HeroGrid trio. */}
       <AnimatedBackdrop className="dark:hidden" />
@@ -49,6 +49,6 @@ export function AuthCard({
           {children}
         </GlassCard>
       </Reveal>
-    </div>
+    </main>
   );
 }

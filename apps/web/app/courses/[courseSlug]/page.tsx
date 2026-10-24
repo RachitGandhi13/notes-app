@@ -165,7 +165,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <main className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {!course.hidden && (
         <script
           type="application/ld+json"
@@ -313,6 +313,6 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
